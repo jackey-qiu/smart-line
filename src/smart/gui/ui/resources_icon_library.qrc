@@ -1,0 +1,17 @@
+<RCC>
+  <qresource prefix="FileSystem">
+    <file>icons/FileSystem/open_folder_128x128.png</file>
+    <file>icons/FileSystem/save_as_128x128.png</file>
+    <file>icons/FileSystem/close_file_128x128.png</file>
+    <file>icons/FileSystem/new_file_128x128.png</file>
+  </qresource>
+  <qresource prefix="Viewing">
+    <file>icons/Viewing/coordinates_128x128.png</file>
+  </qresource>
+  <qresource prefix="Cursors">
+    <file>icons/Cursors/measure_cursor_32x32.png</file>
+    <file>icons/Cursors/registration_cursor_32x32.png</file>
+    <file>icons/Cursors/select_cursor_32x32.png</file>
+    <file>icons/Cursors/target_cursor_32x32.png</file>
+  </qresource>
+</RCC>
