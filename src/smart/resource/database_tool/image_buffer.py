@@ -60,7 +60,7 @@ class ImageBufferInfo(QtCore.QObject):
             elif os.path.splitext(d['Path'])[-1].lower() == ".tif" or os.path.splitext(d['Path'])[
                 -1].lower() == ".tiff":
                 image = tifffile.imread(d['Path'])
-                image = cv2.convertScaleAbs(image, alpha=0.001, beta=50)
+                # image = cv2.convertScaleAbs(image, alpha=0.001, beta=50)
                 qimage= qimage2ndarray.array2qimage(image)
                 qi = QtGui.QPixmap(qimage)
             else:
