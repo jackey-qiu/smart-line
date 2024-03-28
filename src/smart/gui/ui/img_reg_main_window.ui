@@ -56,7 +56,7 @@
        <property name="spacing">
         <number>2</number>
        </property>
-       <item row="0" column="4">
+       <item row="0" column="3">
         <widget class="QToolButton" name="bt_removeMenu">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
@@ -98,50 +98,6 @@
         </widget>
        </item>
        <item row="0" column="1">
-        <widget class="QToolButton" name="bt_alignMenu">
-         <property name="enabled">
-          <bool>false</bool>
-         </property>
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="minimumSize">
-          <size>
-           <width>0</width>
-           <height>0</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>123890</width>
-           <height>60</height>
-          </size>
-         </property>
-         <property name="text">
-          <string>Align</string>
-         </property>
-         <property name="icon">
-          <iconset>
-           <normaloff>icons/Viewing/coordinates_128x128.png</normaloff>icons/Viewing/coordinates_128x128.png</iconset>
-         </property>
-         <property name="iconSize">
-          <size>
-           <width>36</width>
-           <height>36</height>
-          </size>
-         </property>
-         <property name="popupMode">
-          <enum>QToolButton::InstantPopup</enum>
-         </property>
-         <property name="toolButtonStyle">
-          <enum>Qt::ToolButtonTextBesideIcon</enum>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="2">
         <widget class="QToolButton" name="bt_imageMenu">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
@@ -185,7 +141,7 @@
          </property>
         </widget>
        </item>
-       <item row="0" column="5">
+       <item row="0" column="4">
         <spacer name="horizontalSpacer">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
@@ -232,7 +188,7 @@
            <item>
             <widget class="QTabWidget" name="tabWidget_3">
              <property name="currentIndex">
-              <number>2</number>
+              <number>3</number>
              </property>
              <widget class="QWidget" name="tab_9">
               <attribute name="title">
@@ -409,7 +365,7 @@
               </font>
              </property>
              <property name="currentIndex">
-              <number>3</number>
+              <number>6</number>
              </property>
              <widget class="QWidget" name="tab">
               <attribute name="title">
@@ -2013,6 +1969,16 @@
                </item>
               </layout>
              </widget>
+             <widget class="QWidget" name="tab_13">
+              <attribute name="title">
+               <string>Spock</string>
+              </attribute>
+              <layout class="QHBoxLayout" name="horizontalLayout_9">
+               <item>
+                <widget class="QtSpockWidget" name="widget_spock" native="true"/>
+               </item>
+              </layout>
+             </widget>
              <widget class="QWidget" name="tab_4">
               <attribute name="title">
                <string>Console</string>
@@ -2063,6 +2029,12 @@
    <class>ScanPlotWidget</class>
    <extends>QWidget</extends>
    <header>smart.gui.widgets.showscanonline</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>QtSpockWidget</class>
+   <extends>QWidget</extends>
+   <header>sardana.taurus.qt.qtgui.extra_sardana.qtspock.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

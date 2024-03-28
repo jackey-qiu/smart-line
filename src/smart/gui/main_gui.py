@@ -164,6 +164,8 @@ class smartGui(MacroExecutionWindow, MdiFieldImreg_Wrapper, geometry_widget_wrap
         self.createToolsMenu()
         # self.createTaurusMenu()
         self.createHelpMenu()
+        #it is needed for backward compatibility for using qtspock
+        self.widget_spock.kernel_manager.is_valid_spock_profile = False
 
     def connect_mouseClick_event_for_online_monitor(self):
         self.move_motor_action = None
@@ -239,6 +241,7 @@ class smartGui(MacroExecutionWindow, MdiFieldImreg_Wrapper, geometry_widget_wrap
             self.widget_sequencer.onMacroStatusUpdated)
         self.widget_sequencer.onDoorChanged(doorName)
         self.widget_online_monitor.setModel(doorName)
+        self.widget_spock.setModel(doorName)
 
 
     def setModel(self, model):
