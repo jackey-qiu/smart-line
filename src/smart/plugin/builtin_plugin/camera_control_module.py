@@ -4,7 +4,7 @@ from taurus.external.qt import Qt
 from pyqtgraph import GraphicsLayoutWidget, ImageItem
 import pyqtgraph as pg
 from taurus.core import TaurusEventType, TaurusTimeVal
-from smart.gui.widgets.context_menu_actions import VisuaTool
+from smart.gui.widgets.context_menu_actions import VisuaTool, camSwitch
 from taurus.qt.qtgui.tpg import ForcedReadTool
 
 
@@ -25,11 +25,12 @@ class camera_control_panel(object):
         if gridLayoutWidgetName!=None:
             if viewerWidgetName!=None:
                 if not hasattr(self, viewerWidgetName):
-                    setattr(self, viewerWidgetName,TaurusImageItem())
+                    setattr(self, viewerWidgetName,TaurusImageItem(parent=self))
                     getattr(self, gridLayoutWidgetName).addWidget(getattr(self, viewerWidgetName))
 
     def connect_slots_cam(self):
-        self.pushButton_camera.clicked.connect(self.control_cam)
+        return
+        #self.pushButton_camera.clicked.connect(self.control_cam)
 
     def control_cam(self):
         gridLayoutWidgetName, viewerWidgetName, camaraStreamModel = self._extract_cam_info_from_config()
@@ -75,11 +76,12 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
     """
 
     # TODO: clear image if .setModel(None)
-    def __init__(self, *args, **kwargs):
+    def __init__(self, parent = None, *args, **kwargs):
         GraphicsLayoutWidget.__init__(self, *args, **kwargs)
         TaurusBaseComponent.__init__(self, "TaurusImageItem")
         self._timer = Qt.QTimer()
         self._timer.timeout.connect(self._forceRead)
+        self._parent = parent
         self._init_ui()
         # self.setModel('sys/tg_test/1/long64_image_ro')
 
@@ -118,6 +120,8 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self.fr.attachToPlotItem(self.img_viewer)
         self.vt = VisuaTool(self, properties = ['prof_hoz','prof_ver'])
         self.vt.attachToPlotItem(self.img_viewer)
+        self.cam_switch = camSwitch(self._parent)
+        self.cam_switch.attachToPlotItem(self.img_viewer)
 
     def handleEvent(self, evt_src, evt_type, evt_val):
         """Reimplemented from :class:`TaurusImageItem`"""

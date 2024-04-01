@@ -165,7 +165,8 @@ class smartGui(MacroExecutionWindow, MdiFieldImreg_Wrapper, geometry_widget_wrap
         # self.createTaurusMenu()
         self.createHelpMenu()
         #it is needed for backward compatibility for using qtspock
-        self.widget_spock.kernel_manager.is_valid_spock_profile = False
+        self.widget_spock.kernel_manager.is_valid_spock_profile = True
+        self.widget_spock.set_default_style('linux')
 
     def connect_mouseClick_event_for_online_monitor(self):
         self.move_motor_action = None
