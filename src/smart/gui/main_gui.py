@@ -64,6 +64,7 @@ class smartGui(MacroExecutionWindow, MdiFieldImreg_Wrapper, geometry_widget_wrap
         camera_control_panel.__init__(self)
         self.setMinimumSize(800, 600)
         self.widget_terminal.update_name_space('gui', self)
+        self.widget_motor_widget.set_parent(self)
         self._parent = self
 
         self.img_backup_path = "ImageBackup.imagedb"
@@ -243,6 +244,7 @@ class smartGui(MacroExecutionWindow, MdiFieldImreg_Wrapper, geometry_widget_wrap
         self.widget_sequencer.onDoorChanged(doorName)
         self.widget_online_monitor.setModel(doorName)
         self.widget_spock.setModel(doorName)
+        self.widget_motor_widget.update_motor_viewer()
 
 
     def setModel(self, model):

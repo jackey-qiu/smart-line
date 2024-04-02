@@ -188,7 +188,7 @@
            <item>
             <widget class="QTabWidget" name="tabWidget_3">
              <property name="currentIndex">
-              <number>0</number>
+              <number>4</number>
              </property>
              <widget class="QWidget" name="tab_9">
               <attribute name="title">
@@ -328,6 +328,16 @@
               <layout class="QHBoxLayout" name="horizontalLayout_6">
                <item>
                 <widget class="ScanPlotWidget" name="widget_online_monitor" native="true"/>
+               </item>
+              </layout>
+             </widget>
+             <widget class="QWidget" name="tab_14">
+              <attribute name="title">
+               <string>motor monitor</string>
+              </attribute>
+              <layout class="QHBoxLayout" name="horizontalLayout_10">
+               <item>
+                <widget class="motorMeter" name="widget_motor_widget" native="true"/>
                </item>
               </layout>
              </widget>
@@ -2027,6 +2037,12 @@
    <class>QtSpockWidget</class>
    <extends>QWidget</extends>
    <header>sardana.taurus.qt.qtgui.extra_sardana.qtspock.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>motorMeter</class>
+   <extends>QWidget</extends>
+   <header>smart.gui.widgets.motor_widget.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
