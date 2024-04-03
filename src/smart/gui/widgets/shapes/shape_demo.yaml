@@ -1,0 +1,37 @@
+softwareVersion: 0.1.0
+paintEngine: qt.QPainter
+shapes:
+  rect1:
+    api_class: rectangle
+    paint_api: drawRect
+    paint_pars:
+      x: 0
+      y: 0
+      width: 10
+      height: 20
+    paint_decoration:
+      pen_decoration:
+        color: 255, 0, 0
+        lw: 3
+        ls: Qt.SolidLine
+        transparancy: 1
+      brush_decoration:
+        color: 0, 255, 0
+        fill_pattern: Qt.SolidPattern
+        transparancy: 1
+    anchors:
+      number: 4
+connections:
+  con1:
+    type: left-right-cen
+    components: 
+    - rect1.anchor1
+    - circ1.anchor2
+    gap: 20
+    connection_shape: line
+    connection_way: CONN.ELONGATION
+    offset:
+      shape: rect1
+      value: [20, 30]
+
+

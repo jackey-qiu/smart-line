@@ -34,7 +34,7 @@ def main():
     # myWin.init_taurus()
     TaurusMainWindow.loadSettings(myWin)
     myWin.loadSettings()
-    myWin.setWindowIcon(QtGui.QIcon(str(Path(__file__).parent / 'desy_small.png')))
+    myWin.setWindowIcon(QtGui.QIcon(str(Path(__file__).parent / 'smart_logo.png')))
     myWin.setWindowTitle("SMART")
     myWin.showMaximized() 
     app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
