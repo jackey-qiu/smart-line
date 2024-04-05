@@ -64,6 +64,10 @@ class geometry_widget_wrapper(object):
         self.pushButton_select_last.clicked.connect(self.highlightLastImg)
         self.pushButton_next_img.clicked.connect(self.nextImg)
         self.pushButton_pre_img.clicked.connect(self.preImg)
+        self.radioButton_select.clicked.connect(lambda: self.switch_mode_from_radio_button_control('select'))
+        self.radioButton_fiducial.clicked.connect(lambda: self.switch_mode_from_radio_button_control('fiducial'))
+        self.radioButton_dft.clicked.connect(lambda: self.switch_mode_from_radio_button_control('dft'))
+        self.radioButton_particle.clicked.connect(lambda: self.switch_mode_from_radio_button_control('particle'))
 
     def tweak_geo(self):
         which_item = self.comboBox_tweak_item.currentText()

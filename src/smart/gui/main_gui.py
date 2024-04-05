@@ -65,6 +65,7 @@ class smartGui(MacroExecutionWindow, MdiFieldImreg_Wrapper, geometry_widget_wrap
         self.setMinimumSize(800, 600)
         self.widget_terminal.update_name_space('gui', self)
         self.widget_motor_widget.set_parent(self)
+        self.widget_synoptic.set_parent(self)
         self._parent = self
 
         self.img_backup_path = "ImageBackup.imagedb"
@@ -260,6 +261,31 @@ class smartGui(MacroExecutionWindow, MdiFieldImreg_Wrapper, geometry_widget_wrap
         except:
             pass
 
+    def switch_mode_from_radio_button_control(self, text):
+        if 'select' in text:
+            self.field.measure_tool.hide()
+            self.field.set_mode('select')
+            self.update_geo()
+            if hasattr(self, 'move_box'):
+                self.move_box.show()
+        elif 'fiducial' in text:
+            self.field.measure_tool.hide()
+            self.field.set_mode('fiducial_marker')
+            self.update_fiducial()
+            if hasattr(self, 'move_box'):
+                self.move_box.hide()
+        elif 'dft' in text:
+            self.field.measure_tool.hide()
+            self.field.set_mode('dft')
+            if hasattr(self, 'move_box'):
+                self.move_box.hide()
+        elif 'particle' in text:
+            self.field.set_mode('particle')
+            self.field.measure_tool.show()
+            if hasattr(self, 'move_box'):
+                self.move_box.hide()
+            self.set_pars_for_locating_particle_on_gui()
+
     @Slot(int)    
     def switch_mode(self, tabIndex):
         tabText = self.tabWidget.tabText(tabIndex).lower()
@@ -269,17 +295,20 @@ class smartGui(MacroExecutionWindow, MdiFieldImreg_Wrapper, geometry_widget_wrap
             self.update_fiducial()
             if hasattr(self, 'move_box'):
                 self.move_box.hide()
+            self.radioButton_fiducial.click()
         elif 'dft' in tabText:
             self.field.measure_tool.hide()
             self.field.set_mode('dft')
             if hasattr(self, 'move_box'):
                 self.move_box.hide()
+            self.radioButton_dft.click()
         elif 'geometry' in tabText:
             self.field.measure_tool.hide()
             self.field.set_mode('select')
             self.update_geo()
             if hasattr(self, 'move_box'):
                 self.move_box.show()
+            self.radioButton_select.click()
             # if 'particle' in tabText:#filled the save pars for particle tracking
                 # self.set_pars_for_locating_particle_on_gui()
         elif 'particle' in tabText:
@@ -288,6 +317,7 @@ class smartGui(MacroExecutionWindow, MdiFieldImreg_Wrapper, geometry_widget_wrap
             if hasattr(self, 'move_box'):
                 self.move_box.hide()
             self.set_pars_for_locating_particle_on_gui()
+            self.radioButton_particle.click()
 
     def set_cursor_icon(self, cursor_type="cross"):
         """

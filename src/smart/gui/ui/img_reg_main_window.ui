@@ -188,7 +188,7 @@
            <item>
             <widget class="QTabWidget" name="tabWidget_3">
              <property name="currentIndex">
-              <number>4</number>
+              <number>0</number>
              </property>
              <widget class="QWidget" name="tab_9">
               <attribute name="title">
@@ -233,8 +233,34 @@
                       <number>2</number>
                      </property>
                      <item row="0" column="0">
-                      <layout class="QHBoxLayout" name="horizontalLayout_3">
-                       <item>
+                      <layout class="QGridLayout" name="gridLayout_13">
+                       <item row="0" column="4">
+                        <widget class="QPushButton" name="pushButton_next_img">
+                         <property name="sizePolicy">
+                          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                           <horstretch>0</horstretch>
+                           <verstretch>0</verstretch>
+                          </sizepolicy>
+                         </property>
+                         <property name="text">
+                          <string>&gt;&gt;</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="0" column="2">
+                        <widget class="QPushButton" name="pushButton_select_first">
+                         <property name="sizePolicy">
+                          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                           <horstretch>0</horstretch>
+                           <verstretch>0</verstretch>
+                          </sizepolicy>
+                         </property>
+                         <property name="text">
+                          <string>|&lt;&lt;</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="0" column="1">
                         <widget class="QLabel" name="label_2">
                          <property name="sizePolicy">
                           <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
@@ -247,31 +273,91 @@
                          </property>
                         </widget>
                        </item>
-                       <item>
-                        <widget class="QPushButton" name="pushButton_select_first">
+                       <item row="1" column="1">
+                        <widget class="QLabel" name="label_52">
                          <property name="text">
-                          <string>|&lt;&lt;</string>
+                          <string>mode selection</string>
                          </property>
                         </widget>
                        </item>
-                       <item>
+                       <item row="0" column="3">
                         <widget class="QPushButton" name="pushButton_pre_img">
+                         <property name="sizePolicy">
+                          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                           <horstretch>0</horstretch>
+                           <verstretch>0</verstretch>
+                          </sizepolicy>
+                         </property>
                          <property name="text">
                           <string>&lt;&lt;</string>
                          </property>
                         </widget>
                        </item>
-                       <item>
-                        <widget class="QPushButton" name="pushButton_next_img">
+                       <item row="1" column="3">
+                        <widget class="QRadioButton" name="radioButton_fiducial">
+                         <property name="sizePolicy">
+                          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                           <horstretch>0</horstretch>
+                           <verstretch>0</verstretch>
+                          </sizepolicy>
+                         </property>
                          <property name="text">
-                          <string>&gt;&gt;</string>
+                          <string>fiducial mode</string>
                          </property>
                         </widget>
                        </item>
-                       <item>
+                       <item row="1" column="4">
+                        <widget class="QRadioButton" name="radioButton_dft">
+                         <property name="sizePolicy">
+                          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                           <horstretch>0</horstretch>
+                           <verstretch>0</verstretch>
+                          </sizepolicy>
+                         </property>
+                         <property name="text">
+                          <string>DFT mode</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="1" column="5">
+                        <widget class="QRadioButton" name="radioButton_particle">
+                         <property name="sizePolicy">
+                          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                           <horstretch>0</horstretch>
+                           <verstretch>0</verstretch>
+                          </sizepolicy>
+                         </property>
+                         <property name="text">
+                          <string>particle mode</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="0" column="5">
                         <widget class="QPushButton" name="pushButton_select_last">
+                         <property name="sizePolicy">
+                          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                           <horstretch>0</horstretch>
+                           <verstretch>0</verstretch>
+                          </sizepolicy>
+                         </property>
                          <property name="text">
                           <string>&gt;&gt;|</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="1" column="2">
+                        <widget class="QRadioButton" name="radioButton_select">
+                         <property name="sizePolicy">
+                          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                           <horstretch>0</horstretch>
+                           <verstretch>0</verstretch>
+                          </sizepolicy>
+                         </property>
+                         <property name="text">
+                          <string>geometry mode</string>
+                         </property>
+                         <property name="checked">
+                          <bool>true</bool>
                          </property>
                         </widget>
                        </item>
@@ -341,6 +427,20 @@
                </item>
               </layout>
              </widget>
+             <widget class="QWidget" name="tab_15">
+              <attribute name="title">
+               <string>synoptic viewer</string>
+              </attribute>
+              <layout class="QHBoxLayout" name="horizontalLayout_11">
+               <item>
+                <widget class="shapeContainer" name="widget_synoptic" native="true">
+                 <property name="mouseTracking">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
             </widget>
            </item>
           </layout>
@@ -368,7 +468,7 @@
               </font>
              </property>
              <property name="currentIndex">
-              <number>5</number>
+              <number>4</number>
              </property>
              <widget class="QWidget" name="tab">
               <attribute name="title">
@@ -2045,9 +2145,13 @@
    <header>smart.gui.widgets.motor_widget.h</header>
    <container>1</container>
   </customwidget>
+  <customwidget>
+   <class>shapeContainer</class>
+   <extends>QWidget</extends>
+   <header>smart.gui.widgets.shapes.shape_container.h</header>
+   <container>1</container>
+  </customwidget>
  </customwidgets>
- <resources>
-  <include location="../../../../imregdesy/src/ui/resources_icon_library.qrc"/>
- </resources>
+ <resources/>
  <connections/>
 </ui>
