@@ -207,156 +207,6 @@ def apply_imreg_dft(vector_dict, target):
 						 tdict=vector_dict, bgval=None, order=1, invert=False)
 
 
-# // test image
-# from skimage import data
-# from skimage import img_as_float
-# a = img_as_float(data.astronaut()[::2, ::2])
-# a=np.reshape(np.repeat(a[:,:],20),(256,256,3,20))
-# for k in range(20):
-# 	a[:,:,:,k]=ndimage.rotate(a[:,:,:,k],20*k, reshape=False)
-# a= registration_dft_stack(a, iterations=15, display=True, quiet=False,simulation=False,z_axis=(3,),channel=(0,), channel_axis=(2,),angle=[10,30], tx=[0,0], ty=[0,0])
-
-# registration_dft_slice(a[:,:,:,0], a[:,:,:,1], channel=(0,), channel_axis=(2,), scale=[1,0], angle=[0,0], tx=[0,0], ty=[0,0], \
-# 	iterations=3, display=True, quiet=False, simulation=False, progressbar='', display_window='', vector_dict_out=False)
-
-
-# def _projection_registration_cv2(image_stack, channel, warp_mode = cv2.MOTION_EUCLIDEAN):
-# 	"""
-# 	image registration using a projection deformation model
-
-# 	image_stack is 4D array
-
-# 	"""
-
-# 	_z = image_stack.shape[2]//2
-
-
-# 	win = pg.GraphicsWindow(title="Overlay registration")
-# 	win.resize(800,800)
-# 	p1 = win.addPlot()
-# 	# Item for displaying image data
-# 	imv = pg.ImageItem()
-# 	p1.addItem(imv)
-# 	win.show()
-# 	pg.QtGui.QApplication.processEvents()
-
-# 	for k in range(_z,1,-1):
-# 		# im1=np.squeeze(image_stack[:,:,k, channel])
-# 		# im2=np.squeeze(image_stack[:,:,k+1, channel])
-# 		# im1_gray =np.uint8(np.round((im1-im1.min())*65535/(im1.max()-im1.min())))
-# 		# im2_gray = np.uint8(np.round((im2-im2.min())*65535/(im2.max()-im2.min())))
-
-# 		# im1 =  cv2.imread("/run/media/admin/Storage4/Data_Backup_Containers/Data_Container_Live/Unprocessed/Grains/3D/stack/level_Mn55/level_Mn55{:04d}.jpg".format(k+1));
-# 		# im2 =  cv2.imread("/run/media/admin/Storage4/Data_Backup_Containers/Data_Container_Live/Unprocessed/Grains/3D/stack/level_Mn55/level_Mn55{:04d}.jpg".format(k)); 
-# 		im1 = np.float32(image_stack[:,:,k,channel,0])
-# 		# im1_gray = cv2.cvtColor(im1,cv2.COLOR_GRAY2BGR)
-# 		# im1_gray = cv2.cvtColor(im1_gray,cv2.COLOR_BGR2GRAY)
-# 		im_tot=im1
-# 		im1_gray=im1
-# 		im2 = np.float32(image_stack[:,:,k-1,channel,0])
-# 		# im2_gray = cv2.cvtColor(im2,cv2.COLOR_GRAY2BGR)
-# 		# im2_gray = cv2.cvtColor(im2_gray,cv2.COLOR_BGR2GRAY)	
-# 		im2_gray = im2
-# 		sz = im1_gray.shape
-		 
-# 		# Define 2x3 or 3x3 matrices and initialize the matrix to identity
-# 		if warp_mode == cv2.MOTION_HOMOGRAPHY :
-# 		    warp_matrix = np.eye(3, 3, dtype=np.float32)
-# 		else :
-# 		    warp_matrix = np.eye(2, 3, dtype=np.float32)
-		 
-# 		# Specify the number of iterations.
-# 		number_of_iterations = 1000;
-		 
-# 		# Specify the threshold of the increment
-# 		# in the correlation coefficient between two iterations
-# 		termination_eps = 1e-5;
-		 
-# 		# Define termination criteria
-# 		criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, number_of_iterations,  termination_eps)
-		 
-# 		# Run the ECC algorithm. The results are stored in warp_matrix.
-# 		(cc, warp_matrix) = cv2.findTransformECC (im1_gray,im2_gray,warp_matrix, warp_mode, criteria)
-		
-# 		# for c in range(image_stack.shape[3]):
-# 		if warp_mode == cv2.MOTION_HOMOGRAPHY :
-# 		    # Use warpPerspective for Homography 
-# 		    im2_aligned = cv2.warpPerspective (im2_gray, warp_matrix, (sz[1],sz[0]), flags=cv2.INTER_LINEAR + cv2.WARP_INVERSE_MAP)
-# 		else :
-# 		    # Use warpAffine for Translation, Euclidean and Affine
-# 		    im2_aligned = cv2.warpAffine(im2_gray, warp_matrix, (sz[1],sz[0]), flags=cv2.INTER_LINEAR + cv2.WARP_INVERSE_MAP);
-		
-# 		im_tot+=im2_aligned
-# 		im1=im2_aligned
-# 		# # Show final results
-# 		plt.imshow( im_tot)
-# 		# plt.waitKey(0)
-# 		# plt.show()
-
-# 	for k in range(_z,image_stack.shape[2]-1,1):
-# 		# im1=np.squeeze(image_stack[:,:,k, channel])
-# 		# im2=np.squeeze(image_stack[:,:,k+1, channel])
-# 		# im1_gray =np.uint8(np.round((im1-im1.min())*65535/(im1.max()-im1.min())))
-# 		# im2_gray = np.uint8(np.round((im2-im2.min())*65535/(im2.max()-im2.min())))
-		
-# 		im1 = np.float32(image_stack[:,:,k,channel,0])
-# 		im1_gray = cv2.cvtColor(im1,cv2.COLOR_GRAY2BGR)
-# 		im1_gray = cv2.cvtColor(im1_gray,cv2.COLOR_BGR2GRAY)
-# 		# im_tot=im1_gray
-# 		im2 = np.float32(image_stack[:,:,k+1,channel,0])
-# 		im2_gray = cv2.cvtColor(im2,cv2.COLOR_GRAY2BGR)
-# 		im2_gray = cv2.cvtColor(im2_gray,cv2.COLOR_BGR2GRAY)
-# 		sz = im1_gray.shape
-
-		 
-# 		# Define 2x3 or 3x3 matrices and initialize the matrix to identity
-# 		if warp_mode == cv2.MOTION_HOMOGRAPHY :
-# 		    warp_matrix = np.eye(3, 3, dtype=np.float32)
-# 		else :
-# 		    warp_matrix = np.eye(2, 3, dtype=np.float32)
-		 
-# 		# Specify the number of iterations.
-# 		number_of_iterations = 1000;
-		 
-# 		# Specify the threshold of the increment
-# 		# in the correlation coefficient between two iterations
-# 		termination_eps = 1e-5;
-		 
-# 		# Define termination criteria
-
-
-# 		criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, number_of_iterations,  termination_eps)
-		 
-# 		# Run the ECC algorithm. The results are stored in warp_matrix.
-# 		(cc, warp_matrix) = cv2.findTransformECC (im1_gray,im2_gray,warp_matrix, warp_mode, criteria)
-		
-# 		# for c in range(image_stack.shape[3]):
-# 		if warp_mode == cv2.MOTION_HOMOGRAPHY :
-# 		    # Use warpPerspective for Homography 
-# 		    im2_aligned = cv2.warpPerspective (im2_gray, warp_matrix, (sz[1],sz[0]), flags=cv2.INTER_LINEAR + cv2.WARP_INVERSE_MAP)
-# 		else :
-# 		    # Use warpAffine for Translation, Euclidean and Affine
-# 		    im2_aligned = cv2.warpAffine(im2_gray, warp_matrix, (sz[1],sz[0]), flags=cv2.INTER_LINEAR + cv2.WARP_INVERSE_MAP);
-
-# 		# Show final results
-# 		# cv2.imshow("Image 1", im1_gray)
-# 		# cv2.imshow("Image 2", im2_gray)
-# 		# cv2.imshow("im2_aligned", im2_aligned)
-# 		# cv2.waitKey(0)
-# 		im_tot+=im2_aligned
-
-# 	# plt.imshow(np.mean(np.squeeze(im_tot[:,:,:])),axis=2)
-# 	# plt.show()
-
-
-# 		# imv.setImage(im1+im2_aligned)
-# 		# win.setWindowTitle('slice {}'.format(k))
-# 		# pg.QtGui.QApplication.processEvents()
-
-# 	return im_tot
-
-
-
 def _projection_registration_fft(image_stack, channel):
 	"""
 	image registration using a projection deformation model
@@ -441,3 +291,34 @@ def rotatePoint(centerPoint,point,angle):
 	temp_point = ( temp_point[0]*math.cos(angle)-temp_point[1]*math.sin(angle) , temp_point[0]*math.sin(angle)+temp_point[1]*math.cos(angle))
 	temp_point = temp_point[0]+centerPoint[0] , temp_point[1]+centerPoint[1]
 	return temp_point
+
+def rotate_multiple_points(p, origin=(0, 0), degrees=0):
+
+	'''
+	points=[(200, 300), (100, 300)]
+	origin=(100,100)
+
+	new_points = rotate(points, origin=origin, degrees=10)
+	print(new_points)
+	'''
+
+	angle = np.deg2rad(degrees)
+	R = np.array([[np.cos(angle), -np.sin(angle)],
+				[np.sin(angle),  np.cos(angle)]])
+	o = np.atleast_2d(origin)
+	p = np.atleast_2d(p)
+	return np.squeeze((R @ (p.T-o.T) + o.T).T)
+
+
+def unit_vector(vector):
+    """ Returns the unit vector of the vector.  """
+    return vector / np.linalg.norm(vector)
+
+def angle_between(v1, v2):
+	v1_u = unit_vector(v1)
+	v2_u = unit_vector(v2)
+	v2_countercross_wrt_v1 = (v1_u[0]*v2_u[1] - v1_u[1]*v2_u[0])<0
+	if v2_countercross_wrt_v1:
+		return np.rad2deg(np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0)))
+	else:
+		return -np.rad2deg(np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0)))
