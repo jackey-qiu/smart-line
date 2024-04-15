@@ -22,11 +22,6 @@ def make_decoration_from_text(dec = {'pen': {'color': (255, 255, 0), 'width': 3,
     qbrush = QBrush(brush_color)
     return {'pen': qpen, 'brush': qbrush}
 
-@dataclass
-class FakeEvent:
-    x: int = None
-    y: int = None
-
 class baseShape(object):
 
     def __init__(self, dim, decoration_cursor_off = DECORATION_UPON_CURSOR_OFF, decoration_cursor_on = DECORATION_UPON_CURSOR_ON , rotation_center=None, transformation={'rotate':0, 'translate':(0,0)}):
@@ -52,6 +47,8 @@ class baseShape(object):
 
     @property
     def rot_center(self):
+        if self._rotcenter == None:
+            self._rotcenter = [int(each) for each in self.compute_center_from_dim(False)]
         return self._rotcenter
     
     @rot_center.setter
@@ -316,6 +313,189 @@ class buildObject(object):
     def build_shapes(self):
         pass
 
+class shapeComposite(object):
+
+    def __init__(self, shapes, alignment_pattern, connection_pattern):
+        #connection_patter = {'shapes':[[0,1],[1,2]], 'anchors':[['left','top'],['right', 'bottom']]}
+        self._shapes = copy.deepcopy(shapes)
+        self.alignment = alignment_pattern
+        self.connection = connection_pattern
+        self.lines = []
+        self.build_composite()
+
+    @property
+    def shapes(self):
+        return self._shapes
+
+    def build_composite(self):
+        buildTools.align_multiple_shapes(self.shapes, self.alignment)
+        shape_index = self.connection['shapes']
+        anchors = self.connection['anchors']
+        assert len(shape_index) == len(anchors), "Dimension of shape and anchors does not match!"
+        for shapes_, anchors_ in zip(shape_index, anchors):
+            shapes = [self.shapes[each] for each in shapes_]
+            lines = buildTools.make_line_connection_btw_two_anchors(shapes, anchors_)
+            self.lines.append(lines)
+
+class buildTools(object):
+
+    @classmethod
+    def calculate_boundary_for_combined_shapes(cls, shapes):
+        x_min, x_max, y_min, y_max = None, None, None, None
+        for i, shape in enumerate(shapes):
+            if i == 0:
+                x_min, x_max, y_min, y_max = shape.calculate_shape_boundary()
+            else:
+                _x_min, _x_max, _y_min, _y_max = shape.calculate_shape_boundary()
+                x_min = min([x_min, _x_min])
+                x_max = max([x_max, _x_max])
+                y_min = min([y_min, _y_min])
+                y_max = max([y_max, _y_max])
+        return x_min, x_max, y_min, y_max
+
+    @classmethod
+    def align_multiple_shapes(cls, shapes, orientations):
+        def _align_shapes(_shapes, orientations_):
+            assert len(_shapes) == len(orientations_), 'The length of shapes and orientation must be equal!'
+            for i in range(len(_shapes)-1):
+                ref_shape, target_shape = _shapes[i], _shapes[i+1]
+                orientations_temp = orientations_[i:i+2]
+                buildTools.align_two_shapes(ref_shape, target_shape, orientations_temp)
+
+        if type(shapes[0])==list:
+            assert type(orientations[0])==list, 'Format mismatch. Should be list of list.'
+            for shape_segment, orientaion_seg in zip(shapes, orientations):
+                _align_shapes(shape_segment, orientaion_seg)
+        else:
+            _align_shapes(shapes, orientations)
+
+    @classmethod
+    def align_two_shapes(cls, ref_shape, target_shape, orientations = ['bottom', 'top'], gap = 0.1):
+        cen_, v_unit = ref_shape.calculate_orientation_vector(orientations[0])
+        v_mag = ref_shape.calculate_orientation_length(orientations[0]) + target_shape.calculate_orientation_length(orientations[1])
+        v = v_unit * v_mag * (1+gap)
+        #set rot ang to 0 and translate to 0
+        target_shape.reset()
+        origin_cen_target = target_shape.compute_center_from_dim()
+        new_cen_target = v + cen_
+        v_diff = new_cen_target - origin_cen_target
+        target_shape.rot_center = origin_cen_target
+        #let's calculate the angle between the original target shape and the orientated one
+        target_cen_, target_v_unit = target_shape.calculate_orientation_vector(orientations[1])
+        target_v_new = - v
+        angle_offset = -angle_between(target_v_unit, target_v_new)
+        target_shape.transformation = {'rotate': angle_offset, 'translate': v_diff}
+        return target_shape
+
+    @classmethod
+    def make_line_connection_btw_two_anchors(cls, shapes, anchors, short_head_line_len = 10):
+        line_nodes = []
+        def _apply_offset(pos, dir):
+            offset = {'left': np.array([-short_head_line_len, 0]),
+                      'right': np.array([short_head_line_len, 0]),
+                      'top': np.array([0, -short_head_line_len]),
+                      'bottom': np.array([0, short_head_line_len]),
+                     }
+            return np.array(pos) + offset[dir]
+
+        def _extend_to_beyond_boundary(pos, dir, overshot_pix_ct = 20):
+            x_min, x_max, y_min, y_max = buildTools.calculate_boundary_for_combined_shapes(shapes)
+            if dir == 'left':
+                x = min([x_min, pos[0]]) - overshot_pix_ct
+                y = pos[1]
+            elif dir == 'right':
+                x = max([x_max, pos[0]]) + overshot_pix_ct
+                y = pos[1]
+            elif dir == 'top':
+                x = pos[0]
+                y = min([y_min, pos[1]]) - overshot_pix_ct
+            elif dir == 'bottom':
+                x = pos[0]
+                y = max([y_max, pos[1]]) + overshot_pix_ct
+            return [int(x), int(y)]
+
+        def _get_sign_from_dir(dir):
+            if dir in ['left', 'top']:
+                return '>='
+            elif dir in ['right','bottom']:
+                return '<='
+
+        assert len(shapes)==2 and len(anchors)==2, 'shapes and anchors must be list of two items'
+        dirs = []
+        anchor_pos = []
+        for shape, anchor in zip(shapes, anchors):
+            dirs.append(shape.get_proper_extention_dir_for_one_anchor(anchor))
+            anchor_pos.append(shape.compute_anchor_pos_after_transformation(anchor, return_pos_only=True))
+        dir0, dir1 = dirs
+        anchor_pos_offset = [_apply_offset(_pos, _dir) for _pos, _dir in zip(anchor_pos, dirs)]
+        
+        if ('left' not in dirs) and ('right' not in dirs):
+            if (dirs == ['top', 'top']) or (dirs == ['bottom', 'bottom']):
+                first_anchor_pos_after_extend = _extend_to_beyond_boundary(anchor_pos_offset[0], dir0)
+                second_anchor_pos_after_extend = _extend_to_beyond_boundary(anchor_pos_offset[1], dir1)
+                if dirs == ['top', 'top']:
+                    y_min = min([first_anchor_pos_after_extend[1], second_anchor_pos_after_extend[1]])
+                else:
+                    y_min = max([first_anchor_pos_after_extend[1], second_anchor_pos_after_extend[1]])
+                first_anchor_pos_after_extend = [first_anchor_pos_after_extend[0], y_min]
+                second_anchor_pos_after_extend = [second_anchor_pos_after_extend[0], y_min]
+                line_nodes = [anchor_pos[0], anchor_pos_offset[0], first_anchor_pos_after_extend, second_anchor_pos_after_extend,anchor_pos_offset[1], anchor_pos[1]]
+            else:
+                first_anchor_pos_after_extend = _extend_to_beyond_boundary(anchor_pos_offset[0], dir0)
+                second_anchor_pos_after_extend = _extend_to_beyond_boundary(anchor_pos_offset[1], dir1)
+                x_cen = (anchor_pos_offset[0][0] + anchor_pos_offset[1][0])/2
+                first_anchor_pos_after_extend_cen = [x_cen, first_anchor_pos_after_extend[1]]
+                second_anchor_pos_after_extend_cen = [x_cen, second_anchor_pos_after_extend[1]]
+                line_nodes = [anchor_pos[0], anchor_pos_offset[0], first_anchor_pos_after_extend, first_anchor_pos_after_extend_cen, \
+                              second_anchor_pos_after_extend_cen, second_anchor_pos_after_extend,anchor_pos_offset[1], anchor_pos[1]]
+        elif ('top' not in dirs) and ('bottom' not in dirs):
+            if (dirs == ['left', 'left']) or (dirs == ['right', 'right']):
+                first_anchor_pos_after_extend = _extend_to_beyond_boundary(anchor_pos_offset[0], dir0)
+                second_anchor_pos_after_extend = _extend_to_beyond_boundary(anchor_pos_offset[1], dir1)
+                if dirs == ['left', 'left']:
+                    x_min = min([first_anchor_pos_after_extend[0], second_anchor_pos_after_extend[0]])
+                else:
+                    x_min = max([first_anchor_pos_after_extend[0], second_anchor_pos_after_extend[0]])
+                first_anchor_pos_after_extend = [x_min, first_anchor_pos_after_extend[1]]
+                second_anchor_pos_after_extend = [x_min, second_anchor_pos_after_extend[1]]                
+                line_nodes = [anchor_pos[0], anchor_pos_offset[0], first_anchor_pos_after_extend, second_anchor_pos_after_extend,anchor_pos_offset[1], anchor_pos[1]]
+            else:
+                first_anchor_pos_after_extend = _extend_to_beyond_boundary(anchor_pos_offset[0], dir0)
+                second_anchor_pos_after_extend = _extend_to_beyond_boundary(anchor_pos_offset[1], dir1)
+                y_cen = (anchor_pos_offset[0][1] + anchor_pos_offset[1][1])/2
+                first_anchor_pos_after_extend_cen = [first_anchor_pos_after_extend[0], y_cen]
+                second_anchor_pos_after_extend_cen = [second_anchor_pos_after_extend[0], y_cen]
+                line_nodes = [anchor_pos[0], anchor_pos_offset[0], first_anchor_pos_after_extend, first_anchor_pos_after_extend_cen, \
+                              second_anchor_pos_after_extend_cen, second_anchor_pos_after_extend,anchor_pos_offset[1], anchor_pos[1]]            
+        else: # mixture of top/bottom and left/right
+            if dir0 in ['top', 'bottom']:
+                ref_x, ref_y = [anchor_pos_offset[0][0], anchor_pos_offset[1][1]] 
+                check_x, check_y = [anchor_pos_offset[1][0], anchor_pos_offset[0][1]] 
+                check_result_x = eval(f'{check_x}{_get_sign_from_dir(dir1)}{ref_x}')
+                check_result_y = eval(f'{check_y}{_get_sign_from_dir(dir0)}{ref_y}')
+                if check_result_x and check_result_y:
+                    cross_pt = [ref_x, ref_y]
+                    line_nodes = [anchor_pos[0], anchor_pos_offset[0], cross_pt, anchor_pos_offset[1], anchor_pos[1]]
+                else:
+                    first_anchor_pos_after_extend = _extend_to_beyond_boundary(anchor_pos_offset[0], dir0)
+                    second_anchor_pos_after_extend = _extend_to_beyond_boundary(anchor_pos_offset[1], dir1)
+                    cross_pt = [second_anchor_pos_after_extend[0], first_anchor_pos_after_extend[1]]
+                    line_nodes = [anchor_pos[0], anchor_pos_offset[0], first_anchor_pos_after_extend, cross_pt, second_anchor_pos_after_extend, anchor_pos_offset[1], anchor_pos[1]]
+            else:
+                ref_x, ref_y = [anchor_pos_offset[1][0], anchor_pos_offset[0][1]] 
+                check_x, check_y = [anchor_pos_offset[0][0], anchor_pos_offset[1][1]] 
+                check_result_x = eval(f'{check_x}{_get_sign_from_dir(dir0)}{ref_x}')
+                check_result_y = eval(f'{check_y}{_get_sign_from_dir(dir1)}{ref_y}')
+                if check_result_x and check_result_y:
+                    cross_pt = [ref_x, ref_y]
+                    line_nodes = [anchor_pos[0], anchor_pos_offset[0], cross_pt, anchor_pos_offset[1], anchor_pos[1]]
+                else:
+                    first_anchor_pos_after_extend = _extend_to_beyond_boundary(anchor_pos_offset[0], dir0)
+                    second_anchor_pos_after_extend = _extend_to_beyond_boundary(anchor_pos_offset[1], dir1)
+                    cross_pt = [first_anchor_pos_after_extend[0], second_anchor_pos_after_extend[1]]
+                    line_nodes = [anchor_pos[0], anchor_pos_offset[0], first_anchor_pos_after_extend, cross_pt, second_anchor_pos_after_extend, anchor_pos_offset[1], anchor_pos[1]]
+        return np.array(line_nodes).astype(int)
+
 class shapeContainer(QWidget):
     
     def __init__(self, parent = None) -> None:
@@ -370,7 +550,6 @@ class shapeContainer(QWidget):
                 _align_shapes(shape_segment, orientaion_seg)
         else:
             _align_shapes(shapes, orientations)
-
 
     def align_two_shapes(self, ref_shape, target_shape, orientations = ['bottom', 'top']):
         cen_, v_unit = ref_shape.calculate_orientation_vector(orientations[0])
@@ -438,6 +617,8 @@ class shapeContainer(QWidget):
 
 
     def make_line_connection_btw_two_anchors(self, shapes, anchors, short_head_line_len = 10):
+        return buildTools.make_line_connection_btw_two_anchors(shapes, anchors, short_head_line_len)
+        
         line_nodes = []
         def _apply_offset(pos, dir):
             offset = {'left': np.array([-short_head_line_len, 0]),
