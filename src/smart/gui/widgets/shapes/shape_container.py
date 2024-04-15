@@ -222,7 +222,7 @@ class rectangle(baseShape):
         else:
             return x+w/2, y+h/2
     
-    def make_anchors(self, num_of_anchors_on_each_side = 1, include_corner = True):
+    def make_anchors(self, num_of_anchors_on_each_side = 4, include_corner = True):
         #num_of_anchors_on_each_side: exclude corners
 
         w, h = self.dim_pars[2:]
@@ -315,9 +315,12 @@ class buildObject(object):
 
 class shapeComposite(object):
 
-    def __init__(self, shapes, alignment_pattern, connection_pattern):
+    def __init__(self, shapes, anchor_args, alignment_pattern, connection_pattern):
         #connection_patter = {'shapes':[[0,1],[1,2]], 'anchors':[['left','top'],['right', 'bottom']]}
+        #alignment_patter = {'shapes':[[0,1],[1,2]], 'anchors':[['left','top'],['right', 'bottom']]}
         self._shapes = copy.deepcopy(shapes)
+        self.anchor_args = anchor_args
+        self.make_anchors()
         self.alignment = alignment_pattern
         self.connection = connection_pattern
         self.lines = []
@@ -327,8 +330,24 @@ class shapeComposite(object):
     def shapes(self):
         return self._shapes
 
+    def make_anchors(self):
+        for shape, arg in zip(self.shapes, self.anchor_args):
+            shape.make_anchors(arg)
+
     def build_composite(self):
-        buildTools.align_multiple_shapes(self.shapes, self.alignment)
+        self.align_shapes()
+        self.make_line_connection()
+
+    def align_shapes(self):
+        shape_index = self.alignment['shapes']
+        anchors = self.alignment['anchors']
+        assert len(shape_index) == len(anchors), "Dimension of shape and anchors does not match!"
+        for shapes_, anchors_ in zip(shape_index, anchors):
+            ref_shape, target_shape, *_ = [self.shapes[each] for each in shapes_]
+            buildTools.align_two_shapes(ref_shape, target_shape, anchors_, 0)
+
+    def make_line_connection(self):
+        self.lines = []
         shape_index = self.connection['shapes']
         anchors = self.connection['anchors']
         assert len(shape_index) == len(anchors), "Dimension of shape and anchors does not match!"
@@ -338,6 +357,40 @@ class shapeComposite(object):
             self.lines.append(lines)
 
 class buildTools(object):
+
+    @classmethod
+    def align_multiple_shapes(cls, shapes, orientations):
+        def _align_shapes(_shapes, orientations_):
+            assert len(_shapes) == len(orientations_), 'The length of shapes and orientation must be equal!'
+            for i in range(len(_shapes)-1):
+                ref_shape, target_shape = _shapes[i], _shapes[i+1]
+                orientations_temp = orientations_[i:i+2]
+                cls.align_two_shapes(ref_shape, target_shape, orientations_temp)
+
+        if type(shapes[0])==list:
+            assert type(orientations[0])==list, 'Format mismatch. Should be list of list.'
+            for shape_segment, orientaion_seg in zip(shapes, orientations):
+                _align_shapes(shape_segment, orientaion_seg)
+        else:
+            _align_shapes(shapes, orientations)
+
+    @classmethod
+    def align_two_shapes(cls, ref_shape, target_shape, orientations = ['bottom', 'top']):
+        cen_, v_unit = ref_shape.calculate_orientation_vector(orientations[0])
+        v_mag = ref_shape.calculate_orientation_length(orientations[0]) + target_shape.calculate_orientation_length(orientations[1])
+        v = v_unit * v_mag
+        #set rot ang to 0 and translate to 0
+        target_shape.reset()
+        origin_cen_target = target_shape.compute_center_from_dim(apply_translate=False)
+        new_cen_target = v + cen_
+        v_diff = new_cen_target - origin_cen_target
+        target_shape.rot_center = origin_cen_target
+        #let's calculate the angle between the original target shape and the orientated one
+        target_cen_, target_v_unit = target_shape.calculate_orientation_vector(orientations[1])
+        target_v_new = - v
+        angle_offset = -angle_between(target_v_unit, target_v_new)
+        target_shape.transformation = {'rotate': angle_offset, 'translate': v_diff}
+        return target_shape
 
     @classmethod
     def calculate_boundary_for_combined_shapes(cls, shapes):
@@ -502,6 +555,18 @@ class shapeContainer(QWidget):
         super().__init__(parent = parent)
         self.parent = parent
         self.build_shapes()
+        self.composite_shape = shapeComposite(shapes = self.shapes, \
+                                             anchor_args = [4, 3, 3, 3, 3], \
+                                             alignment_pattern= {'shapes':[[0,1],[0,2],[0,3],[0,4]], \
+                                                                 'anchors':[['anchor_top_0','anchor_top_1'],\
+                                                                            ['anchor_top_3','anchor_top_1'],\
+                                                                            ['anchor_bottom_0','anchor_top_1'],\
+                                                                            ['anchor_bottom_3','anchor_top_1'],\
+                                                                            ]},
+                                             connection_pattern= {'shapes':[[1,2],[3,4]], \
+                                                                 'anchors':[['left','right'],\
+                                                                            ['top','top'],\
+                                                                            ]})
         self.test_timer = QTimer()
         self.test_timer.timeout.connect(self.test_rotate_shape)
         self.test_connection_or = ['bottom','top']
@@ -512,8 +577,11 @@ class shapeContainer(QWidget):
         self.parent = parent
 
     def build_shapes(self):
-        self.shapes = [rectangle(dim = [200,180,100,80],rotation_center = [200,180], transformation={'rotate':0, 'translate':(0,0)}), \
-                       rectangle(dim = [100,300,50,50],rotation_center = [125,325], transformation={'rotate':0, 'translate':(0,0)})]#,\
+        self.shapes = [rectangle(dim = [200,180,100,100],rotation_center = [200,180], transformation={'rotate':0, 'translate':(0,0)}), \
+                       rectangle(dim = [100,300,20,20],rotation_center = [110,310], transformation={'rotate':0, 'translate':(0,0)}),\
+                       rectangle(dim = [100,300,20,20],rotation_center = [110,310], transformation={'rotate':0, 'translate':(0,0)}),\
+                       rectangle(dim = [100,300,20,20],rotation_center = [110,310], transformation={'rotate':0, 'translate':(0,0)}),\
+                       rectangle(dim = [100,300,20,20],rotation_center = [110,310], transformation={'rotate':0, 'translate':(0,0)})]#,\
                     #    rectangle(dim = [300,100,50,50],rotation_center = [340,120], transformation={'rotate':0, 'translate':(0,0)}),\
                     #    rectangle(dim = [300,100,50,50],rotation_center = [340,120], transformation={'rotate':0, 'translate':(0,0)}),\
                     #    rectangle(dim = [300,100,50,50],rotation_center = [340,120], transformation={'rotate':0, 'translate':(0,0)})]# \
@@ -521,52 +589,11 @@ class shapeContainer(QWidget):
                     #    rectangle(dim = [500,100,40,80],transformation={'rotate':0, 'translate':(0,0)}), \
                     #    rectangle(dim = [500,100,80,80],transformation={'rotate':0, 'translate':(0,0)})]
 
-    def calculate_boundary_for_combined_shapes(self, shapes = None):
-        if shapes == None:
-            shapes = self.shapes
-        x_min, x_max, y_min, y_max = None, None, None, None
-        for i, shape in enumerate(shapes):
-            if i == 0:
-                x_min, x_max, y_min, y_max = shape.calculate_shape_boundary()
-            else:
-                _x_min, _x_max, _y_min, _y_max = shape.calculate_shape_boundary()
-                x_min = min([x_min, _x_min])
-                x_max = max([x_max, _x_max])
-                y_min = min([y_min, _y_min])
-                y_max = max([y_max, _y_max])
-        return x_min, x_max, y_min, y_max
-
     def align_multiple_shapes(self, shapes, orientations):
-        def _align_shapes(_shapes, orientations_):
-            assert len(_shapes) == len(orientations_), 'The length of shapes and orientation must be equal!'
-            for i in range(len(_shapes)-1):
-                ref_shape, target_shape = _shapes[i], _shapes[i+1]
-                orientations_temp = orientations_[i:i+2]
-                self.align_two_shapes(ref_shape, target_shape, orientations_temp)
-
-        if type(shapes[0])==list:
-            assert type(orientations[0])==list, 'Format mismatch. Should be list of list.'
-            for shape_segment, orientaion_seg in zip(shapes, orientations):
-                _align_shapes(shape_segment, orientaion_seg)
-        else:
-            _align_shapes(shapes, orientations)
+        buildTools.align_multiple_shapes(shapes, orientations)
 
     def align_two_shapes(self, ref_shape, target_shape, orientations = ['bottom', 'top']):
-        cen_, v_unit = ref_shape.calculate_orientation_vector(orientations[0])
-        v_mag = ref_shape.calculate_orientation_length(orientations[0]) + target_shape.calculate_orientation_length(orientations[1])
-        v = v_unit * v_mag
-        #set rot ang to 0 and translate to 0
-        target_shape.reset()
-        origin_cen_target = target_shape.compute_center_from_dim()
-        new_cen_target = v + cen_
-        v_diff = new_cen_target - origin_cen_target
-        target_shape.rot_center = origin_cen_target
-        #let's calculate the angle between the original target shape and the orientated one
-        target_cen_, target_v_unit = target_shape.calculate_orientation_vector(orientations[1])
-        target_v_new = - v
-        angle_offset = -angle_between(target_v_unit, target_v_new)
-        target_shape.transformation = {'rotate': angle_offset, 'translate': v_diff}
-        return target_shape
+        buildTools.align_two_shapes(ref_shape, target_shape, orientations)
 
     def _test_get_rot_center_lines(self, which_shape = 0, offset = 20):
         cen = np.array(self.shapes[which_shape].rot_center) + np.array(self.shapes[which_shape].transformation['translate'])
@@ -580,18 +607,24 @@ class shapeContainer(QWidget):
         lines = self.make_line_connection_btw_two_anchors(self.shapes, self.test_connection_or)
         self.test_draw_connection_lines(qp, lines)
 
+    def _test_composite_shape(self, qp):
+        for line in self.composite_shape.lines:
+            self.test_draw_connection_lines(qp, line)
+
     def paintEvent(self, a0: QPaintEvent | None) -> None:
         qp = QPainter()
         qp.begin(self)
-        self._test_connection(qp)
-        for each in self.shapes:
+        #self._test_connection(qp)
+        self._test_composite_shape(qp)
+        # for each in self.shapes:
+        for each in self.composite_shape.shapes:
             qp.resetTransform()
             each.paint(qp)
         qp.resetTransform()
         qp.setPen(QPen(Qt.green, 4, Qt.SolidLine))
         hor, ver = self._test_get_rot_center_lines()
-        qp.drawLine(*hor)
-        qp.drawLine(*ver)
+        qp.drawLine(*[int(each) for each in hor])
+        qp.drawLine(*[int(each) for each in ver])
         qp.end()
 
     def test_draw_connection_lines(self, qp, line_nodes):
@@ -607,11 +640,12 @@ class shapeContainer(QWidget):
         self.test_timer.stop()
 
     def test_rotate_shape(self):
-        self.shapes[0].transformation = {'rotate':(self.shapes[0].transformation['rotate']+10)%360, 'translate':self.shapes[0].transformation['translate']}
+        self.composite_shape.shapes[0].transformation = {'rotate':(self.composite_shape.shapes[0].transformation['rotate']+10)%360, 'translate':self.composite_shape.shapes[0].transformation['translate']}
         #self.align_multiple_shapes(shapes = [[self.shapes[0], self.shapes[1]], [self.shapes[0], self.shapes[2]], [self.shapes[0], self.shapes[3]], [self.shapes[0], self.shapes[4]]], \
         #                           orientations = [['top', 'bottom'], ['bottom', 'top'], ['left', 'right'], ['right', 'left']])
         # self.align_two_shapes(ref_shape=self.shapes[0], target_shape=self.shapes[1], orientations=  ['bottom', 'top'])
-        for each in self.shapes:
+        self.composite_shape.build_composite()
+        for each in self.composite_shape.shapes:
             each.cursor_pos_checker(self.last_x, self.last_y)
         self.update()
 
@@ -619,87 +653,10 @@ class shapeContainer(QWidget):
     def make_line_connection_btw_two_anchors(self, shapes, anchors, short_head_line_len = 10):
         return buildTools.make_line_connection_btw_two_anchors(shapes, anchors, short_head_line_len)
         
-        line_nodes = []
-        def _apply_offset(pos, dir):
-            offset = {'left': np.array([-short_head_line_len, 0]),
-                      'right': np.array([short_head_line_len, 0]),
-                      'top': np.array([0, -short_head_line_len]),
-                      'bottom': np.array([0, short_head_line_len]),
-                     }
-            return np.array(pos) + offset[dir]
-
-        def _extend_to_beyond_boundary(pos, dir, overshot_percent = 0.1):
-            x_min, x_max, y_min, y_max = self.calculate_boundary_for_combined_shapes(shapes)
-            if dir == 'left':
-                x = min([x_min, pos[0]]) -abs(x_min - pos[0])*overshot_percent
-                y = pos[1]
-            elif dir == 'right':
-                x = max([x_max, pos[0]]) +abs(x_max - pos[0])*overshot_percent
-                y = pos[1]
-            elif dir == 'top':
-                x = pos[0]
-                y = min([y_min, pos[1]]) - abs(y_min - pos[1])*overshot_percent
-            elif dir == 'bottom':
-                x = pos[0]
-                y = max([y_max, pos[1]]) + abs(y_max - pos[1])*overshot_percent
-            return [int(x), int(y)]
-
-        def _get_sign_from_dir(dir):
-            if dir in ['left', 'top']:
-                return '>='
-            elif dir in ['right','bottom']:
-                return '<='
-
-        assert len(shapes)==2 and len(anchors)==2, 'shapes and anchors must be list of two items'
-        dirs = []
-        anchor_pos = []
-        for shape, anchor in zip(shapes, anchors):
-            dirs.append(shape.get_proper_extention_dir_for_one_anchor(anchor))
-            anchor_pos.append(shape.compute_anchor_pos_after_transformation(anchor, return_pos_only=True))
-        dir0, dir1 = dirs
-        anchor_pos_offset = [_apply_offset(_pos, _dir) for _pos, _dir in zip(anchor_pos, dirs)]
-        
-        if ('left' not in dirs) and ('right' not in dirs):
-            x_cen = (anchor_pos_offset[0][0] + anchor_pos_offset[1][0])/2
-            line_nodes = [anchor_pos[0], anchor_pos_offset[0], [x_cen, anchor_pos_offset[0][1]],\
-                          [x_cen, anchor_pos_offset[1][1]], anchor_pos_offset[1], anchor_pos[1]]
-        elif ('top' not in dirs) and ('bottom' not in dirs):
-            y_cen = (anchor_pos_offset[0][1] + anchor_pos_offset[1][1])/2
-            line_nodes = [anchor_pos[0], anchor_pos_offset[0], [anchor_pos_offset[0][0], y_cen],\
-                          [anchor_pos_offset[1][0], y_cen], anchor_pos_offset[1], anchor_pos[1]]
-        else: # mixture of top/bottom and left/right
-            if dir0 in ['top', 'bottom']:
-                ref_x, ref_y = [anchor_pos_offset[0][0], anchor_pos_offset[1][1]] 
-                check_x, check_y = [anchor_pos_offset[1][0], anchor_pos_offset[0][1]] 
-                check_result_x = eval(f'{check_x}{_get_sign_from_dir(dir1)}{ref_x}')
-                check_result_y = eval(f'{check_y}{_get_sign_from_dir(dir0)}{ref_y}')
-                if check_result_x and check_result_y:
-                    cross_pt = [ref_x, ref_y]
-                    line_nodes = [anchor_pos[0], anchor_pos_offset[0], cross_pt, anchor_pos_offset[1], anchor_pos[1]]
-                else:
-                    first_anchor_pos_after_extend = _extend_to_beyond_boundary(anchor_pos_offset[0], dir0)
-                    second_anchor_pos_after_extend = _extend_to_beyond_boundary(anchor_pos_offset[1], dir1)
-                    cross_pt = [second_anchor_pos_after_extend[0], first_anchor_pos_after_extend[1]]
-                    line_nodes = [anchor_pos[0], anchor_pos_offset[0], first_anchor_pos_after_extend, cross_pt, second_anchor_pos_after_extend, anchor_pos_offset[1], anchor_pos[1]]
-            else:
-                ref_x, ref_y = [anchor_pos_offset[1][0], anchor_pos_offset[0][1]] 
-                check_x, check_y = [anchor_pos_offset[0][0], anchor_pos_offset[1][1]] 
-                check_result_x = eval(f'{check_x}{_get_sign_from_dir(dir0)}{ref_x}')
-                check_result_y = eval(f'{check_y}{_get_sign_from_dir(dir1)}{ref_y}')
-                if check_result_x and check_result_y:
-                    cross_pt = [ref_x, ref_y]
-                    line_nodes = [anchor_pos[0], anchor_pos_offset[0], cross_pt, anchor_pos_offset[1], anchor_pos[1]]
-                else:
-                    first_anchor_pos_after_extend = _extend_to_beyond_boundary(anchor_pos_offset[0], dir0)
-                    second_anchor_pos_after_extend = _extend_to_beyond_boundary(anchor_pos_offset[1], dir1)
-                    cross_pt = [first_anchor_pos_after_extend[0], second_anchor_pos_after_extend[1]]
-                    line_nodes = [anchor_pos[0], anchor_pos_offset[0], first_anchor_pos_after_extend, cross_pt, second_anchor_pos_after_extend, anchor_pos_offset[1], anchor_pos[1]]
-        return np.array(line_nodes).astype(int)
-
     def mouseMoveEvent(self, event):
         self.last_x, self.last_y = event.x(), event.y()
         if self.parent !=None:
             self.parent.statusbar.showMessage('Mouse coords: ( %d : %d )' % (event.x(), event.y()))
-        for each in self.shapes:
+        for each in self.composite_shape.shapes:
             each.cursor_pos_checker(event.x(), event.y())
         self.update()
