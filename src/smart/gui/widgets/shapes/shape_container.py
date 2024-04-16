@@ -24,7 +24,7 @@ def make_decoration_from_text(dec = {'pen': {'color': (255, 255, 0), 'width': 3,
 
 class baseShape(object):
 
-    def __init__(self, dim, decoration_cursor_off = DECORATION_UPON_CURSOR_OFF, decoration_cursor_on = DECORATION_UPON_CURSOR_ON , rotation_center=None, transformation={'rotate':0, 'translate':(0,0)}):
+    def __init__(self, dim, decoration_cursor_off = DECORATION_UPON_CURSOR_OFF, decoration_cursor_on = DECORATION_UPON_CURSOR_ON , rotation_center=None, transformation={'rotate':0, 'translate':(0,0), 'scale':1}):
         #super().__init__(parent = parent)
         self._dim_pars = dim
         self._dim_pars_origin = dim
@@ -193,18 +193,25 @@ class baseShape(object):
     def rotate(self, angle):
         self.transformation['rotate'] = angle
 
+    def scale(self, sf):
+        raise NotImplementedError
+
     def reset(self):
-        self.transformation = {'rotate': 0, 'translate': [0, 0]}
+        self.transformation.update({'rotate': 0, 'translate': [0, 0]})
 
 class rectangle(baseShape):
     def __init__(self, dim = [700,100,40,80], rotation_center = None, decoration_cursor_off=DECORATION_UPON_CURSOR_OFF, decoration_cursor_on =DECORATION_UPON_CURSOR_ON, \
-                 transformation={'rotate':45, 'translate':(0,0)}):
+                 transformation={'rotate':45, 'translate':(0,0), 'scale': 1}):
 
         super().__init__(dim = dim, rotation_center=rotation_center, decoration_cursor_off=decoration_cursor_off, decoration_cursor_on= decoration_cursor_on, transformation=transformation)
 
+    def scale(self, sf):
+        self.dim_pars = (np.array(self.dim_pars)*[1,1,sf/self.transformation['scale'],sf/self.transformation['scale']]).astype(int)
+        self.transformation['scale'] = sf
+
     def draw_shape(self, qp):
         qp = self.apply_transform(qp)
-        qp.drawRect(*self.dim_pars)
+        qp.drawRect(*np.array(self.dim_pars).astype(int))
 
     def calculate_shape_boundary(self):
         x, y, w, h = self.dim_pars
@@ -252,7 +259,7 @@ class rectangle(baseShape):
 
     def calculate_orientation_length(self, orientation = 'top'):
 
-        w, h = self.dim_pars[2:]
+        w, h = np.array(self.dim_pars[2:])
         if orientation in ['top', 'bottom']:
             return h/2
         elif orientation in ['left', 'right']:
@@ -264,7 +271,7 @@ class rectangle(baseShape):
                 raise KeyError('No such orientation key!')
         
     def check_pos(self, x, y):
-        ox, oy, w, h = self.dim_pars
+        ox, oy, w, h = np.array(self.dim_pars)
         pos_ = rotate_multiple_points([(x, y)], np.array(self.rot_center) + np.array(self.transformation['translate']), -self.transformation['rotate'])
         pos_ = np.array(pos_) - np.array(self.transformation['translate'])
         x_, y_ = pos_
@@ -315,10 +322,11 @@ class buildObject(object):
 
 class shapeComposite(object):
 
-    def __init__(self, shapes, anchor_args, alignment_pattern, connection_pattern):
+    def __init__(self, shapes, anchor_args, alignment_pattern, connection_pattern, ref_shape_index = None):
         #connection_patter = {'shapes':[[0,1],[1,2]], 'anchors':[['left','top'],['right', 'bottom']]}
         #alignment_patter = {'shapes':[[0,1],[1,2]], 'anchors':[['left','top'],['right', 'bottom']]}
         self._shapes = copy.deepcopy(shapes)
+        self.ref_shape = self.shapes[ref_shape_index] if ref_shape_index!=None else self.shapes[0]
         self.anchor_args = anchor_args
         self.make_anchors()
         self.alignment = alignment_pattern
@@ -356,6 +364,23 @@ class shapeComposite(object):
             lines = buildTools.make_line_connection_btw_two_anchors(shapes, anchors_)
             self.lines.append(lines)
 
+    def translate(self, vec):
+        self.ref_shape.translate(vec)
+        self.build_composite()
+
+    def rotate(self, ang):
+        self.ref_shape.rotate(ang)
+        self.build_composite()
+
+    def scale(self, sf):
+        for shape in self.shapes:
+            shape.reset()
+            shape.scale(sf)
+        #update anchors first
+
+        self.make_anchors()
+        self.build_composite()
+
 class buildTools(object):
 
     @classmethod
@@ -389,7 +414,7 @@ class buildTools(object):
         target_cen_, target_v_unit = target_shape.calculate_orientation_vector(orientations[1])
         target_v_new = - v
         angle_offset = -angle_between(target_v_unit, target_v_new)
-        target_shape.transformation = {'rotate': angle_offset, 'translate': v_diff}
+        target_shape.transformation.update({'rotate': angle_offset, 'translate': v_diff})
         return target_shape
 
     @classmethod
@@ -437,7 +462,7 @@ class buildTools(object):
         target_cen_, target_v_unit = target_shape.calculate_orientation_vector(orientations[1])
         target_v_new = - v
         angle_offset = -angle_between(target_v_unit, target_v_new)
-        target_shape.transformation = {'rotate': angle_offset, 'translate': v_diff}
+        target_shape.transformation.update({'rotate': angle_offset, 'translate': v_diff})
         return target_shape
 
     @classmethod
@@ -558,9 +583,9 @@ class shapeContainer(QWidget):
         self.composite_shape = shapeComposite(shapes = self.shapes, \
                                              anchor_args = [4, 3, 3, 3, 3], \
                                              alignment_pattern= {'shapes':[[0,1],[0,2],[0,3],[0,4]], \
-                                                                 'anchors':[['anchor_top_0','anchor_top_1'],\
-                                                                            ['anchor_top_3','anchor_top_1'],\
-                                                                            ['anchor_bottom_0','anchor_top_1'],\
+                                                                 'anchors':[['top','bottom'],\
+                                                                            ['left','right'],\
+                                                                            ['right','left'],\
                                                                             ['anchor_bottom_3','anchor_top_1'],\
                                                                             ]},
                                              connection_pattern= {'shapes':[[1,2],[3,4]], \
@@ -577,11 +602,11 @@ class shapeContainer(QWidget):
         self.parent = parent
 
     def build_shapes(self):
-        self.shapes = [rectangle(dim = [200,180,100,100],rotation_center = [200,180], transformation={'rotate':0, 'translate':(0,0)}), \
-                       rectangle(dim = [100,300,20,20],rotation_center = [110,310], transformation={'rotate':0, 'translate':(0,0)}),\
-                       rectangle(dim = [100,300,20,20],rotation_center = [110,310], transformation={'rotate':0, 'translate':(0,0)}),\
-                       rectangle(dim = [100,300,20,20],rotation_center = [110,310], transformation={'rotate':0, 'translate':(0,0)}),\
-                       rectangle(dim = [100,300,20,20],rotation_center = [110,310], transformation={'rotate':0, 'translate':(0,0)})]#,\
+        self.shapes = [rectangle(dim = [200,180,100*1.,100*1.],rotation_center = [200,180], transformation={'rotate':0, 'translate':(0,0), 'scale':1}), \
+                       rectangle(dim = [100,300,20*1.,20*1.],rotation_center = [110,310], transformation={'rotate':0, 'translate':(0,0), 'scale':1}),\
+                       rectangle(dim = [100,300,20*1.,20*1.],rotation_center = [110,310], transformation={'rotate':0, 'translate':(0,0), 'scale':1}),\
+                       rectangle(dim = [100,300,20*1.,20*1.],rotation_center = [110,310], transformation={'rotate':0, 'translate':(0,0), 'scale':1}),\
+                       rectangle(dim = [100,300,20*1.,20*1.],rotation_center = [110,310], transformation={'rotate':0, 'translate':(0,0), 'scale':1})]#,\
                     #    rectangle(dim = [300,100,50,50],rotation_center = [340,120], transformation={'rotate':0, 'translate':(0,0)}),\
                     #    rectangle(dim = [300,100,50,50],rotation_center = [340,120], transformation={'rotate':0, 'translate':(0,0)}),\
                     #    rectangle(dim = [300,100,50,50],rotation_center = [340,120], transformation={'rotate':0, 'translate':(0,0)})]# \
