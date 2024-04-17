@@ -3,6 +3,7 @@ from taurus.qt.qtgui.base import TaurusBaseComponent
 from taurus.external.qt import Qt
 from pyqtgraph import GraphicsLayoutWidget, ImageItem
 import pyqtgraph as pg
+from taurus import Device
 from taurus.core import TaurusEventType, TaurusTimeVal
 from smart.gui.widgets.context_menu_actions import VisuaTool, camSwitch
 from taurus.qt.qtgui.tpg import ForcedReadTool
@@ -17,10 +18,11 @@ class camera_control_panel(object):
         gridLayoutWidgetName = self.settings_object.value("Camaras/gridLayoutWidgetName")
         viewerWidgetName = self.settings_object.value("Camaras/viewerWidgetName")
         camaraStreamModel = self.settings_object.value("Camaras/camaraStreamModel")
-        return gridLayoutWidgetName, viewerWidgetName, camaraStreamModel
+        camaraDevice = self.settings_object.value("Camaras/camaraDevice")
+        return gridLayoutWidgetName, viewerWidgetName, camaraStreamModel, camaraDevice
 
     def build_cam_widget(self):
-        gridLayoutWidgetName, viewerWidgetName, camaraStreamModel = self._extract_cam_info_from_config()
+        gridLayoutWidgetName, viewerWidgetName, camaraStreamModel, _ = self._extract_cam_info_from_config()
 
         if gridLayoutWidgetName!=None:
             if viewerWidgetName!=None:
@@ -33,19 +35,23 @@ class camera_control_panel(object):
         #self.pushButton_camera.clicked.connect(self.control_cam)
 
     def control_cam(self):
-        gridLayoutWidgetName, viewerWidgetName, camaraStreamModel = self._extract_cam_info_from_config()
+        gridLayoutWidgetName, viewerWidgetName, camaraStreamModel, _ = self._extract_cam_info_from_config()
         if not getattr(self, viewerWidgetName).getModel():
             self.start_cam_stream()
         else:
             self.stop_cam_stream()
 
     def start_cam_stream(self):
-        _, viewerWidgetName, camaraStreamModel = self._extract_cam_info_from_config()
+        _, viewerWidgetName, camaraStreamModel, device_name = self._extract_cam_info_from_config()
         getattr(self, viewerWidgetName).setModel(camaraStreamModel)
+        _device = Device(device_name)
+        getattr(self, viewerWidgetName).width = _device.width
+        getattr(self, viewerWidgetName).height = _device.height
+
         self.statusbar.showMessage(f'start cam streaming with model of {camaraStreamModel}')
 
     def stop_cam_stream(self):
-        _, viewerWidgetName, _ = self._extract_cam_info_from_config()
+        _, viewerWidgetName, _, _ = self._extract_cam_info_from_config()
         getattr(self, viewerWidgetName).setModel(None)
         self.statusbar.showMessage('stop cam streaming')
 
@@ -83,6 +89,8 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self._timer.timeout.connect(self._forceRead)
         self._parent = parent
         self._init_ui()
+        self.width = None
+        self.width = None
         # self.setModel('sys/tg_test/1/long64_image_ro')
 
     def _init_ui(self):
@@ -129,14 +137,18 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
             self.debug("Ignoring empty value event from %s" % repr(evt_src))
             return
         try:
-            data = evt_val.rvalue.to_base_units().magnitude
-            self.img.setImage(data)
+            data = evt_val.rvalue
+            #cam stream data format from p06 beamline [[v1,...,vn]]
+            if self.height!=None and self.width!=None:
+                data = data[0].reshape((3, self.width, self.height))
+
+            self.img.setImage(data[0])
             hor_region_down,  hor_region_up= self.region_cut_hor.getRegion()
             ver_region_l, ver_region_r = self.region_cut_ver.getRegion()
             hor_region_down,  hor_region_up = int(hor_region_down),  int(hor_region_up)
             ver_region_l, ver_region_r = int(ver_region_l), int(ver_region_r)
-            self.prof_ver.plot(data[ver_region_l:ver_region_r,:].sum(axis=0),pen='g',clear=True)
-            self.prof_hoz.plot(data[:,hor_region_down:hor_region_up].sum(axis=1), pen='r',clear = True)
+            self.prof_ver.plot(data[0][ver_region_l:ver_region_r,:].sum(axis=0),pen='g',clear=True)
+            self.prof_hoz.plot(data[0][:,hor_region_down:hor_region_up].sum(axis=1), pen='r',clear = True)
         except Exception as e:
             self.warning("Exception in handleEvent: %s", e)
 

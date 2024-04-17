@@ -11,6 +11,7 @@ from smart.util.geometry_transformation import rotate_multiple_points, angle_bet
 DECORATION_UPON_CURSOR_ON = {'pen': {'color': (255, 255, 0), 'width': 3, 'ls': 'DotLine'}, 'brush': {'color': (0, 0, 255)}} 
 DECORATION_UPON_CURSOR_OFF = {'pen': {'color': (255, 0, 0), 'width': 3, 'ls': 'SolidLine'}, 'brush': {'color': (0, 0, 255)}}
 
+DECORATION_TEXT_DEFAULT = {'font_size': 8, 'text_color': (255,255,255), 'alignment': 'AlignCenter', 'padding': 0}
 
 def make_decoration_from_text(dec = {'pen': {'color': (255, 255, 0), 'width': 3, 'ls': 'DotLine'}, 'brush': {'color': (0, 0, 255)}}):
 
@@ -24,7 +25,7 @@ def make_decoration_from_text(dec = {'pen': {'color': (255, 255, 0), 'width': 3,
 
 class baseShape(object):
 
-    def __init__(self, dim, decoration_cursor_off = DECORATION_UPON_CURSOR_OFF, decoration_cursor_on = DECORATION_UPON_CURSOR_ON , rotation_center=None, transformation={'rotate':0, 'translate':(0,0), 'scale':1}):
+    def __init__(self, dim, decoration_cursor_off = DECORATION_UPON_CURSOR_OFF, decoration_cursor_on = DECORATION_UPON_CURSOR_ON , rotation_center=None, transformation={'rotate':0, 'translate':(0,0), 'scale':1}, text_decoration = DECORATION_TEXT_DEFAULT, lables = {'text':[], 'anchor':[],'decoration':None}):
         #super().__init__(parent = parent)
         self._dim_pars = dim
         self._dim_pars_origin = dim
@@ -35,6 +36,29 @@ class baseShape(object):
         self._decoration_cursor_off = copy.deepcopy(decoration_cursor_off)
         self.anchors = {}
         self._transformation = transformation
+        self._text_decoration = copy.deepcopy(text_decoration)
+        self._labels = copy.deepcopy(lables)
+
+    @property
+    def labels(self):
+        return self._labels
+    
+    @labels.setter
+    def labels(self, labels):
+        assert type(labels)==dict, 'Need dictionary for labels'
+        assert 'text' in labels and 'anchor' in labels, 'need text and anchor key at least'
+        assert type(labels['text'])==list and type(labels['anchor'])==list, 'the value of text and anchor must be a list'
+        assert len(labels['text'])==len(labels['anchor']), 'The dim of text and anchor must be equal'
+        if len(labels['text'])!=0:
+            self._labels.update(labels)
+
+    @property
+    def text_decoration(self):
+        return self._text_decoration
+    
+    @text_decoration.setter
+    def text_decoration(self, decoration):
+        self._text_decoration.update(decoration)
 
     @property
     def dim_pars(self):
@@ -108,6 +132,9 @@ class baseShape(object):
         raise NotImplementedError
 
     def check_pos(self, x, y):
+        raise NotImplementedError
+
+    def text_label(self, qp):
         raise NotImplementedError
 
     def get_proper_extention_dir_for_one_anchor(self, key):
@@ -201,9 +228,9 @@ class baseShape(object):
 
 class rectangle(baseShape):
     def __init__(self, dim = [700,100,40,80], rotation_center = None, decoration_cursor_off=DECORATION_UPON_CURSOR_OFF, decoration_cursor_on =DECORATION_UPON_CURSOR_ON, \
-                 transformation={'rotate':45, 'translate':(0,0), 'scale': 1}):
+                 transformation={'rotate':45, 'translate':(0,0), 'scale': 1}, text_decoration = DECORATION_TEXT_DEFAULT, lables = {'text':[], 'anchor':[],'decoration':None}):
 
-        super().__init__(dim = dim, rotation_center=rotation_center, decoration_cursor_off=decoration_cursor_off, decoration_cursor_on= decoration_cursor_on, transformation=transformation)
+        super().__init__(dim = dim, rotation_center=rotation_center, decoration_cursor_off=decoration_cursor_off, decoration_cursor_on= decoration_cursor_on, transformation=transformation, text_decoration=text_decoration, lables=lables)
 
     def scale(self, sf):
         self.dim_pars = (np.array(self.dim_pars)*[1,1,sf/self.transformation['scale'],sf/self.transformation['scale']]).astype(int)
@@ -212,6 +239,44 @@ class rectangle(baseShape):
     def draw_shape(self, qp):
         qp = self.apply_transform(qp)
         qp.drawRect(*np.array(self.dim_pars).astype(int))
+        self.text_label(qp)
+
+    def text_label(self, qp):
+        labels = self.labels
+        decoration = self.text_decoration 
+        cen = self.compute_center_from_dim(False)
+        x, y = cen
+        _, _, w, h = self.dim_pars
+        for i, text in enumerate(labels['text']):
+            anchor = labels['anchor'][i]
+            if labels['decoration'] == None:
+                decoration = self.text_decoration
+            else:
+                if type(labels['decoration'])==list and len(labels['decoration'])==len(labels['text']):
+                    decoration = labels['decoration'][i]
+                else:
+                    decoration = self.text_decoration
+            alignment = decoration['alignment']
+            padding = decoration['padding']
+            text_color = decoration['text_color']
+            font_size = decoration['font_size']
+            if anchor == 'left':
+                x = x - w/2 - padding
+            elif anchor == 'right':
+                x = x + w/2 + padding
+            elif anchor == 'top':
+                y = y - h/2 - padding
+            elif anchor == 'bottom':
+                y = y + h/2 + padding
+            elif anchor == 'center':
+                x = x + padding
+                y = y + padding
+            else:
+                if anchor in self.anchors:
+                    x, y = self.anchors[anchor]
+            qp.setPen(QColor(*text_color))
+            qp.setFont(QFont('Decorative', font_size))
+            qp.drawText(int(x), int(y), 100, 20, getattr(Qt, alignment), text)
 
     def calculate_shape_boundary(self):
         x, y, w, h = self.dim_pars
