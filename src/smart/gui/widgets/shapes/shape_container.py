@@ -38,6 +38,13 @@ class baseShape(object):
         self._transformation = transformation
         self._text_decoration = copy.deepcopy(text_decoration)
         self._labels = copy.deepcopy(lables)
+        self.show = True
+
+    def show_shape(self):
+        self.show = True
+
+    def hide_shape(self):
+        self.show = False
 
     @property
     def labels(self):
@@ -77,10 +84,10 @@ class baseShape(object):
     
     @rot_center.setter
     def rot_center(self, rot_center):
-        if rot_center == None:
-            self._rotcenter = [int(each) for each in self.compute_center_from_dim(False)]
-        else:
+        if type(rot_center)==tuple or type(rot_center)==list or type(rot_center)==np.ndarray:
             self._rotcenter = [int(each) for each in rot_center]
+        elif rot_center==None:
+            self._rotcenter = [int(each) for each in self.compute_center_from_dim(False)]
 
     @property
     def decoration(self):
@@ -156,33 +163,53 @@ class baseShape(object):
             ix_shortest = np.argmin(np.linalg.norm(cen - (np.array(anchor_pos) + np.array(possible_dirs_offset))))
             return possible_dirs[ix_shortest]
     
-    def compute_anchor_pos_after_transformation(self, key, return_pos_only = False):
+    def compute_anchor_pos_after_transformation(self, key, return_pos_only = False, ref_anchor = None):
         #calculate anchor pos for key after transformation
+        #ref_anchor in [None, 'left', 'right', 'top', 'bottom']
+        ref_anchor_offset = {'left': np.array([-1, 0]),
+                            'right': np.array([1, 0]),
+                            'top': np.array([0, -1]),
+                            'bottom': np.array([0, 1]),
+                            }
+        ref_anchor_dir = None
+        if ref_anchor!=None:
+            ref_anchor_dir = ref_anchor_offset[ref_anchor]
+        
         orientation = key
-        or_len = self.calculate_orientation_length(orientation)
+        or_len = self.calculate_orientation_length(orientation, ref_anchor = ref_anchor)
         cen = self.compute_center_from_dim(apply_translate=True)
         rotate_angle = self.transformation['rotate'] if 'rotate' in self.transformation else 0
         anchor = None
         if orientation == 'top':
             anchor = np.array(cen) + [0, -or_len]
+            ref_anchor = cen
         elif orientation == 'bottom':
             anchor = np.array(cen) + [0, or_len]
+            ref_anchor = cen
         elif orientation == 'left':
             anchor = np.array(cen) + [-or_len, 0]
+            ref_anchor = cen
         elif orientation == 'right':
             anchor = np.array(cen) + [or_len, 0]
+            ref_anchor = cen
         else:
             if orientation in self.anchors:
                 anchor = self.anchors[orientation]
+                if ref_anchor!=None:
+                    # ref_anchor = anchor - ref_anchor_offset[ref_anchor_dir]
+                    ref_anchor = anchor - ref_anchor_dir
+                else:
+                    ref_anchor = cen
             else:
                 raise KeyError('Not the right key for orientation')
         rot_center = np.array(self.rot_center) + np.array(self.transformation['translate'])
-        cen_, anchor_ = rotate_multiple_points([cen, anchor], rot_center, rotate_angle)
+        cen_, anchor_, ref_anchor_ = rotate_multiple_points([cen, anchor, ref_anchor], rot_center, rotate_angle)
         #return cen and anchor pos and or_len after transformation
         if return_pos_only:
             return anchor_
         else:
-            return anchor_, cen_, or_len
+            # return anchor_, cen_, or_len
+            return anchor_, ref_anchor_, or_len
     
     def cursor_pos_checker(self, x, y):
         cursor_inside_shape = self.check_pos(x, y)
@@ -202,6 +229,8 @@ class baseShape(object):
         return qp
     
     def paint(self, qp) -> None:
+        if not self.show:
+            return
         decoration = make_decoration_from_text(self.decoration)
         qp.setPen(decoration['pen'])
         qp.setBrush(decoration['brush'])
@@ -210,8 +239,8 @@ class baseShape(object):
     def draw_shape(self, qp):
         raise NotImplementedError
     
-    def calculate_orientation_vector(self, orientation = 'top'):
-        anchor_, cen_, or_len = self.compute_anchor_pos_after_transformation(orientation,return_pos_only=False)
+    def calculate_orientation_vector(self, orientation = 'top', ref_anchor = None):
+        anchor_, cen_, or_len = self.compute_anchor_pos_after_transformation(orientation,return_pos_only=False, ref_anchor=ref_anchor)
         return cen_, (anchor_ - cen_)/or_len
         
     def translate(self, v):
@@ -322,7 +351,7 @@ class rectangle(baseShape):
             anchors[each] = anchors[each] + np.array(self.transformation['translate'])
         self.anchors = anchors
 
-    def calculate_orientation_length(self, orientation = 'top'):
+    def calculate_orientation_length(self, orientation = 'top', ref_anchor = None):
 
         w, h = np.array(self.dim_pars[2:])
         if orientation in ['top', 'bottom']:
@@ -331,7 +360,10 @@ class rectangle(baseShape):
             return w/2
         else:
             if orientation in self.anchors:
-                return np.linalg.norm(np.array(self.anchors[orientation]) - np.array(self.compute_center_from_dim(apply_translate=False)))
+                if ref_anchor == None:
+                    return np.linalg.norm(np.array(self.anchors[orientation]) - np.array(self.compute_center_from_dim(apply_translate=False)))
+                else:
+                    return 1
             else:
                 raise KeyError('No such orientation key!')
         
@@ -414,10 +446,12 @@ class shapeComposite(object):
     def align_shapes(self):
         shape_index = self.alignment['shapes']
         anchors = self.alignment['anchors']
+        gaps = self.alignment['gaps']
+        ref_anchors = self.alignment['ref_anchors']
         assert len(shape_index) == len(anchors), "Dimension of shape and anchors does not match!"
-        for shapes_, anchors_ in zip(shape_index, anchors):
+        for shapes_, anchors_, gap_, ref_anchors_ in zip(shape_index, anchors, gaps, ref_anchors):
             ref_shape, target_shape, *_ = [self.shapes[each] for each in shapes_]
-            buildTools.align_two_shapes(ref_shape, target_shape, anchors_, 0)
+            buildTools.align_two_shapes(ref_shape, target_shape, anchors_, gap_, ref_anchors_)
 
     def make_line_connection(self):
         self.lines = []
@@ -449,7 +483,7 @@ class shapeComposite(object):
 class buildTools(object):
 
     @classmethod
-    def align_multiple_shapes(cls, shapes, orientations):
+    def align_multiple_shapes_old(cls, shapes, orientations):
         def _align_shapes(_shapes, orientations_):
             assert len(_shapes) == len(orientations_), 'The length of shapes and orientation must be equal!'
             for i in range(len(_shapes)-1):
@@ -465,7 +499,7 @@ class buildTools(object):
             _align_shapes(shapes, orientations)
 
     @classmethod
-    def align_two_shapes(cls, ref_shape, target_shape, orientations = ['bottom', 'top']):
+    def align_two_shapes_old(cls, ref_shape, target_shape, orientations = ['bottom', 'top']):
         cen_, v_unit = ref_shape.calculate_orientation_vector(orientations[0])
         v_mag = ref_shape.calculate_orientation_length(orientations[0]) + target_shape.calculate_orientation_length(orientations[1])
         v = v_unit * v_mag
@@ -499,6 +533,7 @@ class buildTools(object):
     @classmethod
     def align_multiple_shapes(cls, shapes, orientations):
         def _align_shapes(_shapes, orientations_):
+            #_shapes = [ref1, tag1, ref2, tag2, ...], orientations_ = [ref_or1, tag_or1, ref_or2, tag_or2, ...]
             assert len(_shapes) == len(orientations_), 'The length of shapes and orientation must be equal!'
             for i in range(len(_shapes)-1):
                 ref_shape, target_shape = _shapes[i], _shapes[i+1]
@@ -506,6 +541,7 @@ class buildTools(object):
                 buildTools.align_two_shapes(ref_shape, target_shape, orientations_temp)
 
         if type(shapes[0])==list:
+            #shapes is a list of _shapes, orientations is a list of orientations_
             assert type(orientations[0])==list, 'Format mismatch. Should be list of list.'
             for shape_segment, orientaion_seg in zip(shapes, orientations):
                 _align_shapes(shape_segment, orientaion_seg)
@@ -513,18 +549,32 @@ class buildTools(object):
             _align_shapes(shapes, orientations)
 
     @classmethod
-    def align_two_shapes(cls, ref_shape, target_shape, orientations = ['bottom', 'top'], gap = 0.1):
-        cen_, v_unit = ref_shape.calculate_orientation_vector(orientations[0])
-        v_mag = ref_shape.calculate_orientation_length(orientations[0]) + target_shape.calculate_orientation_length(orientations[1])
+    def align_two_shapes(cls, ref_shape, target_shape, orientations = ['bottom', 'top'],  gap = 0.1, ref_anchors = [None, None]):
+        cen_, v_unit = ref_shape.calculate_orientation_vector(orientations[0], ref_anchors[0])
+        v_mag = ref_shape.calculate_orientation_length(orientations[0], ref_anchors[0]) + target_shape.calculate_orientation_length(orientations[1], ref_anchors[1])
         v = v_unit * v_mag * (1+gap)
         #set rot ang to 0 and translate to 0
         target_shape.reset()
-        origin_cen_target = target_shape.compute_center_from_dim()
+        #this center is the geometry center if ref_anchor is None, and become offseted anchor otherwise
+        if orientations[1] in ['left', 'right', 'top', 'bottom']:
+            origin_cen_target = target_shape.compute_center_from_dim()
+        else:
+            if ref_anchors[1]==None:
+                origin_cen_target = target_shape.compute_center_from_dim()
+            else:
+                anchor = target_shape.anchors[orientations[1]]
+                ref_anchor_offset = {'left': np.array([-1, 0]),
+                                    'right': np.array([1, 0]),
+                                    'top': np.array([0, -1]),
+                                    'bottom': np.array([0, 1]),
+                                    }
+                assert ref_anchors[1] in ref_anchor_offset, "Wrong key for ref anchor"
+                origin_cen_target = anchor - ref_anchor_offset[ref_anchors[1]]
         new_cen_target = v + cen_
         v_diff = new_cen_target - origin_cen_target
         target_shape.rot_center = origin_cen_target
         #let's calculate the angle between the original target shape and the orientated one
-        target_cen_, target_v_unit = target_shape.calculate_orientation_vector(orientations[1])
+        target_cen_, target_v_unit = target_shape.calculate_orientation_vector(orientations[1], ref_anchors[1])
         target_v_new = - v
         angle_offset = -angle_between(target_v_unit, target_v_new)
         target_shape.transformation.update({'rotate': angle_offset, 'translate': v_diff})
@@ -649,10 +699,15 @@ class shapeContainer(QWidget):
                                              anchor_args = [4, 3, 3, 3, 3], \
                                              alignment_pattern= {'shapes':[[0,1],[0,2],[0,3],[0,4]], \
                                                                  'anchors':[['top','bottom'],\
-                                                                            ['left','right'],\
-                                                                            ['right','left'],\
-                                                                            ['anchor_bottom_3','anchor_top_1'],\
-                                                                            ]},
+                                                                            ['anchor_bottom_0','anchor_top_1'],\
+                                                                            ['anchor_bottom_1','anchor_top_1'],\
+                                                                            ['anchor_bottom_2','anchor_top_1']],\
+                                                                 'gaps': [0.3, 0.3, 0.3, 13],\
+                                                                 'ref_anchors': [[None, None], \
+                                                                                 ['bottom', 'top'],\
+                                                                                 ['bottom', 'top'], \
+                                                                                 ['bottom', 'top']],\
+                                                                },
                                              connection_pattern= {'shapes':[[1,2],[3,4]], \
                                                                  'anchors':[['left','right'],\
                                                                             ['top','top'],\
@@ -667,7 +722,7 @@ class shapeContainer(QWidget):
         self.parent = parent
 
     def build_shapes(self):
-        self.shapes = [rectangle(dim = [200,180,100*1.,100*1.],rotation_center = [200,180], transformation={'rotate':0, 'translate':(0,0), 'scale':1}), \
+        self.shapes = [rectangle(dim = [200,180,100*1.,100*1.],rotation_center = None, transformation={'rotate':0, 'translate':(0,0), 'scale':1}), \
                        rectangle(dim = [100,300,20*1.,20*1.],rotation_center = [110,310], transformation={'rotate':0, 'translate':(0,0), 'scale':1}),\
                        rectangle(dim = [100,300,20*1.,20*1.],rotation_center = [110,310], transformation={'rotate':0, 'translate':(0,0), 'scale':1}),\
                        rectangle(dim = [100,300,20*1.,20*1.],rotation_center = [110,310], transformation={'rotate':0, 'translate':(0,0), 'scale':1}),\

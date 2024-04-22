@@ -18,6 +18,7 @@ from ..plugin.builtin_plugin.field_dft_registration import MdiFieldImreg_Wrapper
 from ..plugin.builtin_plugin.field_fiducial_markers_unit import FiducialMarkerWidget_wrapper
 from ..plugin.builtin_plugin.camera_control_module import camera_control_panel
 from ..plugin.builtin_plugin.particle_tool import particle_widget_wrapper
+from ..plugin.builtin_plugin.beamline_control import beamlineControl
 from ..viewer.field_tools import FieldViewBox
 from ..gui.widgets.context_menu_actions import check_true, MoveMotorTool, GaussianFitTool, GaussianSimTool
 from ..gui.widgets.table_tree_widgets import TableWidgetDragRows
@@ -30,7 +31,7 @@ from taurus.core.util.containers import ArrayBuffer
 setting_file = str(Path(__file__).parent.parent / 'resource' / 'config' / 'appsettings.ini')
 ui_file_folder = Path(__file__).parent / 'ui'
 
-class smartGui(MacroExecutionWindow, MdiFieldImreg_Wrapper, geometry_widget_wrapper, FiducialMarkerWidget_wrapper, particle_widget_wrapper, camera_control_panel):
+class smartGui(MacroExecutionWindow, MdiFieldImreg_Wrapper, geometry_widget_wrapper, FiducialMarkerWidget_wrapper, particle_widget_wrapper, camera_control_panel, beamlineControl):
     """
     Main class of the workspace
     """
@@ -62,6 +63,7 @@ class smartGui(MacroExecutionWindow, MdiFieldImreg_Wrapper, geometry_widget_wrap
         FiducialMarkerWidget_wrapper.__init__(self)
         particle_widget_wrapper.__init__(self)
         camera_control_panel.__init__(self)
+        beamlineControl.__init__(self)
         self.setMinimumSize(800, 600)
         self.widget_terminal.update_name_space('gui', self)
         self.widget_motor_widget.set_parent(self)
@@ -354,6 +356,8 @@ class smartGui(MacroExecutionWindow, MdiFieldImreg_Wrapper, geometry_widget_wrap
         self.connect_slots_par()
         #cam stream slots
         self.connect_slots_cam()
+        #beamline control slots
+        self.connect_slots_beamline_control()
         #widget events
         self.bt_removeMenu.setMenu(QtWidgets.QMenu(self.bt_removeMenu))
         self.bt_removeMenu.clicked.connect(self.bt_removeMenu.showMenu)

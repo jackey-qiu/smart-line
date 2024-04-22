@@ -7,6 +7,7 @@ from taurus import Device
 from taurus.core import TaurusEventType, TaurusTimeVal
 from smart.gui.widgets.context_menu_actions import VisuaTool, camSwitch
 from taurus.qt.qtgui.tpg import ForcedReadTool
+import numpy as np
 
 
 class camera_control_panel(object):
@@ -19,10 +20,11 @@ class camera_control_panel(object):
         viewerWidgetName = self.settings_object.value("Camaras/viewerWidgetName")
         camaraStreamModel = self.settings_object.value("Camaras/camaraStreamModel")
         camaraDevice = self.settings_object.value("Camaras/camaraDevice")
-        return gridLayoutWidgetName, viewerWidgetName, camaraStreamModel, camaraDevice
+        camaraDataCallbacks = self.settings_object.value("Camaras/camaraDataFormatCallbacks")
+        return gridLayoutWidgetName, viewerWidgetName, camaraStreamModel, camaraDevice, camaraDataCallbacks
 
     def build_cam_widget(self):
-        gridLayoutWidgetName, viewerWidgetName, camaraStreamModel, _ = self._extract_cam_info_from_config()
+        gridLayoutWidgetName, viewerWidgetName, *_ = self._extract_cam_info_from_config()
 
         if gridLayoutWidgetName!=None:
             if viewerWidgetName!=None:
@@ -35,28 +37,26 @@ class camera_control_panel(object):
         #self.pushButton_camera.clicked.connect(self.control_cam)
 
     def control_cam(self):
-        gridLayoutWidgetName, viewerWidgetName, camaraStreamModel, _ = self._extract_cam_info_from_config()
+        gridLayoutWidgetName, viewerWidgetName, camaraStreamModel, *_ = self._extract_cam_info_from_config()
         if not getattr(self, viewerWidgetName).getModel():
             self.start_cam_stream()
         else:
             self.stop_cam_stream()
 
     def start_cam_stream(self):
-        _, viewerWidgetName, camaraStreamModel, device_name = self._extract_cam_info_from_config()
+        _, viewerWidgetName, camaraStreamModel, device_name, data_format_cbs = self._extract_cam_info_from_config()
         getattr(self, viewerWidgetName).setModel(camaraStreamModel)
         _device = Device(device_name)
         getattr(self, viewerWidgetName).width = _device.width
         getattr(self, viewerWidgetName).height = _device.height
+        getattr(self, viewerWidgetName).data_format_cbs = data_format_cbs.rsplit('=>')
 
         self.statusbar.showMessage(f'start cam streaming with model of {camaraStreamModel}')
 
     def stop_cam_stream(self):
-        _, viewerWidgetName, _, _ = self._extract_cam_info_from_config()
+        _, viewerWidgetName, *_ = self._extract_cam_info_from_config()
         getattr(self, viewerWidgetName).setModel(None)
         self.statusbar.showMessage('stop cam streaming')
-
-
-
 
 class CumForcedReadTool(ForcedReadTool):
     def __init__(self,*args, **kwargs) -> None:
@@ -82,18 +82,36 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
     """
 
     # TODO: clear image if .setModel(None)
-    def __init__(self, parent = None, *args, **kwargs):
+    def __init__(self, parent = None, rgb_viewer = True, *args, **kwargs):
         GraphicsLayoutWidget.__init__(self, *args, **kwargs)
         TaurusBaseComponent.__init__(self, "TaurusImageItem")
         self._timer = Qt.QTimer()
         self._timer.timeout.connect(self._forceRead)
         self._parent = parent
+        self.rgb_viewer = rgb_viewer
         self._init_ui()
         self.width = None
         self.width = None
+        self.data_format_cbs = [lambda x: x]
         # self.setModel('sys/tg_test/1/long64_image_ro')
 
     def _init_ui(self):
+        if self.rgb_viewer:
+            self._setup_rgb_viewer()
+        else:
+            self._setup_one_channel_viewer()
+        self._setup_context_action()
+
+    def _setup_context_action(self):
+        if not self.rgb_viewer:
+            self.vt = VisuaTool(self, properties = ['prof_hoz','prof_ver'])
+            self.vt.attachToPlotItem(self.img_viewer)
+        self.fr = CumForcedReadTool(self, period=3000)
+        self.fr.attachToPlotItem(self.img_viewer)
+        self.cam_switch = camSwitch(self._parent)
+        self.cam_switch.attachToPlotItem(self.img_viewer)
+
+    def _setup_one_channel_viewer(self):
         #for horizontal profile
         self.prof_hoz = self.addPlot(col = 1, colspan = 5, rowspan = 2)
         #for vertical profile
@@ -123,13 +141,26 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self.region_cut_ver.setRegion([120,150])
         self.img_viewer.addItem(self.region_cut_hor, ignoreBounds = True)
         self.img_viewer.addItem(self.region_cut_ver, ignoreBounds = True)
-        self.fr = CumForcedReadTool(self, period=3000)
-        #self.fr.attachToPlotItem(self.img_viewer)
-        self.fr.attachToPlotItem(self.img_viewer)
-        self.vt = VisuaTool(self, properties = ['prof_hoz','prof_ver'])
-        self.vt.attachToPlotItem(self.img_viewer)
-        self.cam_switch = camSwitch(self._parent)
-        self.cam_switch.attachToPlotItem(self.img_viewer)
+        # self.vt = VisuaTool(self, properties = ['prof_hoz','prof_ver'])
+        # self.vt.attachToPlotItem(self.img_viewer)
+
+    def _setup_rgb_viewer(self):
+
+        self.isoLine_v = pg.InfiniteLine(angle=90, movable=True, pen='g')
+        self.isoLine_h = pg.InfiniteLine(angle=0, movable=True, pen='g')
+        self.isoLine_v.setValue(0.8)
+        self.isoLine_v.setZValue(100000) # bring iso line above contrast controls
+        self.isoLine_h.setValue(0.8)
+        self.isoLine_h.setZValue(100000) # bring iso line above contrast controls
+
+        self.img_viewer = self.addPlot(row = 2, col = 1, rowspan = 5, colspan = 10)
+        self.img_viewer.setAspectLocked()
+        self.img = pg.ImageItem()
+        self.img_viewer.addItem(self.img)
+
+        self.img_viewer.addItem(self.isoLine_v, ignoreBounds = True)
+        self.img_viewer.addItem(self.isoLine_h, ignoreBounds = True)
+
 
     def handleEvent(self, evt_src, evt_type, evt_val):
         """Reimplemented from :class:`TaurusImageItem`"""
@@ -139,18 +170,31 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         try:
             data = evt_val.rvalue
             #cam stream data format from p06 beamline [[v1,...,vn]]
-            if self.height!=None and self.width!=None:
-                data = data[0].reshape((3, self.width, self.height))
+            data = self.preprocess_data(data, self.data_format_cbs)
+            #if self.height!=None and self.width!=None:
+            #    data = data[0].reshape((self.width, self.height, 3))
+                #data = np.clip(data, 0, 255).astype(np.ubyte)
 
-            self.img.setImage(data[0])
-            hor_region_down,  hor_region_up= self.region_cut_hor.getRegion()
-            ver_region_l, ver_region_r = self.region_cut_ver.getRegion()
-            hor_region_down,  hor_region_up = int(hor_region_down),  int(hor_region_up)
-            ver_region_l, ver_region_r = int(ver_region_l), int(ver_region_r)
-            self.prof_ver.plot(data[0][ver_region_l:ver_region_r,:].sum(axis=0),pen='g',clear=True)
-            self.prof_hoz.plot(data[0][:,hor_region_down:hor_region_up].sum(axis=1), pen='r',clear = True)
+            self.img.setImage(data)
+            if not self.rgb_viewer:
+                hor_region_down,  hor_region_up= self.region_cut_hor.getRegion()
+                ver_region_l, ver_region_r = self.region_cut_ver.getRegion()
+                hor_region_down,  hor_region_up = int(hor_region_down),  int(hor_region_up)
+                ver_region_l, ver_region_r = int(ver_region_l), int(ver_region_r)
+                self.prof_ver.plot(data[ver_region_l:ver_region_r,:].sum(axis=0),pen='g',clear=True)
+                self.prof_hoz.plot(data[:,hor_region_down:hor_region_up].sum(axis=1), pen='r',clear = True)
         except Exception as e:
             self.warning("Exception in handleEvent: %s", e)
+
+    def preprocess_data(self, data, cbs):
+        
+        for cb in cbs:
+            if type(cb)==str:
+                data = eval(cb)(data)
+            else:
+                data = cb(data)
+        return data
+
 
     @property
     def forcedReadPeriod(self):

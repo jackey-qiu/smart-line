@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1412</width>
+    <width>1576</width>
     <height>980</height>
    </rect>
   </property>
@@ -56,6 +56,19 @@
        <property name="spacing">
         <number>2</number>
        </property>
+       <item row="0" column="5">
+        <spacer name="horizontalSpacer">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
        <item row="0" column="3">
         <widget class="QToolButton" name="bt_removeMenu">
          <property name="sizePolicy">
@@ -142,17 +155,21 @@
         </widget>
        </item>
        <item row="0" column="4">
-        <spacer name="horizontalSpacer">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
+        <widget class="QPushButton" name="pushButton_connect_model">
+         <property name="text">
+          <string>connect models</string>
          </property>
-         <property name="sizeHint" stdset="0">
+         <property name="icon">
+          <iconset>
+           <normaloff>icons/others/connect.png</normaloff>icons/others/connect.png</iconset>
+         </property>
+         <property name="iconSize">
           <size>
-           <width>40</width>
-           <height>20</height>
+           <width>36</width>
+           <height>36</height>
           </size>
          </property>
-        </spacer>
+        </widget>
        </item>
       </layout>
      </widget>
@@ -188,7 +205,7 @@
            <item>
             <widget class="QTabWidget" name="tabWidget_3">
              <property name="currentIndex">
-              <number>0</number>
+              <number>1</number>
              </property>
              <widget class="QWidget" name="tab_9">
               <attribute name="title">
@@ -468,7 +485,7 @@
               </font>
              </property>
              <property name="currentIndex">
-              <number>4</number>
+              <number>5</number>
              </property>
              <widget class="QWidget" name="tab">
               <attribute name="title">
@@ -1550,130 +1567,162 @@
                     <layout class="QVBoxLayout" name="verticalLayout_14">
                      <item>
                       <layout class="QGridLayout" name="gridLayout_7">
-                       <item row="1" column="3">
-                        <widget class="QPushButton" name="pushButton_6">
+                       <item row="4" column="3">
+                        <widget class="QLabel" name="label_26">
+                         <property name="sizePolicy">
+                          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+                           <horstretch>0</horstretch>
+                           <verstretch>0</verstretch>
+                          </sizepolicy>
+                         </property>
                          <property name="text">
-                          <string>Brighter</string>
+                          <string>%</string>
                          </property>
                         </widget>
                        </item>
-                       <item row="1" column="1">
+                       <item row="4" column="5">
                         <widget class="QPushButton" name="pushButton_4">
                          <property name="text">
                           <string>Lightoff</string>
                          </property>
                         </widget>
                        </item>
-                       <item row="1" column="0">
+                       <item row="1" column="4">
+                        <widget class="QPushButton" name="pushButton_10">
+                         <property name="text">
+                          <string>save foc.</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="4" column="4">
                         <widget class="QPushButton" name="pushButton_3">
                          <property name="text">
                           <string>Lighton</string>
                          </property>
                         </widget>
                        </item>
-                       <item row="1" column="2">
-                        <widget class="QPushButton" name="pushButton_5">
-                         <property name="text">
-                          <string>Dimmer</string>
+                       <item row="0" column="1">
+                        <widget class="TaurusWheelEdit" name="frame_zoom_pos">
+                         <property name="frameShape">
+                          <enum>QFrame::StyledPanel</enum>
+                         </property>
+                         <property name="frameShadow">
+                          <enum>QFrame::Raised</enum>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="1" column="1">
+                        <widget class="TaurusWheelEdit" name="frame_foc_pos">
+                         <property name="frameShape">
+                          <enum>QFrame::StyledPanel</enum>
+                         </property>
+                         <property name="frameShadow">
+                          <enum>QFrame::Raised</enum>
                          </property>
                         </widget>
                        </item>
                        <item row="1" column="5">
-                        <widget class="QSpinBox" name="spinBox"/>
-                       </item>
-                       <item row="1" column="4">
-                        <widget class="QLabel" name="label_19">
+                        <widget class="QPushButton" name="pushButton_12">
                          <property name="text">
-                          <string>by</string>
+                          <string>reset foc.</string>
                          </property>
                         </widget>
                        </item>
-                       <item row="0" column="2">
-                        <widget class="QPushButton" name="pushButton_7">
-                         <property name="text">
-                          <string>Focus</string>
+                       <item row="4" column="1">
+                        <widget class="TaurusWheelEdit" name="frame_illum_pos">
+                         <property name="frameShape">
+                          <enum>QFrame::StyledPanel</enum>
                          </property>
-                        </widget>
-                       </item>
-                       <item row="0" column="3">
-                        <widget class="QPushButton" name="pushButton_8">
-                         <property name="text">
-                          <string>DeFocus</string>
+                         <property name="frameShadow">
+                          <enum>QFrame::Raised</enum>
                          </property>
                         </widget>
                        </item>
                        <item row="0" column="0">
-                        <widget class="QPushButton" name="pushButton">
+                        <widget class="QLabel" name="label_27">
                          <property name="text">
-                          <string>ZoomIn</string>
+                          <string>zoom pos.</string>
                          </property>
                         </widget>
                        </item>
-                       <item row="0" column="1">
-                        <widget class="QPushButton" name="pushButton_2">
+                       <item row="4" column="0">
+                        <widget class="QLabel" name="label_23">
                          <property name="text">
-                          <string>ZoomOut</string>
+                          <string>illum. pos.</string>
                          </property>
                         </widget>
                        </item>
-                       <item row="1" column="6">
-                        <widget class="QLabel" name="label_21">
+                       <item row="1" column="3">
+                        <widget class="QLabel" name="label_54">
+                         <property name="sizePolicy">
+                          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+                           <horstretch>0</horstretch>
+                           <verstretch>0</verstretch>
+                          </sizepolicy>
+                         </property>
                          <property name="text">
-                          <string>%</string>
+                          <string>um</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="1" column="0">
+                        <widget class="QLabel" name="label_53">
+                         <property name="text">
+                          <string>foc pos.</string>
                          </property>
                         </widget>
                        </item>
                        <item row="0" column="4">
-                        <widget class="QLabel" name="label_20">
+                        <widget class="QPushButton" name="pushButton_9">
                          <property name="text">
-                          <string>by</string>
+                          <string>save zoom</string>
                          </property>
                         </widget>
                        </item>
                        <item row="0" column="5">
-                        <widget class="QSpinBox" name="spinBox_2"/>
+                        <widget class="QPushButton" name="pushButton_11">
+                         <property name="text">
+                          <string>reset zoom</string>
+                         </property>
+                        </widget>
                        </item>
-                       <item row="0" column="6">
+                       <item row="0" column="3">
                         <widget class="QLabel" name="label_22">
+                         <property name="sizePolicy">
+                          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+                           <horstretch>0</horstretch>
+                           <verstretch>0</verstretch>
+                          </sizepolicy>
+                         </property>
                          <property name="text">
                           <string>um</string>
                          </property>
                         </widget>
                        </item>
-                       <item row="2" column="0">
-                        <widget class="QLabel" name="label_23">
+                       <item row="0" column="2">
+                        <widget class="TaurusLabel" name="label_zoom_pos">
                          <property name="text">
-                          <string>Stage X</string>
+                          <string/>
                          </property>
                         </widget>
                        </item>
-                       <item row="2" column="1">
-                        <widget class="QLineEdit" name="lineEdit"/>
-                       </item>
-                       <item row="2" column="2">
-                        <widget class="QLabel" name="label_24">
+                       <item row="1" column="2">
+                        <widget class="TaurusLabel" name="label_foc_pos">
                          <property name="text">
-                          <string>Stage Y</string>
+                          <string/>
                          </property>
                         </widget>
                        </item>
-                       <item row="2" column="3">
-                        <widget class="QLineEdit" name="lineEdit_2"/>
-                       </item>
-                       <item row="2" column="4">
-                        <widget class="QLabel" name="label_25">
-                         <property name="text">
-                          <string>Stage Z</string>
+                       <item row="4" column="2">
+                        <widget class="TaurusLabel" name="label_illum_pos">
+                         <property name="minimumSize">
+                          <size>
+                           <width>59</width>
+                           <height>0</height>
+                          </size>
                          </property>
-                        </widget>
-                       </item>
-                       <item row="2" column="5">
-                        <widget class="QLineEdit" name="lineEdit_3"/>
-                       </item>
-                       <item row="2" column="6">
-                        <widget class="QLabel" name="label_26">
                          <property name="text">
-                          <string>um</string>
+                          <string/>
                          </property>
                         </widget>
                        </item>
@@ -1684,55 +1733,74 @@
                   </item>
                   <item>
                    <widget class="QGroupBox" name="groupBox_3">
+                    <property name="minimumSize">
+                     <size>
+                      <width>0</width>
+                      <height>200</height>
+                     </size>
+                    </property>
                     <property name="title">
                      <string>Sample stage control</string>
                     </property>
                     <layout class="QVBoxLayout" name="verticalLayout_15">
                      <item>
                       <layout class="QGridLayout" name="gridLayout_9">
-                       <item row="1" column="3">
-                        <widget class="QSpinBox" name="spinBox_8"/>
+                       <item row="1" column="1">
+                        <widget class="TaurusWheelEdit" name="frame_y_stage_value">
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>60</height>
+                          </size>
+                         </property>
+                         <property name="frameShape">
+                          <enum>QFrame::StyledPanel</enum>
+                         </property>
+                         <property name="frameShadow">
+                          <enum>QFrame::Raised</enum>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="0" column="2">
+                        <widget class="TaurusLabel" name="label_x_stage_value">
+                         <property name="minimumSize">
+                          <size>
+                           <width>59</width>
+                           <height>0</height>
+                          </size>
+                         </property>
+                         <property name="text">
+                          <string/>
+                         </property>
+                        </widget>
                        </item>
                        <item row="1" column="2">
-                        <widget class="QLabel" name="label_44">
-                         <property name="sizePolicy">
-                          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                           <horstretch>0</horstretch>
-                           <verstretch>0</verstretch>
-                          </sizepolicy>
+                        <widget class="TaurusLabel" name="label_y_stage_value">
+                         <property name="minimumSize">
+                          <size>
+                           <width>59</width>
+                           <height>0</height>
+                          </size>
                          </property>
                          <property name="text">
-                          <string>by</string>
+                          <string/>
                          </property>
                         </widget>
                        </item>
-                       <item row="1" column="1">
-                        <widget class="QPushButton" name="pushButton_28">
-                         <property name="sizePolicy">
-                          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                           <horstretch>0</horstretch>
-                           <verstretch>0</verstretch>
-                          </sizepolicy>
+                       <item row="2" column="2">
+                        <widget class="TaurusLabel" name="label_z_stage_value">
+                         <property name="minimumSize">
+                          <size>
+                           <width>59</width>
+                           <height>0</height>
+                          </size>
                          </property>
                          <property name="text">
-                          <string>dx-</string>
+                          <string/>
                          </property>
                         </widget>
                        </item>
-                       <item row="1" column="0">
-                        <widget class="QPushButton" name="pushButton_27">
-                         <property name="sizePolicy">
-                          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                           <horstretch>0</horstretch>
-                           <verstretch>0</verstretch>
-                          </sizepolicy>
-                         </property>
-                         <property name="text">
-                          <string>dx+</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="1" column="6">
+                       <item row="1" column="3">
                         <widget class="QLabel" name="label_45">
                          <property name="sizePolicy">
                           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
@@ -1741,66 +1809,11 @@
                           </sizepolicy>
                          </property>
                          <property name="text">
-                          <string>um</string>
+                          <string>mm</string>
                          </property>
                         </widget>
-                       </item>
-                       <item row="1" column="5">
-                        <widget class="QLineEdit" name="lineEdit_12"/>
                        </item>
                        <item row="2" column="3">
-                        <widget class="QSpinBox" name="spinBox_4"/>
-                       </item>
-                       <item row="2" column="2">
-                        <widget class="QLabel" name="label_29">
-                         <property name="sizePolicy">
-                          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                           <horstretch>0</horstretch>
-                           <verstretch>0</verstretch>
-                          </sizepolicy>
-                         </property>
-                         <property name="text">
-                          <string>by</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="2" column="0">
-                        <widget class="QPushButton" name="pushButton_15">
-                         <property name="sizePolicy">
-                          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                           <horstretch>0</horstretch>
-                           <verstretch>0</verstretch>
-                          </sizepolicy>
-                         </property>
-                         <property name="text">
-                          <string>dx+</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="2" column="1">
-                        <widget class="QPushButton" name="pushButton_16">
-                         <property name="sizePolicy">
-                          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                           <horstretch>0</horstretch>
-                           <verstretch>0</verstretch>
-                          </sizepolicy>
-                         </property>
-                         <property name="text">
-                          <string>dx-</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="1" column="4">
-                        <widget class="QPushButton" name="pushButton_29">
-                         <property name="text">
-                          <string>x to</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="2" column="5">
-                        <widget class="QLineEdit" name="lineEdit_10"/>
-                       </item>
-                       <item row="2" column="6">
                         <widget class="QLabel" name="label_30">
                          <property name="sizePolicy">
                           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
@@ -1809,50 +1822,11 @@
                           </sizepolicy>
                          </property>
                          <property name="text">
-                          <string>um</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="2" column="4">
-                        <widget class="QPushButton" name="pushButton_13">
-                         <property name="text">
-                          <string>x to</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="0" column="0">
-                        <widget class="QPushButton" name="pushButton_25">
-                         <property name="sizePolicy">
-                          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                           <horstretch>0</horstretch>
-                           <verstretch>0</verstretch>
-                          </sizepolicy>
-                         </property>
-                         <property name="text">
-                          <string>dx+</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="0" column="1">
-                        <widget class="QPushButton" name="pushButton_26">
-                         <property name="sizePolicy">
-                          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                           <horstretch>0</horstretch>
-                           <verstretch>0</verstretch>
-                          </sizepolicy>
-                         </property>
-                         <property name="text">
-                          <string>dx-</string>
+                          <string>mm</string>
                          </property>
                         </widget>
                        </item>
                        <item row="0" column="3">
-                        <widget class="QSpinBox" name="spinBox_7"/>
-                       </item>
-                       <item row="0" column="5">
-                        <widget class="QLineEdit" name="lineEdit_11"/>
-                       </item>
-                       <item row="0" column="6">
                         <widget class="QLabel" name="label_43">
                          <property name="sizePolicy">
                           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
@@ -1861,184 +1835,66 @@
                           </sizepolicy>
                          </property>
                          <property name="text">
-                          <string>um</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="0" column="4">
-                        <widget class="QPushButton" name="pushButton_14">
-                         <property name="text">
-                          <string>x to</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="0" column="2">
-                        <widget class="QLabel" name="label_34">
-                         <property name="sizePolicy">
-                          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                           <horstretch>0</horstretch>
-                           <verstretch>0</verstretch>
-                          </sizepolicy>
-                         </property>
-                         <property name="text">
-                          <string>by</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="3" column="6">
-                        <widget class="QLabel" name="label_27">
-                         <property name="text">
-                          <string>um</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="3" column="5">
-                        <widget class="QLineEdit" name="lineEdit_4"/>
-                       </item>
-                       <item row="3" column="3" colspan="2">
-                        <widget class="QLabel" name="label_31">
-                         <property name="text">
-                          <string>Stage XYZ</string>
-                         </property>
-                        </widget>
-                       </item>
-                      </layout>
-                     </item>
-                    </layout>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QGroupBox" name="groupBox_4">
-                    <property name="title">
-                     <string>Sample scan control</string>
-                    </property>
-                    <layout class="QVBoxLayout" name="verticalLayout_16">
-                     <item>
-                      <layout class="QGridLayout" name="gridLayout_10">
-                       <item row="1" column="3">
-                        <widget class="QPushButton" name="pushButton_17">
-                         <property name="text">
-                          <string>Brighter</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="1" column="1">
-                        <widget class="QPushButton" name="pushButton_18">
-                         <property name="text">
-                          <string>Lightoff</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="1" column="0">
-                        <widget class="QPushButton" name="pushButton_19">
-                         <property name="text">
-                          <string>Lighton</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="1" column="2">
-                        <widget class="QPushButton" name="pushButton_20">
-                         <property name="text">
-                          <string>Dimmer</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="1" column="5">
-                        <widget class="QSpinBox" name="spinBox_5"/>
-                       </item>
-                       <item row="1" column="4">
-                        <widget class="QLabel" name="label_35">
-                         <property name="text">
-                          <string>by</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="0" column="2">
-                        <widget class="QPushButton" name="pushButton_21">
-                         <property name="text">
-                          <string>Focus</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="0" column="3">
-                        <widget class="QPushButton" name="pushButton_22">
-                         <property name="text">
-                          <string>DeFocus</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="0" column="0">
-                        <widget class="QPushButton" name="pushButton_23">
-                         <property name="text">
-                          <string>ZoomIn</string>
+                          <string>mm</string>
                          </property>
                         </widget>
                        </item>
                        <item row="0" column="1">
-                        <widget class="QPushButton" name="pushButton_24">
-                         <property name="text">
-                          <string>ZoomOut</string>
+                        <widget class="TaurusWheelEdit" name="frame_x_stage_value">
+                         <property name="sizePolicy">
+                          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                           <horstretch>0</horstretch>
+                           <verstretch>0</verstretch>
+                          </sizepolicy>
+                         </property>
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>60</height>
+                          </size>
+                         </property>
+                         <property name="frameShape">
+                          <enum>QFrame::StyledPanel</enum>
+                         </property>
+                         <property name="frameShadow">
+                          <enum>QFrame::Raised</enum>
                          </property>
                         </widget>
                        </item>
-                       <item row="1" column="6">
-                        <widget class="QLabel" name="label_36">
+                       <item row="0" column="0">
+                        <widget class="QLabel" name="label_21">
                          <property name="text">
-                          <string>%</string>
+                          <string>sampleX</string>
                          </property>
                         </widget>
                        </item>
-                       <item row="0" column="4">
-                        <widget class="QLabel" name="label_37">
+                       <item row="1" column="0">
+                        <widget class="QLabel" name="label_24">
                          <property name="text">
-                          <string>by</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="0" column="5">
-                        <widget class="QSpinBox" name="spinBox_6"/>
-                       </item>
-                       <item row="0" column="6">
-                        <widget class="QLabel" name="label_38">
-                         <property name="text">
-                          <string>um</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="2" column="0">
-                        <widget class="QLabel" name="label_39">
-                         <property name="text">
-                          <string>Stage X</string>
+                          <string>sampleY</string>
                          </property>
                         </widget>
                        </item>
                        <item row="2" column="1">
-                        <widget class="QLineEdit" name="lineEdit_7"/>
-                       </item>
-                       <item row="2" column="2">
-                        <widget class="QLabel" name="label_40">
-                         <property name="text">
-                          <string>Stage Y</string>
+                        <widget class="TaurusWheelEdit" name="frame_z_stage_value">
+                         <property name="minimumSize">
+                          <size>
+                           <width>0</width>
+                           <height>60</height>
+                          </size>
+                         </property>
+                         <property name="frameShape">
+                          <enum>QFrame::StyledPanel</enum>
+                         </property>
+                         <property name="frameShadow">
+                          <enum>QFrame::Raised</enum>
                          </property>
                         </widget>
                        </item>
-                       <item row="2" column="3">
-                        <widget class="QLineEdit" name="lineEdit_8"/>
-                       </item>
-                       <item row="2" column="4">
-                        <widget class="QLabel" name="label_41">
+                       <item row="2" column="0">
+                        <widget class="QLabel" name="label_25">
                          <property name="text">
-                          <string>Stage Z</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="2" column="5">
-                        <widget class="QLineEdit" name="lineEdit_9"/>
-                       </item>
-                       <item row="2" column="6">
-                        <widget class="QLabel" name="label_42">
-                         <property name="text">
-                          <string>um</string>
+                          <string>sampleZ</string>
                          </property>
                         </widget>
                        </item>
@@ -2048,7 +1904,7 @@
                    </widget>
                   </item>
                   <item>
-                   <spacer name="verticalSpacer_2">
+                   <spacer name="verticalSpacer_4">
                     <property name="orientation">
                      <enum>Qt::Vertical</enum>
                     </property>
@@ -2107,7 +1963,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1412</width>
+     <width>1576</width>
      <height>21</height>
     </rect>
    </property>
@@ -2149,6 +2005,17 @@
    <class>shapeContainer</class>
    <extends>QWidget</extends>
    <header>smart.gui.widgets.shapes.shape_container.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>TaurusLabel</class>
+   <extends>QLabel</extends>
+   <header>taurus.qt.qtgui.display.h</header>
+  </customwidget>
+  <customwidget>
+   <class>TaurusWheelEdit</class>
+   <extends>QFrame</extends>
+   <header>taurus.qt.qtgui.input.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
