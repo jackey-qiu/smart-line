@@ -1,9 +1,11 @@
-from PyQt5.QtGui import QPaintEvent, QPainter, QPen, QBrush, QColor, QFont, QCursor, QPainterPath,QTransform
+from PyQt5.QtGui import QPaintEvent, QPainter, QPen, QBrush, QColor, QFont, QPolygonF, QCursor, QPainterPath,QTransform
 from PyQt5.QtWidgets import QWidget
-from PyQt5.QtCore import Qt, pyqtSignal, pyqtSlot
+from taurus.qt.qtgui.base import TaurusBaseComponent
+from PyQt5.QtCore import Qt, QPointF, pyqtSignal, pyqtSlot
 from PyQt5.QtCore import QTimer
 import numpy as np
 import copy
+import math
 import time
 from dataclasses import dataclass
 from smart.util.geometry_transformation import rotate_multiple_points, angle_between
@@ -11,7 +13,7 @@ from smart.util.geometry_transformation import rotate_multiple_points, angle_bet
 DECORATION_UPON_CURSOR_ON = {'pen': {'color': (255, 255, 0), 'width': 3, 'ls': 'DotLine'}, 'brush': {'color': (0, 0, 255)}} 
 DECORATION_UPON_CURSOR_OFF = {'pen': {'color': (255, 0, 0), 'width': 3, 'ls': 'SolidLine'}, 'brush': {'color': (0, 0, 255)}}
 
-DECORATION_TEXT_DEFAULT = {'font_size': 8, 'text_color': (255,255,255), 'alignment': 'AlignCenter', 'padding': 0}
+DECORATION_TEXT_DEFAULT = {'font_size': 8, 'text_color': (255,255,255), 'alignment': 'AlignLeft', 'padding': 0}
 
 def make_decoration_from_text(dec = {'pen': {'color': (255, 255, 0), 'width': 3, 'ls': 'DotLine'}, 'brush': {'color': (0, 0, 255)}}):
 
@@ -120,7 +122,7 @@ class baseShape(object):
     @transformation.setter
     def transformation(self, transformation):
         assert isinstance(transformation, dict), 'wrong format of transformation'
-        self._transformation = transformation
+        self._transformation.update(transformation)
         # self.calculate_shape()
 
     def compute_center_from_dim(self, apply_translate = True):
@@ -192,6 +194,13 @@ class baseShape(object):
         elif orientation == 'right':
             anchor = np.array(cen) + [or_len, 0]
             ref_anchor = cen
+        elif orientation == 'cen':
+            anchor = np.array(cen)
+            if ref_anchor!=None:
+                # ref_anchor = anchor - ref_anchor_offset[ref_anchor_dir]
+                ref_anchor = anchor - ref_anchor_dir
+            else:
+                ref_anchor = anchor - ref_anchor_offset['left']#by default
         else:
             if orientation in self.anchors:
                 anchor = self.anchors[orientation]
@@ -274,9 +283,9 @@ class rectangle(baseShape):
         labels = self.labels
         decoration = self.text_decoration 
         cen = self.compute_center_from_dim(False)
-        x, y = cen
         _, _, w, h = self.dim_pars
         for i, text in enumerate(labels['text']):
+            x, y = cen
             anchor = labels['anchor'][i]
             if labels['decoration'] == None:
                 decoration = self.text_decoration
@@ -352,7 +361,8 @@ class rectangle(baseShape):
         self.anchors = anchors
 
     def calculate_orientation_length(self, orientation = 'top', ref_anchor = None):
-
+        if orientation == 'cen':
+            return 1
         w, h = np.array(self.dim_pars[2:])
         if orientation in ['top', 'bottom']:
             return h/2
@@ -379,10 +389,255 @@ class rectangle(baseShape):
      
 
 class circle(baseShape):
-    pass
+    def __init__(self, dim = [100,100,40], rotation_center = None, decoration_cursor_off=DECORATION_UPON_CURSOR_OFF, decoration_cursor_on =DECORATION_UPON_CURSOR_ON, \
+                 transformation={'rotate':0, 'translate':(0,0), 'scale': 1}, text_decoration = DECORATION_TEXT_DEFAULT, lables = {'text':[], 'anchor':[],'decoration':None}):
 
-class polygon(baseShape):
-    pass
+        super().__init__(dim = dim, rotation_center=rotation_center, decoration_cursor_off=decoration_cursor_off, decoration_cursor_on= decoration_cursor_on, transformation=transformation, text_decoration=text_decoration, lables=lables)
+    
+    def scale(self, sf):
+        self.dim_pars = (np.array(self.dim_pars)*[1,1,sf/self.transformation['scale']]).astype(int)
+        self.transformation['scale'] = sf
+
+    def draw_shape(self, qp):
+        qp = self.apply_transform(qp)
+        qp.drawEllipse(*(self.dim_pars + [self.dim_pars[-1]]))
+        self.text_label(qp)
+
+    def text_label(self, qp):
+        labels = self.labels
+        decoration = self.text_decoration 
+        cen = self.compute_center_from_dim(False)
+        r = self.dim_pars[-1]/2
+        for i, text in enumerate(labels['text']):
+            x, y = cen
+            anchor = labels['anchor'][i]
+            if labels['decoration'] == None:
+                decoration = self.text_decoration
+            else:
+                if type(labels['decoration'])==list and len(labels['decoration'])==len(labels['text']):
+                    decoration = labels['decoration'][i]
+                else:
+                    decoration = self.text_decoration
+            alignment = decoration['alignment']
+            padding = decoration['padding']
+            text_color = decoration['text_color']
+            font_size = decoration['font_size']
+            if anchor == 'left':
+                x = x - r
+                x = x - padding
+            elif anchor == 'right':
+                x = x + r
+                x = x + padding
+            elif anchor == 'top':
+                y = y - r
+                y = y - padding
+            elif anchor == 'bottom':
+                y = y + r
+                y = y + padding
+            elif anchor == 'center':
+                x, y = x, y
+            else:
+                if anchor in self.anchors:
+                    x, y = self.anchors[anchor]
+            qp.setPen(QColor(*text_color))
+            qp.setFont(QFont('Decorative', font_size))
+            qp.drawText(int(x), int(y), 100, 20, getattr(Qt, alignment), text)
+
+    def calculate_shape_boundary(self):
+        cen = np.array(self.compute_center_from_dim(False))
+        r = self.dim_pars[-1]/2
+        four_corners = [cen + each for each in [[r, 0], [-r, 0], [0, r], [0, -r]]]
+        four_corners = [np.array(each) + np.array(self.transformation['translate']) for each in four_corners]
+        rot_center = np.array(self.rot_center) + np.array(self.transformation['translate'])
+        four_corners = rotate_multiple_points(four_corners, rot_center, self.transformation['rotate'])
+        #return x_min, x_max, y_min, y_max
+        return int(four_corners[:,0].min()), int(four_corners[:,0].max()), int(four_corners[:,1].min()), int(four_corners[:,1].max())
+
+    def compute_center_from_dim(self, apply_translate = True):
+        x, y, R = self.dim_pars
+        x, y = x+R/2, y+R/2
+        if apply_translate:
+            return x + self.transformation['translate'][0], y + self.transformation['translate'][1]
+        else:
+            return x, y
+        
+    def make_anchors(self, num_of_anchors = 4):
+        #num_of_anchors_on_each_side: exclude corners
+        cen = np.array(self.compute_center_from_dim(False))
+        ang_step = math.radians(360/num_of_anchors)
+        anchors = {}
+        for i in range(num_of_anchors):
+            dx, dy = math.cos(ang_step*i), -math.sin(ang_step*i)
+            anchors[f'anchor_{i}'] = cen + [dx, dy] + np.array(self.transformation['translate'])
+        self.anchors = anchors
+
+    def calculate_orientation_length(self, orientation = 'top', **kwargs):
+        if orientation == 'cen':
+            return 1
+        else:
+            return self.dim_pars[-1]/2
+
+    def check_pos(self, x, y):
+        cen = np.array(self.compute_center_from_dim(False))
+        r = self.dim_pars[-1]/2
+        p1, p2, p3, p4 = [cen + each for each in [[r, 0], [-r, 0], [0, r], [0, -r]]]
+        pos_ = rotate_multiple_points([(x, y)], np.array(self.rot_center) + np.array(self.transformation['translate']), -self.transformation['rotate'])
+        pos_ = np.array(pos_) - np.array(self.transformation['translate'])
+        x_, y_ = pos_
+        if (p2[0] <= x_ <= p1[0]) and (p4[1] <= y_ <= p3[1]):
+            return True
+        else:
+            return False
+
+class isocelesTriangle(baseShape):
+    def __init__(self, dim = [100,100,40,60], rotation_center = None, decoration_cursor_off=DECORATION_UPON_CURSOR_OFF, decoration_cursor_on =DECORATION_UPON_CURSOR_ON, \
+                 transformation={'rotate':0, 'translate':(0,0), 'scale': 1}, text_decoration = DECORATION_TEXT_DEFAULT, lables = {'text':[], 'anchor':[],'decoration':None}):
+
+        super().__init__(dim = dim, rotation_center=rotation_center, decoration_cursor_off=decoration_cursor_off, decoration_cursor_on= decoration_cursor_on, transformation=transformation, text_decoration=text_decoration, lables=lables)
+    
+    def scale(self, sf):
+        self.dim_pars = (np.array(self.dim_pars)*[1,1,sf/self.transformation['scale'],1]).astype(int)
+        self.transformation['scale'] = sf
+
+    def _cal_corner_point_coordinates(self, return_type_is_qpointF = True):
+        ang = math.radians(self.dim_pars[-1])/2
+        edge_lenth = self.dim_pars[-2]
+        dx = edge_lenth * math.sin(ang)
+        dy = edge_lenth * math.cos(ang)
+        point1 = (np.array(self.dim_pars[0:2])).astype(int)
+        point2 = (np.array(self.dim_pars[0:2]) + np.array([-dx, dy])).astype(int)
+        point3 = (np.array(self.dim_pars[0:2]) + np.array([dx, dy])).astype(int)
+        if return_type_is_qpointF:
+            return QPointF(*point1), QPointF(*point2), QPointF(*point3)
+        else:
+            return point1, point2, point3
+
+    def draw_shape(self, qp):
+        qp = self.apply_transform(qp)
+        point1, point2, point3 = self._cal_corner_point_coordinates()
+        polygon = QPolygonF()
+        polygon.append(point1)
+        polygon.append(point2)
+        polygon.append(point3)
+        qp.drawPolygon(polygon)
+        self.text_label(qp)
+
+    def text_label(self, qp):
+        labels = self.labels
+        decoration = self.text_decoration 
+        point1, point2, point3 = self._cal_corner_point_coordinates(False)
+        for i, text in enumerate(labels['text']):
+            anchor = labels['anchor'][i]
+            if labels['decoration'] == None:
+                decoration = self.text_decoration
+            else:
+                if type(labels['decoration'])==list and len(labels['decoration'])==len(labels['text']):
+                    decoration = labels['decoration'][i]
+                else:
+                    decoration = self.text_decoration
+            alignment = decoration['alignment']
+            padding = decoration['padding']
+            text_color = decoration['text_color']
+            font_size = decoration['font_size']
+            if anchor == 'left':
+                x, y = point2
+                x = x - padding
+            elif anchor == 'right':
+                x, y = point3
+                x = x + padding
+            elif anchor == 'top':
+                x, y = point1
+                y = y - padding
+            elif anchor == 'bottom':
+                x, y = (point2 + point3)/2
+                y = y + padding
+            elif anchor == 'center':
+                x, y = (point2 + point3)/2
+                y = y - abs(point1[1] - y)/2
+            else:
+                if anchor in self.anchors:
+                    x, y = self.anchors[anchor]
+            qp.setPen(QColor(*text_color))
+            qp.setFont(QFont('Decorative', font_size))
+            qp.drawText(int(x), int(y), 100, 20, getattr(Qt, alignment), text)
+
+    def calculate_shape_boundary(self):
+        three_corners = self._cal_corner_point_coordinates(False)
+        three_corners = [np.array(each) + np.array(self.transformation['translate']) for each in three_corners]
+        rot_center = np.array(self.rot_center) + np.array(self.transformation['translate'])
+        three_corners = rotate_multiple_points(three_corners, rot_center, self.transformation['rotate'])
+        #return x_min, x_max, y_min, y_max
+        return int(three_corners[:,0].min()), int(three_corners[:,0].max()), int(three_corners[:,1].min()), int(three_corners[:,1].max())
+
+    def compute_center_from_dim(self, apply_translate = True):
+        x, y, edge, ang = self.dim_pars
+        p1, p2, p3 = self._cal_corner_point_coordinates(False)
+        r = edge**2/2/abs(p3[1]-p1[1])
+        #geometry rot center
+        x, y = np.array(p1) + [0, r]
+        if apply_translate:
+            return x + self.transformation['translate'][0], y + self.transformation['translate'][1]
+        else:
+            return x, y
+
+    def make_anchors(self, num_of_anchors_on_each_side = 4, include_corner = True):
+        #num_of_anchors_on_each_side: exclude corners
+
+        edge, ang = self.dim_pars[2:]
+        ang = math.radians(ang/2)
+        bottom_edge = edge * math.sin(ang) *2
+        height = edge * math.cos(ang)
+        if not include_corner:
+            w_step, h_step = bottom_edge/(num_of_anchors_on_each_side+1), height/(num_of_anchors_on_each_side+1)
+        else:
+            assert num_of_anchors_on_each_side>2, 'At least two achors at each edge'
+            w_step, h_step = bottom_edge/(num_of_anchors_on_each_side-1), height/(num_of_anchors_on_each_side-1)
+
+        p1, p2, p3 = self._cal_corner_point_coordinates(False)
+        anchors = {}
+        for i in range(num_of_anchors_on_each_side):
+            if not include_corner:
+                anchors[f'anchor_left_{i}'] = np.array(p1) + [-(i+1)*h_step*math.tan(ang), (i+1)*h_step]
+                anchors[f'anchor_bottom_{i}'] = np.array(p2) + [(i+1)*w_step, 0]
+                anchors[f'anchor_right_{i}'] = np.array(p1) + [(i+1)*h_step*math.tan(ang), (i+1)*h_step]
+            else:
+                anchors[f'anchor_left_{i}'] = np.array(p1) + [-i*h_step*math.tan(ang), i*h_step]
+                anchors[f'anchor_bottom_{i}'] = np.array(p2) + [i*w_step, 0]
+                anchors[f'anchor_right_{i}'] = np.array(p1) + [i*h_step*math.tan(ang), i*h_step]                
+        for each in anchors:
+            anchors[each] = anchors[each] + np.array(self.transformation['translate'])
+        self.anchors = anchors
+
+    def calculate_orientation_length(self, orientation = 'top', ref_anchor = None):
+        if orientation == 'cen':
+            return 1
+        cen = self.compute_center_from_dim(False)
+        p1, p2, p3 = self._cal_corner_point_coordinates(False)
+        w, h = np.array(self.dim_pars[2:])
+        if orientation=='top':
+            return abs(cen[1] - p1[1])
+        elif orientation == 'bottom':
+            return abs(cen[1] - p2[1])
+        elif orientation in ['left', 'right']:
+            return abs(cen[0] - p1[0])
+        else:
+            if orientation in self.anchors:
+                if ref_anchor == None:
+                    return np.linalg.norm(np.array(self.anchors[orientation]) - np.array(self.compute_center_from_dim(apply_translate=False)))
+                else:
+                    return 1
+            else:
+                raise KeyError('No such orientation key!')
+
+    def check_pos(self, x, y):
+        p1, p2, p3 = self._cal_corner_point_coordinates(False)
+        pos_ = rotate_multiple_points([(x, y)], np.array(self.rot_center) + np.array(self.transformation['translate']), -self.transformation['rotate'])
+        pos_ = np.array(pos_) - np.array(self.transformation['translate'])
+        x_, y_ = pos_
+        if (p2[0] <= x_ <= p3[0]) and (p1[1] <= y_ <= p2[1]):
+            return True
+        else:
+            return False
 
 class line(baseShape):
     pass
@@ -417,12 +672,18 @@ class buildObject(object):
     def build_shapes(self):
         pass
 
-class shapeComposite(object):
+class shapeComposite(TaurusBaseComponent):
 
-    def __init__(self, shapes, anchor_args, alignment_pattern, connection_pattern, ref_shape_index = None):
+    modelKeys = [TaurusBaseComponent.MLIST]
+
+    def __init__(self, shapes, anchor_args=None, alignment_pattern=None, connection_pattern = None, ref_shape_index = None, model_index_list = []):
         #connection_patter = {'shapes':[[0,1],[1,2]], 'anchors':[['left','top'],['right', 'bottom']]}
         #alignment_patter = {'shapes':[[0,1],[1,2]], 'anchors':[['left','top'],['right', 'bottom']]}
+        TaurusBaseComponent.__init__(self)
         self._shapes = copy.deepcopy(shapes)
+        self._model_shape_index_list = model_index_list
+        self._callbacks_upon_model_change = []
+        self._callbacks_upon_left_mouseclick = []
         self.ref_shape = self.shapes[ref_shape_index] if ref_shape_index!=None else self.shapes[0]
         self.anchor_args = anchor_args
         self.make_anchors()
@@ -434,8 +695,22 @@ class shapeComposite(object):
     @property
     def shapes(self):
         return self._shapes
+    
+    @property
+    def model_shape_index_list(self):
+        return self._model_shape_index_list
+    
+    @model_shape_index_list.setter
+    def model_shape_index_list(self, model_shape_index_list):
+        shapes_num = len(self.shapes)
+        assert type(model_shape_index_list)==list, 'please give a list of model shape index'
+        for each in model_shape_index_list:
+            assert type(each)==int and each<shapes_num, 'index must be integer and smaller than the num of total shape in the composite obj'
+        self._model_shape_index_list = model_shape_index_list
 
     def make_anchors(self):
+        if self.anchor_args==None:
+            return
         for shape, arg in zip(self.shapes, self.anchor_args):
             shape.make_anchors(arg)
 
@@ -444,6 +719,8 @@ class shapeComposite(object):
         self.make_line_connection()
 
     def align_shapes(self):
+        if self.alignment==None:
+            return
         shape_index = self.alignment['shapes']
         anchors = self.alignment['anchors']
         gaps = self.alignment['gaps']
@@ -454,6 +731,8 @@ class shapeComposite(object):
             buildTools.align_two_shapes(ref_shape, target_shape, anchors_, gap_, ref_anchors_)
 
     def make_line_connection(self):
+        if self.lines == None:
+            return
         self.lines = []
         shape_index = self.connection['shapes']
         anchors = self.connection['anchors']
@@ -479,6 +758,26 @@ class shapeComposite(object):
 
         self.make_anchors()
         self.build_composite()
+    
+    def change_upon_model_change(self, callback_pars):
+        #update _callbacks_upon_model_change
+        raise NotImplementedError
+
+    def change_upon_left_mouseclick(self, callback_pars = {}):
+        #update _callbacks_upon_left_mouseclick
+        #by default doing nothing
+        if len(callback_pars) == 0:
+            self._callbacks_upon_left_mouseclick = [lambda:None for each in self.model_shape_index_list]
+    
+    def handleEvent(self, evt_src, evt_type, evt_value):
+        """reimplemented from TaurusBaseComponent"""
+        try:
+            for i in range(len(self.model_shape_index_list)):
+                if evt_src is self.getModelObj(key=(TaurusBaseComponent.MLIST, i)):
+                    self._callbacks_upon_model_change[i](float(evt_value.rvalue.m))
+                    break
+        except Exception as e:
+            self.info("Skipping event. Reason: %s", e)
 
 class buildTools(object):
 
@@ -562,7 +861,10 @@ class buildTools(object):
             if ref_anchors[1]==None:
                 origin_cen_target = target_shape.compute_center_from_dim()
             else:
-                anchor = target_shape.anchors[orientations[1]]
+                if orientations[1]=='cen':
+                    anchor = target_shape.compute_center_from_dim()
+                else:
+                    anchor = target_shape.anchors[orientations[1]]
                 ref_anchor_offset = {'left': np.array([-1, 0]),
                                     'right': np.array([1, 0]),
                                     'top': np.array([0, -1]),
@@ -695,15 +997,15 @@ class shapeContainer(QWidget):
         super().__init__(parent = parent)
         self.parent = parent
         self.build_shapes()
-        self.composite_shape = shapeComposite(shapes = self.shapes, \
+        self.composite_shape = shapeComposite(shapes = self.shapes[0:-2], \
                                              anchor_args = [4, 3, 3, 3, 3], \
                                              alignment_pattern= {'shapes':[[0,1],[0,2],[0,3],[0,4]], \
-                                                                 'anchors':[['top','bottom'],\
+                                                                 'anchors':[['cen','cen'],\
                                                                             ['anchor_bottom_0','anchor_top_1'],\
                                                                             ['anchor_bottom_1','anchor_top_1'],\
                                                                             ['anchor_bottom_2','anchor_top_1']],\
                                                                  'gaps': [0.3, 0.3, 0.3, 13],\
-                                                                 'ref_anchors': [[None, None], \
+                                                                 'ref_anchors': [['bottom', 'bottom'], \
                                                                                  ['bottom', 'top'],\
                                                                                  ['bottom', 'top'], \
                                                                                  ['bottom', 'top']],\
@@ -726,7 +1028,9 @@ class shapeContainer(QWidget):
                        rectangle(dim = [100,300,20*1.,20*1.],rotation_center = [110,310], transformation={'rotate':0, 'translate':(0,0), 'scale':1}),\
                        rectangle(dim = [100,300,20*1.,20*1.],rotation_center = [110,310], transformation={'rotate':0, 'translate':(0,0), 'scale':1}),\
                        rectangle(dim = [100,300,20*1.,20*1.],rotation_center = [110,310], transformation={'rotate':0, 'translate':(0,0), 'scale':1}),\
-                       rectangle(dim = [100,300,20*1.,20*1.],rotation_center = [110,310], transformation={'rotate':0, 'translate':(0,0), 'scale':1})]#,\
+                       rectangle(dim = [100,300,20*1.,20*1.],rotation_center = [110,310], transformation={'rotate':0, 'translate':(0,0), 'scale':1}), \
+                       isocelesTriangle(dim=[500,500, 80, 60]), \
+                       circle(dim=[300,300, 80])]#,\
                     #    rectangle(dim = [300,100,50,50],rotation_center = [340,120], transformation={'rotate':0, 'translate':(0,0)}),\
                     #    rectangle(dim = [300,100,50,50],rotation_center = [340,120], transformation={'rotate':0, 'translate':(0,0)}),\
                     #    rectangle(dim = [300,100,50,50],rotation_center = [340,120], transformation={'rotate':0, 'translate':(0,0)})]# \
@@ -766,6 +1070,10 @@ class shapeContainer(QWidget):
             qp.resetTransform()
             each.paint(qp)
         qp.resetTransform()
+        self.shapes[-1].paint(qp)
+        qp.resetTransform()
+        self.shapes[-2].paint(qp)
+        qp.resetTransform()
         qp.setPen(QPen(Qt.green, 4, Qt.SolidLine))
         hor, ver = self._test_get_rot_center_lines()
         qp.drawLine(*[int(each) for each in hor])
@@ -802,6 +1110,6 @@ class shapeContainer(QWidget):
         self.last_x, self.last_y = event.x(), event.y()
         if self.parent !=None:
             self.parent.statusbar.showMessage('Mouse coords: ( %d : %d )' % (event.x(), event.y()))
-        for each in self.composite_shape.shapes:
+        for each in self.composite_shape.shapes + self.shapes[-2:]:
             each.cursor_pos_checker(event.x(), event.y())
         self.update()
