@@ -18,4 +18,5 @@ class synopticViewerControl(object):
 
     def set_scaling_factor(self):
         self.widget_synoptic.composite_shape.scale(self.horizontalSlider_sf.value())
+        self.widget_synoptic.composite_shape_2.scale(self.horizontalSlider_sf.value())
         self.widget_synoptic.update()

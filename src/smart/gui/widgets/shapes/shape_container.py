@@ -395,7 +395,7 @@ class circle(baseShape):
         super().__init__(dim = dim, rotation_center=rotation_center, decoration_cursor_off=decoration_cursor_off, decoration_cursor_on= decoration_cursor_on, transformation=transformation, text_decoration=text_decoration, lables=lables)
     
     def scale(self, sf):
-        self.dim_pars = (np.array(self.dim_pars)*[1,1,sf/self.transformation['scale']]).astype(int)
+        self.dim_pars = list((np.array(self.dim_pars)*np.array([1,1,sf/self.transformation['scale']])).astype(int))
         self.transformation['scale'] = sf
 
     def draw_shape(self, qp):
@@ -471,7 +471,7 @@ class circle(baseShape):
             anchors[f'anchor_{i}'] = cen + [dx, dy] + np.array(self.transformation['translate'])
         self.anchors = anchors
 
-    def calculate_orientation_length(self, orientation = 'top', **kwargs):
+    def calculate_orientation_length(self, orientation = 'top', ref_anchor = None):
         if orientation == 'cen':
             return 1
         else:
@@ -1014,6 +1014,26 @@ class shapeContainer(QWidget):
                                                                  'anchors':[['left','right'],\
                                                                             ['top','top'],\
                                                                             ]})
+
+        self.composite_shape_2 = shapeComposite(shapes = [self.shapes[i] for i in [-1,-3,-4,-5,-6,-2]], \
+                                             anchor_args = [4, 3, 3, 3, 3, 3], \
+                                             alignment_pattern= {'shapes':[[0,1],[0,2],[0,3],[0,4], [0,5]], \
+                                                                 'anchors':[['left','right'],\
+                                                                            ['top','bottom'],\
+                                                                            ['right','left'],\
+                                                                            ['bottom','top'],\
+                                                                            ['cen','cen']],\
+                                                                 'gaps': [0.3, 0.3, 0.3, 0.3, 0.3],\
+                                                                 'ref_anchors': [['bottom', 'bottom'], \
+                                                                                 ['bottom', 'top'],\
+                                                                                 ['bottom', 'top'], \
+                                                                                 ['bottom', 'top'], \
+                                                                                 ['bottom', 'top']],\
+                                                                },
+                                             connection_pattern= {'shapes':[[1,2],[3,4]], \
+                                                                 'anchors':[['left','right'],\
+                                                                            ['top','top'],\
+                                                                            ]})                                                                            
         self.test_timer = QTimer()
         self.test_timer.timeout.connect(self.test_rotate_shape)
         self.test_connection_or = ['bottom','top']
@@ -1029,8 +1049,8 @@ class shapeContainer(QWidget):
                        rectangle(dim = [100,300,20*1.,20*1.],rotation_center = [110,310], transformation={'rotate':0, 'translate':(0,0), 'scale':1}),\
                        rectangle(dim = [100,300,20*1.,20*1.],rotation_center = [110,310], transformation={'rotate':0, 'translate':(0,0), 'scale':1}),\
                        rectangle(dim = [100,300,20*1.,20*1.],rotation_center = [110,310], transformation={'rotate':0, 'translate':(0,0), 'scale':1}), \
-                       isocelesTriangle(dim=[500,500, 80, 60]), \
-                       circle(dim=[300,300, 80])]#,\
+                       isocelesTriangle(dim=[500,500, 69.28, 60]), \
+                       circle(dim=[700,400, 80])]#,\
                     #    rectangle(dim = [300,100,50,50],rotation_center = [340,120], transformation={'rotate':0, 'translate':(0,0)}),\
                     #    rectangle(dim = [300,100,50,50],rotation_center = [340,120], transformation={'rotate':0, 'translate':(0,0)}),\
                     #    rectangle(dim = [300,100,50,50],rotation_center = [340,120], transformation={'rotate':0, 'translate':(0,0)})]# \
@@ -1057,7 +1077,7 @@ class shapeContainer(QWidget):
         self.test_draw_connection_lines(qp, lines)
 
     def _test_composite_shape(self, qp):
-        for line in self.composite_shape.lines:
+        for line in self.composite_shape.lines + self.composite_shape_2.lines:
             self.test_draw_connection_lines(qp, line)
 
     def paintEvent(self, a0: QPaintEvent | None) -> None:
@@ -1069,10 +1089,13 @@ class shapeContainer(QWidget):
         for each in self.composite_shape.shapes:
             qp.resetTransform()
             each.paint(qp)
-        qp.resetTransform()
-        self.shapes[-1].paint(qp)
-        qp.resetTransform()
-        self.shapes[-2].paint(qp)
+        for each in self.composite_shape_2.shapes:
+            qp.resetTransform()
+            each.paint(qp)
+        #qp.resetTransform()
+        #self.shapes[-1].paint(qp)
+        #qp.resetTransform()
+        #self.shapes[-2].paint(qp)
         qp.resetTransform()
         qp.setPen(QPen(Qt.green, 4, Qt.SolidLine))
         hor, ver = self._test_get_rot_center_lines()
@@ -1094,11 +1117,13 @@ class shapeContainer(QWidget):
 
     def test_rotate_shape(self):
         self.composite_shape.shapes[0].transformation = {'rotate':(self.composite_shape.shapes[0].transformation['rotate']+10)%360, 'translate':self.composite_shape.shapes[0].transformation['translate']}
+        self.composite_shape_2.shapes[0].transformation = {'rotate':(self.composite_shape_2.shapes[0].transformation['rotate']+10)%360, 'translate':self.composite_shape_2.shapes[0].transformation['translate']}
         #self.align_multiple_shapes(shapes = [[self.shapes[0], self.shapes[1]], [self.shapes[0], self.shapes[2]], [self.shapes[0], self.shapes[3]], [self.shapes[0], self.shapes[4]]], \
         #                           orientations = [['top', 'bottom'], ['bottom', 'top'], ['left', 'right'], ['right', 'left']])
         # self.align_two_shapes(ref_shape=self.shapes[0], target_shape=self.shapes[1], orientations=  ['bottom', 'top'])
         self.composite_shape.build_composite()
-        for each in self.composite_shape.shapes:
+        self.composite_shape_2.build_composite()
+        for each in self.composite_shape.shapes + self.composite_shape_2.shapes:
             each.cursor_pos_checker(self.last_x, self.last_y)
         self.update()
 
@@ -1110,6 +1135,6 @@ class shapeContainer(QWidget):
         self.last_x, self.last_y = event.x(), event.y()
         if self.parent !=None:
             self.parent.statusbar.showMessage('Mouse coords: ( %d : %d )' % (event.x(), event.y()))
-        for each in self.composite_shape.shapes + self.shapes[-2:]:
+        for each in self.composite_shape.shapes + self.shapes[-2:] + self.composite_shape_2.shapes:
             each.cursor_pos_checker(event.x(), event.y())
         self.update()

@@ -20,6 +20,7 @@ from ..plugin.builtin_plugin.camera_control_module import camera_control_panel
 from ..plugin.builtin_plugin.particle_tool import particle_widget_wrapper
 from ..plugin.builtin_plugin.beamline_control import beamlineControl
 from ..plugin.builtin_plugin.synoptic_viewer_contol import synopticViewerControl
+from ..plugin.user_plugin.queue_control import queueControl
 from ..viewer.field_tools import FieldViewBox
 from ..gui.widgets.context_menu_actions import check_true, MoveMotorTool, GaussianFitTool, GaussianSimTool
 from ..gui.widgets.table_tree_widgets import TableWidgetDragRows
@@ -32,7 +33,7 @@ from taurus.core.util.containers import ArrayBuffer
 setting_file = str(Path(__file__).parent.parent / 'resource' / 'config' / 'appsettings.ini')
 ui_file_folder = Path(__file__).parent / 'ui'
 
-class smartGui(MacroExecutionWindow, MdiFieldImreg_Wrapper, geometry_widget_wrapper, FiducialMarkerWidget_wrapper, particle_widget_wrapper, camera_control_panel, beamlineControl, synopticViewerControl):
+class smartGui(MacroExecutionWindow, MdiFieldImreg_Wrapper, geometry_widget_wrapper, FiducialMarkerWidget_wrapper, particle_widget_wrapper, camera_control_panel, beamlineControl, synopticViewerControl, queueControl):
     """
     Main class of the workspace
     """
@@ -66,6 +67,7 @@ class smartGui(MacroExecutionWindow, MdiFieldImreg_Wrapper, geometry_widget_wrap
         camera_control_panel.__init__(self)
         beamlineControl.__init__(self)
         synopticViewerControl.__init__(self)
+        queueControl.__init__(self)
         self.setMinimumSize(800, 600)
         self.widget_terminal.update_name_space('gui', self)
         self.widget_motor_widget.set_parent(self)
@@ -360,8 +362,10 @@ class smartGui(MacroExecutionWindow, MdiFieldImreg_Wrapper, geometry_widget_wrap
         self.connect_slots_cam()
         #beamline control slots
         self.connect_slots_beamline_control()
-        #synoptic viewer control solots
+        #synoptic viewer control slots
         self.connect_slots_synoptic_viewer_control()
+        #queue control slots
+        self.connect_slots_queue_control()
         #widget events
         self.bt_removeMenu.setMenu(QtWidgets.QMenu(self.bt_removeMenu))
         self.bt_removeMenu.clicked.connect(self.bt_removeMenu.showMenu)
