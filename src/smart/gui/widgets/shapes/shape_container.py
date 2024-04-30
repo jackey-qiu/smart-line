@@ -736,10 +736,11 @@ class shapeComposite(TaurusBaseComponent):
         self.lines = []
         shape_index = self.connection['shapes']
         anchors = self.connection['anchors']
+        connect_types = self.connection.get('connect_types', [False]*len(anchors))
         assert len(shape_index) == len(anchors), "Dimension of shape and anchors does not match!"
-        for shapes_, anchors_ in zip(shape_index, anchors):
+        for shapes_, anchors_, connect_ in zip(shape_index, anchors, connect_types):
             shapes = [self.shapes[each] for each in shapes_]
-            lines = buildTools.make_line_connection_btw_two_anchors(shapes, anchors_)
+            lines = buildTools.make_line_connection_btw_two_anchors(shapes, anchors_, direct_connection=connect_)
             self.lines.append(lines)
 
     def translate(self, vec):
@@ -780,40 +781,6 @@ class shapeComposite(TaurusBaseComponent):
             self.info("Skipping event. Reason: %s", e)
 
 class buildTools(object):
-
-    @classmethod
-    def align_multiple_shapes_old(cls, shapes, orientations):
-        def _align_shapes(_shapes, orientations_):
-            assert len(_shapes) == len(orientations_), 'The length of shapes and orientation must be equal!'
-            for i in range(len(_shapes)-1):
-                ref_shape, target_shape = _shapes[i], _shapes[i+1]
-                orientations_temp = orientations_[i:i+2]
-                cls.align_two_shapes(ref_shape, target_shape, orientations_temp)
-
-        if type(shapes[0])==list:
-            assert type(orientations[0])==list, 'Format mismatch. Should be list of list.'
-            for shape_segment, orientaion_seg in zip(shapes, orientations):
-                _align_shapes(shape_segment, orientaion_seg)
-        else:
-            _align_shapes(shapes, orientations)
-
-    @classmethod
-    def align_two_shapes_old(cls, ref_shape, target_shape, orientations = ['bottom', 'top']):
-        cen_, v_unit = ref_shape.calculate_orientation_vector(orientations[0])
-        v_mag = ref_shape.calculate_orientation_length(orientations[0]) + target_shape.calculate_orientation_length(orientations[1])
-        v = v_unit * v_mag
-        #set rot ang to 0 and translate to 0
-        target_shape.reset()
-        origin_cen_target = target_shape.compute_center_from_dim(apply_translate=False)
-        new_cen_target = v + cen_
-        v_diff = new_cen_target - origin_cen_target
-        target_shape.rot_center = origin_cen_target
-        #let's calculate the angle between the original target shape and the orientated one
-        target_cen_, target_v_unit = target_shape.calculate_orientation_vector(orientations[1])
-        target_v_new = - v
-        angle_offset = -angle_between(target_v_unit, target_v_new)
-        target_shape.transformation.update({'rotate': angle_offset, 'translate': v_diff})
-        return target_shape
 
     @classmethod
     def calculate_boundary_for_combined_shapes(cls, shapes):
@@ -883,7 +850,7 @@ class buildTools(object):
         return target_shape
 
     @classmethod
-    def make_line_connection_btw_two_anchors(cls, shapes, anchors, short_head_line_len = 10):
+    def make_line_connection_btw_two_anchors(cls, shapes, anchors, short_head_line_len = 10, direct_connection = False):
         line_nodes = []
         def _apply_offset(pos, dir):
             offset = {'left': np.array([-short_head_line_len, 0]),
@@ -921,6 +888,10 @@ class buildTools(object):
         for shape, anchor in zip(shapes, anchors):
             dirs.append(shape.get_proper_extention_dir_for_one_anchor(anchor))
             anchor_pos.append(shape.compute_anchor_pos_after_transformation(anchor, return_pos_only=True))
+        
+        if direct_connection:
+            return np.array(anchor_pos).astype(int)
+
         dir0, dir1 = dirs
         anchor_pos_offset = [_apply_offset(_pos, _dir) for _pos, _dir in zip(anchor_pos, dirs)]
         
@@ -1030,10 +1001,15 @@ class shapeContainer(QWidget):
                                                                                  ['bottom', 'top'], \
                                                                                  ['bottom', 'top']],\
                                                                 },
-                                             connection_pattern= {'shapes':[[1,2],[3,4]], \
+                                             connection_pattern= {'shapes':[[1,2],[3,4], [0,0],[0,0],[0,0],[0,0]], \
                                                                  'anchors':[['left','right'],\
                                                                             ['top','top'],\
-                                                                            ]})                                                                            
+                                                                            ['top','left'],\
+                                                                            ['left','bottom'],\
+                                                                            ['bottom','right'],\
+                                                                            ['right','top'],\
+                                                                            ],\
+                                                                 'connect_types': [False, False, True, True, True, True]})                                                                            
         self.test_timer = QTimer()
         self.test_timer.timeout.connect(self.test_rotate_shape)
         self.test_connection_or = ['bottom','top']

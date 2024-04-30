@@ -728,7 +728,6 @@ class smartGui(MacroExecutionWindow, MdiFieldImreg_Wrapper, geometry_widget_wrap
         self.statusbar.showMessage(m)
 
     def closeEvent(self, event):
-        import time
         quit_msg = "About to Exit the program, are you sure? "
         reply = QMessageBox.question(self, 'Message', 
                         quit_msg, QMessageBox.Yes, QMessageBox.No)

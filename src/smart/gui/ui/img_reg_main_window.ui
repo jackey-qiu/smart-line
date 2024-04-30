@@ -486,14 +486,35 @@
                       </widget>
                      </item>
                      <item>
-                      <widget class="QPushButton" name="pushButton">
+                      <widget class="QPushButton" name="pushButton_update_task">
                        <property name="text">
                         <string>update task</string>
                        </property>
                       </widget>
                      </item>
                      <item>
-                      <widget class="QPushButton" name="pushButton_5">
+                      <widget class="QPushButton" name="pushButton_enable_task">
+                       <property name="text">
+                        <string>enable task</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QPushButton" name="pushButton_disable_task">
+                       <property name="text">
+                        <string>disable task</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QPushButton" name="pushButton_pause_task">
+                       <property name="text">
+                        <string>pause task</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QPushButton" name="pushButton_delete_task">
                        <property name="text">
                         <string>delete task</string>
                        </property>
@@ -599,6 +620,9 @@
                      </item>
                      <item row="2" column="1">
                       <widget class="QLineEdit" name="lineEdit_queue_name">
+                       <property name="text">
+                        <string>test_queue_01</string>
+                       </property>
                        <property name="placeholderText">
                         <string>give the queue name here</string>
                        </property>
@@ -616,6 +640,9 @@
                      </item>
                      <item row="4" column="1">
                       <widget class="QLineEdit" name="lineEdit_cmd">
+                       <property name="text">
+                        <string>ascan samy 0 1 100 0.5</string>
+                       </property>
                        <property name="placeholderText">
                         <string>give the scan command: eg ascan samy 0 1 100 0.5</string>
                        </property>
@@ -623,6 +650,9 @@
                      </item>
                      <item row="5" column="1">
                       <widget class="QLineEdit" name="lineEdit_session">
+                       <property name="text">
+                        <string>test_session_01</string>
+                       </property>
                        <property name="placeholderText">
                         <string>give the session name here</string>
                        </property>
@@ -796,19 +826,6 @@
                    <item>
                     <layout class="QHBoxLayout" name="horizontalLayout_12">
                      <item>
-                      <spacer name="horizontalSpacer_5">
-                       <property name="orientation">
-                        <enum>Qt::Horizontal</enum>
-                       </property>
-                       <property name="sizeHint" stdset="0">
-                        <size>
-                         <width>40</width>
-                         <height>20</height>
-                        </size>
-                       </property>
-                      </spacer>
-                     </item>
-                     <item>
                       <widget class="QLabel" name="label_72">
                        <property name="text">
                         <string>queue name</string>
@@ -826,9 +843,39 @@
                       </widget>
                      </item>
                      <item>
+                      <widget class="QLabel" name="label_73">
+                       <property name="text">
+                        <string>tasks</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QComboBox" name="comboBox_queue_task"/>
+                     </item>
+                     <item>
                       <widget class="QPushButton" name="pushButton_get_queue_info">
                        <property name="text">
-                        <string>get selected queue info</string>
+                        <string>get queue info</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <spacer name="horizontalSpacer_5">
+                       <property name="orientation">
+                        <enum>Qt::Horizontal</enum>
+                       </property>
+                       <property name="sizeHint" stdset="0">
+                        <size>
+                         <width>40</width>
+                         <height>20</height>
+                        </size>
+                       </property>
+                      </spacer>
+                     </item>
+                     <item>
+                      <widget class="QPushButton" name="pushButton_remove_queue">
+                       <property name="text">
+                        <string>delete queue</string>
                        </property>
                       </widget>
                      </item>
