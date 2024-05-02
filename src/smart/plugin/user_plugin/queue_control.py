@@ -1,16 +1,66 @@
 from . import p06io
 from taurus import info, error, warning, critical
 from PyQt5.QtCore import pyqtSlot as Slot
+from PyQt5 import QtCore
 from smart.gui.widgets.event_dialogue import confirmation_dialogue, error_pop_up
 import logging
 
 REQUIRED_KEYS = ['queue', 'scan_command', 'session']
 
+class eventListener(QtCore.QObject):
+    queue_entry_event = QtCore.pyqtSignal(list)
+    queue_event = QtCore.pyqtSignal(object)
+
+    def __init__(self):
+        super().__init__()
+        self.ntp_host = None
+        self.ntp_port = None
+        self.msg = None
+        self.listening = False
+
+    def update_host_and_port(self, host, port):
+        self.ntp_host = host
+        self.ntp_port = port
+
+    def connect_queue_server(self, which_instance = 0):
+        try:
+            ntp_comm = p06io.zeromq.ClientReq(self.ntp_host, self.ntp_port)
+            queue_info = ntp_comm.send_receive_message(["info", ["scan_queue"]],timeout=3)
+
+            # In this case you will just have 1 instance running so you take instance zero
+            instance_info = queue_info[list(queue_info.keys())[which_instance]]
+
+            # All available connections are under the connections key
+            self.brcast_host = instance_info["connections"]["broadcaster"]["host"]
+            self.brcast_port = int(instance_info["connections"]["broadcaster"]["port"])
+            self.brcast_comm = p06io.zeromq.ClientSub(self.brcast_host, self.brcast_port)
+        except Exception as er:
+            error(f"Fail to connect to queue server with the following error:/n {str(er)}") 
+
+    def start_listen_server(self):
+        self.connect_queue_server()
+        self.listening = True
+        while self.listening:
+            self.msg = self.brcast_comm.receive_message()
+            if self.msg[1] == 'entry_event':
+                self.queue_entry_event.emit(self.msg[0])
+            elif self.msg[1] == 'queue_event':
+                self.queue_event.emit(self.msg[0])
+
+    def stop_listen_server(self):
+        self.listening = False
+        self.msg = None
+
 class queueControl(object):
 
     def __init__(self, parent=None):
+        self.brcast_listener = eventListener()
+        self.brcast_listener_thread = QtCore.QThread()
+        self.brcast_listener.moveToThread(self.brcast_listener_thread)
+        self.brcast_listener_thread.started.connect(self.brcast_listener.start_listen_server)
         self.ntp_host = self.settings_object.value("QueueControl/ntp_host")
         self.ntp_port = int(self.settings_object.value("QueueControl/ntp_port"))
+        self.brcast_listener.update_host_and_port(self.ntp_host, self.ntp_port)
         self.queue_comm = None
         self.queue_info = None
         # self.set_models()
@@ -28,7 +78,11 @@ class queueControl(object):
             self.queue_host = instance_info["connections"]["communication"]["host"]
             self.queue_port = int(instance_info["connections"]["communication"]["port"])
             self.queue_comm = p06io.zeromq.ClientReq(self.queue_host, self.queue_port)
+            #self.brcast_host = instance_info["connections"]["broadcaster"]["host"]
+            #self.brcast_port = int(instance_info["connections"]["broadcaster"]["port"])
+            #self.brcast_comm = p06io.zeromq.ClientSub(self.brcast_host, self.brcast_port)
             self.statusUpdate(f'Connect to queue server: {self.queue_host}:{self.queue_port}')
+            self.brcast_listener_thread.start()
         except Exception as er:
             error(f"Fail to connect to queue server with the following error:/n {str(er)}") 
             self.statusUpdate(f'Failure to connect to queue server!')
@@ -141,6 +195,19 @@ class queueControl(object):
             if key in task_key_widget_setAPI_map:
                 task_key_widget_setAPI_map[key](str(value))
 
+    @Slot(list)
+    def update_queued_task_from_brcast_event(self, queue_list):
+        self._update_queue_status()
+        self.statusUpdate('The changed queue names are:'+' '.join(queue_list))
+        if self.comboBox_queue_name_list.currentText() in queue_list:
+            current_job_id = self.comboBox_queue_task.currentText()
+            #self.display_info_for_a_queue()
+            self.comboBox_queue_task.setCurrentText(current_job_id)
+            self.display_info_for_a_queue()
+
+    def _update_queue_status(self):
+        pass    
+
     def _append_task(self,task):
         assert type(task)==dict, 'Task must be formated in a python dict'
         for each in REQUIRED_KEYS:
@@ -208,3 +275,4 @@ class queueControl(object):
         self.pushButton_enable_task.clicked.connect(lambda: self.change_state_of_a_task('enabled'))
         self.pushButton_disable_task.clicked.connect(lambda: self.change_state_of_a_task('disabled'))
         self.pushButton_pause_task.clicked.connect(lambda: self.change_state_of_a_task('paused'))
+        self.brcast_listener.queue_entry_event.connect(self.update_queued_task_from_brcast_event)
