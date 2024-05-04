@@ -72,6 +72,7 @@ class smartGui(MacroExecutionWindow, MdiFieldImreg_Wrapper, geometry_widget_wrap
         self.widget_terminal.update_name_space('gui', self)
         self.widget_motor_widget.set_parent(self)
         self.widget_synoptic.set_parent(self)
+        self.widget_queue_synoptic_viewer.set_parent(self)
         self._parent = self
 
         self.img_backup_path = "ImageBackup.imagedb"

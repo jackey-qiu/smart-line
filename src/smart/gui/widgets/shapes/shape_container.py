@@ -13,7 +13,7 @@ from smart.util.geometry_transformation import rotate_multiple_points, angle_bet
 DECORATION_UPON_CURSOR_ON = {'pen': {'color': (255, 255, 0), 'width': 3, 'ls': 'DotLine'}, 'brush': {'color': (0, 0, 255)}} 
 DECORATION_UPON_CURSOR_OFF = {'pen': {'color': (255, 0, 0), 'width': 3, 'ls': 'SolidLine'}, 'brush': {'color': (0, 0, 255)}}
 
-DECORATION_TEXT_DEFAULT = {'font_size': 8, 'text_color': (255,255,255), 'alignment': 'AlignLeft', 'padding': 0}
+DECORATION_TEXT_DEFAULT = {'font_size': 8, 'text_color': (255,255,255), 'alignment': 'AlignCenter', 'padding': 0}
 
 def make_decoration_from_text(dec = {'pen': {'color': (255, 255, 0), 'width': 3, 'ls': 'DotLine'}, 'brush': {'color': (0, 0, 255)}}):
 
@@ -97,7 +97,7 @@ class baseShape(object):
     
     @decoration.setter
     def decoration(self, decoration):
-        self._decoration = decoration
+        self._decoration.update(decoration)
 
     @property
     def decoration_cursor_on(self):
@@ -105,7 +105,7 @@ class baseShape(object):
     
     @decoration_cursor_on.setter
     def decoration_cursor_on(self, decoration):
-        self._decoration_cursor_on = decoration
+        self._decoration_cursor_on.update(decoration)
 
     @property
     def decoration_cursor_off(self):
@@ -113,7 +113,7 @@ class baseShape(object):
     
     @decoration_cursor_off.setter
     def decoration_cursor_off(self, decoration):
-        self._decoration_cursor_off = decoration
+        self._decoration_cursor_off.update(decoration)
 
     @property
     def transformation(self):
@@ -314,7 +314,8 @@ class rectangle(baseShape):
                     x, y = self.anchors[anchor]
             qp.setPen(QColor(*text_color))
             qp.setFont(QFont('Decorative', font_size))
-            qp.drawText(int(x), int(y), 100, 20, getattr(Qt, alignment), text)
+            x, y, width, height = self.dim_pars
+            qp.drawText(int(x), int(y), int(width), int(height), getattr(Qt, alignment), text)
 
     def calculate_shape_boundary(self):
         x, y, w, h = self.dim_pars
@@ -961,6 +962,128 @@ class buildTools(object):
                     cross_pt = [first_anchor_pos_after_extend[0], second_anchor_pos_after_extend[1]]
                     line_nodes = [anchor_pos[0], anchor_pos_offset[0], first_anchor_pos_after_extend, cross_pt, second_anchor_pos_after_extend, anchor_pos_offset[1], anchor_pos[1]]
         return np.array(line_nodes).astype(int)
+
+class queueSynopticView(QWidget):
+    FILL_QUEUED = {'brush': {'color': (0, 0, 255)}}
+    FILL_RUN = {'brush': {'color': (50, 255, 0)}}
+    FILL_DISABLED = {'brush': {'color': (50, 50, 50)}}
+    FILL_FAILED = {'brush': {'color': (255, 50, 0)}}
+    FILL_PAUSED = {'brush': {'color': (255, 0, 255)}}
+
+    def __init__(self, parent = None, padding = 20, block_width=180, block_height =20) -> None:
+        super().__init__(parent = parent)
+        self.parent = parent
+        self.padding = padding
+        self.block_width = block_width
+        self.block_height = block_height
+        self._data = []
+        self.composite_shape_container = {}
+        self.composite_shapes = []
+
+    def set_data(self, data):
+        self._data = data
+        self.build_shapes()
+
+    def _calculate_col_num_blocks(self):
+        widget_height = self.size().height()
+        widget_width = self.size().width()
+        num_blocks_each_column = int((widget_height - widget_height%(self.padding + self.block_height))/(self.padding + self.block_height))
+        return num_blocks_each_column
+
+    def build_shapes(self):
+        self.composite_shape_container = {}
+        if len(self._data)==0:
+            self.shapes = []
+            return
+        size_col = self._calculate_col_num_blocks()
+        for i in range(len(self._data)):
+            which_col = int((i+1)/size_col)
+            shape = rectangle(dim = [self.padding + which_col*(self.block_width + self.padding),self.padding,self.block_width,self.block_height],rotation_center = None, transformation={'rotate':0, 'translate':(0,0), 'scale':1})
+            state = self._data.iloc[i,:]['state']
+            queue_id = self._data.iloc[i,:]['queue_id']
+            cmd = self._data.iloc[i,:]['scan_command']
+            if state == 'queued':
+                shape.decoration = self.FILL_QUEUED
+                shape.decoration_cursor_off = self.FILL_QUEUED
+                shape.decoration_cursor_on = self.FILL_QUEUED
+            elif state == 'running':
+                shape.decoration = self.FILL_RUN
+                shape.decoration_cursor_off = self.FILL_RUN
+                shape.decoration_cursor_on = self.FILL_RUN
+            elif state == 'failed':
+                shape.decoration = self.FILL_FAILED
+                shape.decoration_cursor_off = self.FILL_FAILED
+                shape.decoration_cursor_on = self.FILL_FAILED
+            elif state == 'paused':
+                shape.decoration = self.FILL_PAUSED
+                shape.decoration_cursor_off = self.FILL_PAUSED
+                shape.decoration_cursor_on = self.FILL_PAUSED
+            elif state == 'disabled':
+                shape.decoration = self.FILL_DISABLED
+                shape.decoration_cursor_off = self.FILL_DISABLED
+                shape.decoration_cursor_on = self.FILL_DISABLED
+            shape.labels = {'text':[f'{queue_id}:{cmd}'],'anchor':['left']}
+            if which_col not in self.composite_shape_container:
+                self.composite_shape_container[which_col] = []
+                self.composite_shape_container[which_col].append(shape)
+            else:
+                self.composite_shape_container[which_col].append(shape)
+        self.build_composite_object()
+        self.update()
+
+    def build_composite_object(self):
+        self.composite_shapes = []
+        for each, shapes in self.composite_shape_container.items():
+            composite = shapeComposite(shapes = shapes, \
+                                             anchor_args = [4 for i in range(len(shapes))], \
+                                             alignment_pattern= {'shapes':[[i, i+1] for i in range(len(shapes)-1)], \
+                                                                 'anchors':[['bottom', 'top'] for i in range(len(shapes)-1)],\
+                                                                 'gaps': [self.padding/self.block_height for i in range(len(shapes)-1)],\
+                                                                 'ref_anchors': [['bottom', 'top'] for i in range(len(shapes)-1)],\
+                                                                },
+                                             connection_pattern= {'shapes':[[i, i+1] for i in range(len(shapes)-1)], \
+                                                                 'anchors':[['bottom', 'top'] for i in range(len(shapes)-1)], \
+                                                                 'connect_types':[True for i in range(len(shapes)-1)] })
+            self.composite_shapes.append(composite)
+
+    def set_parent(self, parent):
+        self.parent = parent
+
+    def paintEvent(self, a0: QPaintEvent | None) -> None:
+        qp = QPainter()
+        qp.begin(self)
+        # for each in self.shapes:            
+        for each in self.composite_shapes:
+            for line in each.lines:
+                qp.setPen(QPen(Qt.green, 4, Qt.SolidLine))        
+                for i in range(len(line)-1):
+                    pts = list(line[i]) + list(line[i+1])
+                    qp.drawLine(*pts)  
+        for each in self.composite_shapes:
+            for each_shape in each.shapes:
+                qp.resetTransform()
+                each_shape.paint(qp)
+              
+        qp.end()
+
+    def mouseMoveEvent(self, event):
+        self.last_x, self.last_y = event.x(), event.y()
+        if self.parent !=None:
+            self.parent.statusbar.showMessage('Mouse coords: ( %d : %d )' % (event.x(), event.y()))
+        for each in self.composite_shapes:
+            for each_shape in each.shapes:
+                each_shape.cursor_pos_checker(event.x(), event.y())
+        self.update()
+
+    def mousePressEvent(self, event):
+        x, y = event.x(), event.y()
+        shapes_under_cursor = []
+        for each in self.composite_shapes:
+            for each_shape in each.shapes:
+                if each_shape.check_pos(x, y) and event.button() == Qt.LeftButton:
+                    queue_id = each_shape.labels['text'][0].rsplit(':')[0]
+                    self.parent.update_task_from_server(queue_id)
+                    return
 
 class shapeContainer(QWidget):
     

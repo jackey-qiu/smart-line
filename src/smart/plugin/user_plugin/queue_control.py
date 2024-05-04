@@ -1,9 +1,12 @@
 from . import p06io
 from taurus import info, error, warning, critical
 from PyQt5.QtCore import pyqtSlot as Slot
+from PyQt5.QtWidgets import  QAbstractItemView
 from PyQt5 import QtCore
 from smart.gui.widgets.event_dialogue import confirmation_dialogue, error_pop_up
+from smart.util.util import PandasModel
 import logging
+import pandas as pd
 
 REQUIRED_KEYS = ['queue', 'scan_command', 'session']
 
@@ -82,7 +85,10 @@ class queueControl(object):
             #self.brcast_port = int(instance_info["connections"]["broadcaster"]["port"])
             #self.brcast_comm = p06io.zeromq.ClientSub(self.brcast_host, self.brcast_port)
             self.statusUpdate(f'Connect to queue server: {self.queue_host}:{self.queue_port}')
+            self.get_available_queues()
             self.brcast_listener_thread.start()
+            self.init_pandas_model_queue()
+            self.widget_queue_synoptic_viewer.set_data(self.pandas_model_queue._data)
         except Exception as er:
             error(f"Fail to connect to queue server with the following error:/n {str(er)}") 
             self.statusUpdate(f'Failure to connect to queue server!')
@@ -97,6 +103,7 @@ class queueControl(object):
                 self.comboBox_queue_name_list.clear()
                 self.comboBox_queue_name_list.addItems(eval(str(msg)))
                 self.textEdit_queue_info_output.setPlainText(str(msg))
+                return eval(str(msg))
             except Exception as err:
                 error(f"Fail to run the command: get_available_queues. Error:/n {str(err)}")
                 self.statusUpdate(f'Failure to run command get_available_queues!')
@@ -111,6 +118,33 @@ class queueControl(object):
                           'queue_id': self.lineEdit_queue_id.setText}
         for each in task_key_widget_setAPI_map.values():
             each('')
+
+    def _format_queue(self):
+        available_queues = self.get_available_queues()
+        queue_info_dict = {'session':[], 'queue':[],'scan_command':[], 'scan_id':[], 'queue_id':[],'state':[]}
+        if available_queues==None:
+            return pd.DataFrame(queue_info_dict)
+        else:
+            for queue in available_queues:
+                queue_info = self.queue_comm.send_receive_message(['get', queue],timeout=3)
+                for task in queue_info:
+                    task.update({'queue':queue})
+                    for key in queue_info_dict:
+                        if key == 'scan_command':
+                            task[key] = ' '.join(task[key])
+                        elif key == 'queue_id':
+                            task[key] = int(task[key])
+                        queue_info_dict[key].append(task[key])
+        return pd.DataFrame.from_dict(queue_info_dict)
+    
+    def init_pandas_model_queue(self, table_view_widget_name='tableView_queue'):
+        data = self._format_queue()
+        #disable_all_tabs_but_one(self, tab_widget_name, tab_indx)
+        self.pandas_model_queue = PandasModel(data = data, tableviewer = getattr(self, table_view_widget_name), main_gui=self)
+        getattr(self, table_view_widget_name).setModel(self.pandas_model_queue)
+        getattr(self, table_view_widget_name).resizeColumnsToContents()
+        getattr(self, table_view_widget_name).setSelectionBehavior(QAbstractItemView.SelectRows)
+        getattr(self, table_view_widget_name).horizontalHeader().setStretchLastSection(True)
 
     def display_info_for_a_queue(self):
         queue_name = str(self.comboBox_queue_name_list.currentText())
@@ -174,6 +208,17 @@ class queueControl(object):
         self._append_task(task_from_widget)
 
     @Slot(str)
+    def update_queue_viewer_type(self, viewer_type):
+        if viewer_type=='tableViewer':
+            self.tableView_queue.show()
+            self.widget_queue_synoptic_viewer.hide()
+        else:
+            self.tableView_queue.hide()
+            self.widget_queue_synoptic_viewer.show()
+            self.widget_queue_synoptic_viewer.set_data(self.pandas_model_queue._data)
+
+
+    @Slot(str)
     def update_task_from_server(self, queue_id):
         msg = None
         if self.queue_info == None:
@@ -195,10 +240,38 @@ class queueControl(object):
             if key in task_key_widget_setAPI_map:
                 task_key_widget_setAPI_map[key](str(value))
 
+    @Slot(QtCore.QModelIndex)
+    def update_task_upon_click_tableview(self, modelindex):
+        row = modelindex.row()
+        queue = self.pandas_model_queue._data.iloc[row,:]['queue']
+        queue_id = self.pandas_model_queue._data.iloc[row,:]['queue_id']
+        queued_tasks = self.queue_comm.send_receive_message(["get", queue])
+        task_info = None
+        for each_task in queued_tasks:
+            if each_task['queue_id']==queue_id:
+                task_info = each_task
+                break
+        if task_info!=None:
+            task_info.update({'queue': queue})
+            task_key_widget_setAPI_map = {'execution_id':self.lineEdit_exe_id.setText,
+                            'queue':self.lineEdit_queue_name.setText,
+                            'scan_command': self.lineEdit_cmd.setText,
+                            'session': self.lineEdit_session.setText, 
+                            'state': self.lineEdit_state.setText, 
+                            'scan_info': self.lineEdit_scan_info.setText,
+                            'queue_id': self.lineEdit_queue_id.setText}
+            for key, value in task_info.items():
+                if key=='scan_command':
+                    value = ' '.join(value)
+                if key in task_key_widget_setAPI_map:
+                    task_key_widget_setAPI_map[key](str(value))            
+
     @Slot(list)
     def update_queued_task_from_brcast_event(self, queue_list):
         self._update_queue_status()
         self.statusUpdate('The changed queue names are:'+' '.join(queue_list))
+        self.init_pandas_model_queue()
+        self.widget_queue_synoptic_viewer.set_data(self.pandas_model_queue._data)
         if self.comboBox_queue_name_list.currentText() in queue_list:
             current_job_id = self.comboBox_queue_task.currentText()
             #self.display_info_for_a_queue()
@@ -269,6 +342,7 @@ class queueControl(object):
         self.pushButton_get_queue_info.clicked.connect(self.display_info_for_a_queue)
         self.pushButton_add_task.clicked.connect(self.add_task_from_ui)
         self.comboBox_queue_task.textActivated.connect(self.update_task_from_server)
+        self.comboBox_queue_viewer.textActivated.connect(self.update_queue_viewer_type)
         self.pushButton_delete_task.clicked.connect(self.remove_task)
         self.pushButton_remove_queue.clicked.connect(self.remove_queue)
         self.pushButton_update_task.clicked.connect(self.update_task)
@@ -276,3 +350,4 @@ class queueControl(object):
         self.pushButton_disable_task.clicked.connect(lambda: self.change_state_of_a_task('disabled'))
         self.pushButton_pause_task.clicked.connect(lambda: self.change_state_of_a_task('paused'))
         self.brcast_listener.queue_entry_event.connect(self.update_queued_task_from_brcast_event)
+        self.tableView_queue.clicked.connect(self.update_task_upon_click_tableview)
