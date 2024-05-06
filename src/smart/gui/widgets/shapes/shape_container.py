@@ -891,10 +891,22 @@ class buildTools(object):
             anchor_pos.append(shape.compute_anchor_pos_after_transformation(anchor, return_pos_only=True))
         
         if direct_connection:
-            return np.array(anchor_pos).astype(int)
+            line_pos = []
+            for _pos, _dir in zip(anchor_pos, dirs):
+                pos_offset = _apply_offset(_pos, _dir)
+                if (_pos==anchor_pos[0]).all():
+                    line_pos = line_pos + [_pos, pos_offset]
+                else:
+                    line_pos = line_pos + [pos_offset, _pos]
+            return np.array(line_pos).astype(int)
+
+            #return np.array(anchor_pos).astype(int)
 
         dir0, dir1 = dirs
         anchor_pos_offset = [_apply_offset(_pos, _dir) for _pos, _dir in zip(anchor_pos, dirs)]
+
+        # if direct_connection:
+            # return np.array(anchor_pos_offset).astype(int)
         
         if ('left' not in dirs) and ('right' not in dirs):
             if (dirs == ['top', 'top']) or (dirs == ['bottom', 'bottom']):
@@ -969,16 +981,22 @@ class queueSynopticView(QWidget):
     FILL_DISABLED = {'brush': {'color': (50, 50, 50)}}
     FILL_FAILED = {'brush': {'color': (255, 50, 0)}}
     FILL_PAUSED = {'brush': {'color': (255, 0, 255)}}
+    CLICKED_SHAPE = {'pen': {'color': (255, 255, 0), 'width': 3, 'ls': 'SolidLine'}}
+    NONCLICKED_SHAPE = {'pen': {'color': (255, 0, 0), 'width': 3, 'ls': 'SolidLine'}}
 
-    def __init__(self, parent = None, padding = 20, block_width=180, block_height =20) -> None:
+    def __init__(self, parent = None, padding_vertical = 20, padding_hor = 60, block_width=180, block_height =20) -> None:
         super().__init__(parent = parent)
         self.parent = parent
-        self.padding = padding
+        self.padding_vertical = padding_vertical
+        self.padding_hor = padding_hor
         self.block_width = block_width
         self.block_height = block_height
         self._data = []
         self.composite_shape_container = {}
         self.composite_shapes = []
+        self.last_clicked_shape = None
+        self.lines_bw_composite = []
+        self.triangle_ends = []
 
     def set_data(self, data):
         self._data = data
@@ -987,7 +1005,7 @@ class queueSynopticView(QWidget):
     def _calculate_col_num_blocks(self):
         widget_height = self.size().height()
         widget_width = self.size().width()
-        num_blocks_each_column = int((widget_height - widget_height%(self.padding + self.block_height))/(self.padding + self.block_height))
+        num_blocks_each_column = int((widget_height - widget_height%(self.padding_vertical + self.block_height))/(self.padding_vertical + self.block_height))
         return num_blocks_each_column
 
     def build_shapes(self):
@@ -998,7 +1016,7 @@ class queueSynopticView(QWidget):
         size_col = self._calculate_col_num_blocks()
         for i in range(len(self._data)):
             which_col = int((i+1)/size_col)
-            shape = rectangle(dim = [self.padding + which_col*(self.block_width + self.padding),self.padding,self.block_width,self.block_height],rotation_center = None, transformation={'rotate':0, 'translate':(0,0), 'scale':1})
+            shape = rectangle(dim = [self.padding_hor + which_col*(self.block_width + self.padding_hor),self.padding_vertical,self.block_width,self.block_height],rotation_center = None, transformation={'rotate':0, 'translate':(0,0), 'scale':1})
             state = self._data.iloc[i,:]['state']
             queue_id = self._data.iloc[i,:]['queue_id']
             cmd = self._data.iloc[i,:]['scan_command']
@@ -1033,18 +1051,30 @@ class queueSynopticView(QWidget):
 
     def build_composite_object(self):
         self.composite_shapes = []
+        self.lines_bw_composite = []
+        self.triangle_ends = []
         for each, shapes in self.composite_shape_container.items():
             composite = shapeComposite(shapes = shapes, \
                                              anchor_args = [4 for i in range(len(shapes))], \
                                              alignment_pattern= {'shapes':[[i, i+1] for i in range(len(shapes)-1)], \
                                                                  'anchors':[['bottom', 'top'] for i in range(len(shapes)-1)],\
-                                                                 'gaps': [self.padding/self.block_height for i in range(len(shapes)-1)],\
+                                                                 'gaps': [self.padding_vertical/self.block_height for i in range(len(shapes)-1)],\
                                                                  'ref_anchors': [['bottom', 'top'] for i in range(len(shapes)-1)],\
                                                                 },
                                              connection_pattern= {'shapes':[[i, i+1] for i in range(len(shapes)-1)], \
                                                                  'anchors':[['bottom', 'top'] for i in range(len(shapes)-1)], \
                                                                  'connect_types':[True for i in range(len(shapes)-1)] })
             self.composite_shapes.append(composite)
+        #make line connection between two adjacent composit shapes
+        for i in range(len(self.composite_shapes)-1):
+            shapes = [self.composite_shapes[i].shapes[-1], self.composite_shapes[i+1].shapes[0]]
+            anchors = ['right', 'left']
+            rot_cen = [shapes[-1].dim_pars[0], shapes[-1].dim_pars[1]+int(shapes[-1].dim_pars[-1]/2)]
+            self.triangle_ends.append(isocelesTriangle(dim = rot_cen + [10, 60]))
+            self.triangle_ends[-1].transformation = {'rotate':90}
+            self.triangle_ends[-1].rot_center = rot_cen
+            self.triangle_ends[-1].decoration = {'pen': {'color': (0, 255, 0), 'width': 2, 'ls': 'SolidLine'}, 'brush': {'color': (0, 255, 0)}} 
+            self.lines_bw_composite.append(buildTools.make_line_connection_btw_two_anchors(shapes, anchors, short_head_line_len = int(self.padding_hor/2), direct_connection = True))
 
     def set_parent(self, parent):
         self.parent = parent
@@ -1055,21 +1085,28 @@ class queueSynopticView(QWidget):
         # for each in self.shapes:            
         for each in self.composite_shapes:
             for line in each.lines:
-                qp.setPen(QPen(Qt.green, 4, Qt.SolidLine))        
+                qp.setPen(QPen(Qt.green, 2, Qt.SolidLine))        
                 for i in range(len(line)-1):
                     pts = list(line[i]) + list(line[i+1])
                     qp.drawLine(*pts)  
+        for line in self.lines_bw_composite:
+            qp.setPen(QPen(Qt.green, 2, Qt.SolidLine))        
+            for i in range(len(line)-1):
+                pts = list(line[i]) + list(line[i+1])
+                qp.drawLine(*pts)              
         for each in self.composite_shapes:
             for each_shape in each.shapes:
                 qp.resetTransform()
                 each_shape.paint(qp)
-              
+        for each_shape in self.triangle_ends:
+            qp.resetTransform()
+            each_shape.paint(qp)
         qp.end()
 
     def mouseMoveEvent(self, event):
         self.last_x, self.last_y = event.x(), event.y()
-        if self.parent !=None:
-            self.parent.statusbar.showMessage('Mouse coords: ( %d : %d )' % (event.x(), event.y()))
+        # if self.parent !=None:
+            # self.parent.statusbar.showMessage('Mouse coords: ( %d : %d )' % (event.x(), event.y()))
         for each in self.composite_shapes:
             for each_shape in each.shapes:
                 each_shape.cursor_pos_checker(event.x(), event.y())
@@ -1083,6 +1120,16 @@ class queueSynopticView(QWidget):
                 if each_shape.check_pos(x, y) and event.button() == Qt.LeftButton:
                     queue_id = each_shape.labels['text'][0].rsplit(':')[0]
                     self.parent.update_task_from_server(queue_id)
+                    if self.parent !=None:
+                        self.parent.statusbar.showMessage(f'Clicked job id is: {queue_id}')
+                    if self.last_clicked_shape==None:
+                        #self.last_clicked_shape.decoration_cursor_off = self.NONCLICKED_SHAPE
+                        self.last_clicked_shape = each_shape
+                        self.last_clicked_shape.decoration_cursor_off = self.CLICKED_SHAPE
+                    else:
+                        self.last_clicked_shape.decoration_cursor_off = self.NONCLICKED_SHAPE
+                        self.last_clicked_shape = each_shape
+                        self.last_clicked_shape.decoration_cursor_off = self.CLICKED_SHAPE
                     return
 
 class shapeContainer(QWidget):
