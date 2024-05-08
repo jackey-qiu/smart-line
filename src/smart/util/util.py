@@ -1,7 +1,33 @@
-
 import numpy as np
 import weakref
 
+def get_stage_coords_from_tif_file_from_p06_desy(file_path):
+    #func to extract the motor stage info from the generated tiff file at P06 beamline, DESY
+    #Author: Jan Garrevoet
+    #Note: The origin is by default located at top left site of the tif image.
+    from PIL import Image
+    from PIL.TiffTags import TAGS
+    with Image.open(file_path) as img:
+        # Loading also the meaning from the tiff tags enum
+        # meta_dict = {TAGS[key] : img.tag[key] for key in img.tag}
+        # just using the enum id
+        meta_dict = {key : img.tag[key] for key in img.tag}
+
+    # The origin and unit you get from
+    description = meta_dict[270]
+    desc_items = description[0].split("\n")
+    origin_x = float(desc_items[1].split("=")[1])
+    origin_y = float(desc_items[2].split("=")[1])
+    unit = desc_items[3].split("=")[1]
+
+    # The pixel size
+    pixel_size_x = meta_dict[282][0][1] / meta_dict[282][0][0]
+    pixel_size_y = meta_dict[283][0][1] / meta_dict[283][0][0]
+
+    # Calculate the origin of the image in motor positions:
+    motor_origin_x = -1 * pixel_size_x * origin_x
+    motor_origin_y = -1 * pixel_size_y * origin_y
+    return {'origin': (motor_origin_x, motor_origin_y), 'pix_size': (pixel_size_x, pixel_size_y), 'unit': unit}
 
 def quick_level(data):
     while data.size > 1e6:

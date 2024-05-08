@@ -7,6 +7,7 @@ import numpy as np
 import copy
 import math
 import time
+import yaml
 from dataclasses import dataclass
 from smart.util.geometry_transformation import rotate_multiple_points, angle_between
 
@@ -266,7 +267,7 @@ class baseShape(object):
 
 class rectangle(baseShape):
     def __init__(self, dim = [700,100,40,80], rotation_center = None, decoration_cursor_off=DECORATION_UPON_CURSOR_OFF, decoration_cursor_on =DECORATION_UPON_CURSOR_ON, \
-                 transformation={'rotate':45, 'translate':(0,0), 'scale': 1}, text_decoration = DECORATION_TEXT_DEFAULT, lables = {'text':[], 'anchor':[],'decoration':None}):
+                 transformation={'rotate':0, 'translate':(0,0), 'scale': 1}, text_decoration = DECORATION_TEXT_DEFAULT, lables = {'text':[], 'anchor':[],'decoration':None}):
 
         super().__init__(dim = dim, rotation_center=rotation_center, decoration_cursor_off=decoration_cursor_off, decoration_cursor_on= decoration_cursor_on, transformation=transformation, text_decoration=text_decoration, lables=lables)
 
@@ -784,6 +785,61 @@ class shapeComposite(TaurusBaseComponent):
 class buildTools(object):
 
     @classmethod
+    def build_basic_shape_from_yaml(cls, yaml_file_path):
+        with open(yaml_file_path, 'r', encoding='utf8') as f:
+           config = yaml.safe_load(f.read()) 
+        shape_container = {}
+        basic_shapes = config['basic_shapes']
+        for shape, shape_info in basic_shapes.items():
+            for shape_type, shape_type_info in shape_info.items():
+                anchor_pars = shape_type_info.pop('anchor_pars', None)
+                shape_obj = eval(shape)(**shape_type_info)
+                shape_container[f'{shape}.{shape_type}'] = shape_obj
+                if anchor_pars!=None:
+                    shape_obj.make_anchors(*anchor_pars)
+                else:
+                    shape_obj.make_anchors()
+        return shape_container
+
+    @classmethod
+    def build_composite_shape_from_yaml(cls, yaml_file_path):
+        with open(yaml_file_path, 'r', encoding='utf8') as f:
+           config = yaml.safe_load(f.read()) 
+        shape_container = cls.build_basic_shape_from_yaml(yaml_file_path)
+        composite_container = config['composite_shapes']
+        composite_obj_container = {}
+        for composite, composite_info in composite_container.items():
+            shapes_tag = composite_info['shapes']
+            shapes = [] 
+            for each in shapes_tag:
+                if '*' not in each:
+                    each = each+'*1'
+                shape_key, num_shape = each.rsplit('*')
+                num_shape = int(num_shape)
+                for i in range(num_shape):
+                    shapes.append(shape_container[shape_key])
+            ref_shape = composite_info['ref_shape']
+            alignment_pattern = composite_info['alignment']
+            if 'connection' in composite_info:
+                connection_pattern = composite_info['connection']
+            else:
+                connection_pattern = None
+            composite_obj_container[composite] = shapeComposite(shapes = shapes, alignment_pattern=alignment_pattern, connection_pattern=connection_pattern)
+            if composite_info['transformation']!=None:
+                translate = composite_info['transformation'].pop('translate', (0,0))
+                rotation = composite_info['transformation'].pop('rotate', 0)
+                sf = composite_info['transformation'].pop('scale', 1)
+                composite_obj_container[composite].translate(translate)
+                composite_obj_container[composite].rotate(rotation)
+                composite_obj_container[composite].scale(sf)
+
+        return composite_obj_container
+
+    @classmethod
+    def build_view_from_yaml(cls, yaml_file_path):
+        pass
+
+    @classmethod
     def calculate_boundary_for_combined_shapes(cls, shapes):
         x_min, x_max, y_min, y_max = None, None, None, None
         for i, shape in enumerate(shapes):
@@ -994,6 +1050,7 @@ class queueSynopticView(QWidget):
         self._data = []
         self.composite_shape_container = {}
         self.composite_shapes = []
+        self.legend_shapes = []
         self.last_clicked_shape = None
         self.lines_bw_composite = []
         self.triangle_ends = []
@@ -1001,6 +1058,7 @@ class queueSynopticView(QWidget):
     def set_data(self, data):
         self._data = data
         self.build_shapes()
+        self.build_legend_shapes()
 
     def _calculate_col_num_blocks(self):
         widget_height = self.size().height()
@@ -1008,6 +1066,27 @@ class queueSynopticView(QWidget):
         num_blocks_each_column = int((widget_height - widget_height%(self.padding_vertical + self.block_height))/(self.padding_vertical + self.block_height))
         return num_blocks_each_column
 
+    def build_legend_shapes(self):
+        height = 20
+        width = int(self.padding_hor*0.8)
+        x = int(self.padding_hor*0.1)
+        shape_queued = rectangle(dim=[x, self.padding_vertical, width, height])
+        shape_queued.decoration = self.FILL_QUEUED
+        shape_queued.labels = {'text':['queued'],'anchor':['left']}
+        shape_disabled = rectangle(dim=[x, (self.padding_vertical + self.block_height)*1+self.padding_vertical, width, height])
+        shape_disabled.decoration = self.FILL_DISABLED
+        shape_disabled.labels = {'text':['disabled'],'anchor':['left']}
+        shape_failed = rectangle(dim=[x, (self.padding_vertical+ self.block_height)*2+self.padding_vertical, width, height])
+        shape_failed.decoration = self.FILL_FAILED
+        shape_failed.labels = {'text':['failed'],'anchor':['left']}
+        shape_pause = rectangle(dim=[x, (self.padding_vertical+ self.block_height)*3+self.padding_vertical, width, height])
+        shape_pause.decoration = self.FILL_PAUSED
+        shape_pause.labels = {'text':['pause'],'anchor':['left']}
+        shape_run = rectangle(dim=[x, (self.padding_vertical+ self.block_height)*4+self.padding_vertical, width, height])
+        shape_run.decoration = self.FILL_RUN
+        shape_run.labels = {'text':['run'],'anchor':['left']}
+        self.legend_shapes = [shape_queued, shape_disabled, shape_failed, shape_pause, shape_run]
+        
     def build_shapes(self):
         self.composite_shape_container = {}
         if len(self._data)==0:
@@ -1018,7 +1097,7 @@ class queueSynopticView(QWidget):
             which_col = int((i+1)/size_col)
             shape = rectangle(dim = [self.padding_hor + which_col*(self.block_width + self.padding_hor),self.padding_vertical,self.block_width,self.block_height],rotation_center = None, transformation={'rotate':0, 'translate':(0,0), 'scale':1})
             state = self._data.iloc[i,:]['state']
-            queue_id = self._data.iloc[i,:]['queue_id']
+            unique_id = self._data.iloc[i,:]['unique_id']
             cmd = self._data.iloc[i,:]['scan_command']
             if state == 'queued':
                 shape.decoration = self.FILL_QUEUED
@@ -1040,7 +1119,8 @@ class queueSynopticView(QWidget):
                 shape.decoration = self.FILL_DISABLED
                 shape.decoration_cursor_off = self.FILL_DISABLED
                 shape.decoration_cursor_on = self.FILL_DISABLED
-            shape.labels = {'text':[f'{queue_id}:{cmd}'],'anchor':['left']}
+            shape.labels = {'text':[f'{cmd}'],'anchor':['left']}
+            setattr(shape, 'unique_id', unique_id)
             if which_col not in self.composite_shape_container:
                 self.composite_shape_container[which_col] = []
                 self.composite_shape_container[which_col].append(shape)
@@ -1101,6 +1181,9 @@ class queueSynopticView(QWidget):
         for each_shape in self.triangle_ends:
             qp.resetTransform()
             each_shape.paint(qp)
+        for each_shape in self.legend_shapes:
+            qp.resetTransform()
+            each_shape.paint(qp)
         qp.end()
 
     def mouseMoveEvent(self, event):
@@ -1118,10 +1201,11 @@ class queueSynopticView(QWidget):
         for each in self.composite_shapes:
             for each_shape in each.shapes:
                 if each_shape.check_pos(x, y) and event.button() == Qt.LeftButton:
-                    queue_id = each_shape.labels['text'][0].rsplit(':')[0]
-                    self.parent.update_task_from_server(queue_id)
+                    # queue_id = each_shape.labels['text'][0].rsplit(':')[0]
+                    unique_id = each_shape.unique_id
+                    self.parent.update_task_from_server(unique_id)
                     if self.parent !=None:
-                        self.parent.statusbar.showMessage(f'Clicked job id is: {queue_id}')
+                        self.parent.statusbar.showMessage(f'Clicked job id is: {unique_id}')
                     if self.last_clicked_shape==None:
                         #self.last_clicked_shape.decoration_cursor_off = self.NONCLICKED_SHAPE
                         self.last_clicked_shape = each_shape

@@ -9,6 +9,7 @@ import pandas as pd
 import copy
 import math
 from smart.util.geometry_transformation import rotatePoint
+from smart.util.util import get_stage_coords_from_tif_file_from_p06_desy
 from PyQt5.QtWidgets import  QAbstractItemView
 from PyQt5 import QtGui, QtCore, QtWidgets, uic
 from PyQt5.QtCore import pyqtSignal as Signal
@@ -167,6 +168,30 @@ class MdiFieldImreg_Wrapper(object):
         getattr(self, table_view_widget_name).setSelectionBehavior(QAbstractItemView.SelectRows)
         getattr(self, table_view_widget_name).horizontalHeader().setStretchLastSection(True)        
 
+    def get_stage_info_P06(self):
+        attrDict = self.reference_image.loc
+        tiff_path = attrDict['Path']
+        result = get_stage_coords_from_tif_file_from_p06_desy(tiff_path)
+        origin, pix_size, unit = result['origin'], result['pix_size'], result['unit']
+        pix_num = (self.reference_image.width, self.reference_image.height)
+        if unit == 'microns':
+            ref_img_width = pix_size[0]*pix_num[0]/1000
+            ref_img_height = pix_size[1]*pix_num[1]/1000
+            origin = list(np.array(origin)/1000)
+        elif unit == 'mm':
+            ref_img_width = pix_size[0]*pix_num[0]
+            ref_img_height = pix_size[1]*pix_num[1]
+        else:
+            raise TypeError('Unsupported unit')
+        return ref_img_width, ref_img_height, origin
+
+    def fill_stage_info(self, standard = 'P06'):
+        if standard == 'P06':
+            hor_width, ver_width, origin = self.get_stage_info_P06()
+            self.lineEdit_beampos_motors.setText(str(list(origin)))
+            self.lineEdit_motor_range_along_width.setText(str(hor_width))
+            self.lineEdit_motor_range_along_height.setText(str(ver_width))
+
     def cal_scaling_factors(self):
         frame_vp = [self.reference_image.width, self.reference_image.height]
         frame_stage = [self.lineEdit_motor_range_along_width.text(), self.lineEdit_motor_range_along_height.text()]
@@ -248,8 +273,6 @@ class MdiFieldImreg_Wrapper(object):
 
             self.field.rectangleSelected_sig.emit(x0, y0, x1, y1)
 
-
-
     def update_beam_pos_vp(self):
         if not hasattr(self, 'reference_image'):
             self.statusbar.showMessage('You should pick the reference image first!')
@@ -295,6 +318,7 @@ class MdiFieldImreg_Wrapper(object):
         self.dft_reg_instance.sig_dft_finished.connect(self.dft_imreg2)
         self.comboBox_ref_frame_pos.currentIndexChanged.connect(self.update_beam_pos_vp)
         self.pushButton_cal_sf.clicked.connect(self.cal_scaling_factors)
+        self.pushButton_fill_stage_info.clicked.connect(self.fill_stage_info)
         self.pushButton_add_row.clicked.connect(lambda:self.generate_scan_macro(mot_name_along_width='samy', mot_name_along_height='samz'))
         self.pushButton_remove_row.clicked.connect(self.drop_selected_row)
         self.tableView_scan_list.clicked.connect(self.update_dft_roi_on_click_table_row)

@@ -115,13 +115,13 @@ class queueControl(object):
                           'session': self.lineEdit_session.setText, 
                           'state': self.lineEdit_state.setText, 
                           'scan_info': self.lineEdit_scan_info.setText,
-                          'queue_id': self.lineEdit_queue_id.setText}
+                          'unique_id': self.lineEdit_job_id.setText}
         for each in task_key_widget_setAPI_map.values():
             each('')
 
     def _format_queue(self):
         available_queues = self.get_available_queues()
-        queue_info_dict = {'session':[], 'queue':[],'scan_command':[], 'scan_id':[], 'queue_id':[],'state':[]}
+        queue_info_dict = {'session':[], 'queue':[],'scan_command':[], 'scan_id':[], 'unique_id':[],'state':[]}
         if available_queues==None:
             return pd.DataFrame(queue_info_dict)
         else:
@@ -132,7 +132,7 @@ class queueControl(object):
                     for key in queue_info_dict:
                         if key == 'scan_command':
                             task[key] = ' '.join(task[key])
-                        elif key == 'queue_id':
+                        elif key == 'unique_id':
                             task[key] = int(task[key])
                         queue_info_dict[key].append(task[key])
         return pd.DataFrame.from_dict(queue_info_dict)
@@ -152,14 +152,14 @@ class queueControl(object):
         tasks = []
         for each in msg:
             each.update({'queue':queue_name})
-            tasks.append(str(each['queue_id']))
+            tasks.append(str(each['unique_id']))
         self.queue_info = msg
         self.comboBox_queue_task.clear()
         self.comboBox_queue_task.addItems(tasks)
         self.textEdit_queue_info_output.setPlainText('\n\n'.join([str(each) for each in msg]))
 
     def remove_task(self, task_id):
-        task_id = self.lineEdit_queue_id.text()
+        task_id = self.lineEdit_job_id.text()
         if task_id=='':
             return
         try:
@@ -219,21 +219,28 @@ class queueControl(object):
 
 
     @Slot(str)
-    def update_task_from_server(self, queue_id):
+    def update_task_from_server(self, unique_id):
         msg = None
         if self.queue_info == None:
             return
         for each in self.queue_info:
-            if each['queue_id']==int(queue_id):
+            if each['unique_id']==int(unique_id):
                 msg = each
                 break
+        queue_id_index = self.pandas_model_queue._data[self.pandas_model_queue._data['unique_id']==int(unique_id)].index.to_list()
+        if len(queue_id_index)>0:
+            queue_id = queue_id_index[0]
+            msg.update({'queue_id': queue_id})
+        else:
+            msg.update({'queue_id': 'ERROR'})
         task_key_widget_setAPI_map = {'execution_id':self.lineEdit_exe_id.setText,
                           'queue':self.lineEdit_queue_name.setText,
                           'scan_command': self.lineEdit_cmd.setText,
                           'session': self.lineEdit_session.setText, 
                           'state': self.lineEdit_state.setText, 
                           'scan_info': self.lineEdit_scan_info.setText,
-                          'queue_id': self.lineEdit_queue_id.setText}
+                          'queue_id': self.lineEdit_queue_id.setText,
+                          'unique_id': self.lineEdit_job_id.setText}
         for key, value in msg.items():
             if key=='scan_command':
                 value = ' '.join(value)
@@ -244,22 +251,23 @@ class queueControl(object):
     def update_task_upon_click_tableview(self, modelindex):
         row = modelindex.row()
         queue = self.pandas_model_queue._data.iloc[row,:]['queue']
-        queue_id = self.pandas_model_queue._data.iloc[row,:]['queue_id']
+        queue_id = self.pandas_model_queue._data.iloc[row,:]['unique_id']
         queued_tasks = self.queue_comm.send_receive_message(["get", queue])
         task_info = None
         for each_task in queued_tasks:
-            if each_task['queue_id']==queue_id:
+            if each_task['unique_id']==queue_id:
                 task_info = each_task
                 break
         if task_info!=None:
-            task_info.update({'queue': queue})
+            task_info.update({'queue': queue, 'queue_id': str(row)})
             task_key_widget_setAPI_map = {'execution_id':self.lineEdit_exe_id.setText,
                             'queue':self.lineEdit_queue_name.setText,
                             'scan_command': self.lineEdit_cmd.setText,
                             'session': self.lineEdit_session.setText, 
                             'state': self.lineEdit_state.setText, 
                             'scan_info': self.lineEdit_scan_info.setText,
-                            'queue_id': self.lineEdit_queue_id.setText}
+                            'queue_id': self.lineEdit_queue_id.setText,
+                            'unique_id': self.lineEdit_job_id.setText}
             for key, value in task_info.items():
                 if key=='scan_command':
                     value = ' '.join(value)
@@ -299,27 +307,28 @@ class queueControl(object):
             error(f'Fail to add one task due to {str(err)}')
 
     def update_task(self):
-        task_key_widget_map = {'execution_id':self.lineEdit_exe_id.text(),
+        task_key_widget_map = {
                           'queue':self.lineEdit_queue_name.text(),
                           'scan_command': self.lineEdit_cmd.text(),
                           'session': self.lineEdit_session.text(), 
                           'state': self.lineEdit_state.text(), 
                           'scan_info': self.lineEdit_scan_info.text(),
-                          'queue_id': self.lineEdit_queue_id.text()}
+                          'queue_id': self.lineEdit_queue_id.text(),
+                          'unique_id': self.lineEdit_job_id.text()}
         task_key_widget_map_copy = dict(task_key_widget_map.items())
         for each, value in task_key_widget_map.items():
             if value=='':
                 task_key_widget_map_copy.pop(each)
-            if each=='execution_id':
+            if each=='queue_id':
                 try:
-                    task_key_widget_map_copy['execution_id'] = int(task_key_widget_map_copy['execution_id'])
+                    task_key_widget_map_copy['queue_id'] = int(task_key_widget_map_copy['queue_id'])
                 except:
                     task_key_widget_map_copy.pop(each, None)
-        queue_id = int(task_key_widget_map_copy.pop('queue_id'))
+        unique_id = int(task_key_widget_map_copy.pop('unique_id'))
         task_key_widget_map_copy['scan_command'] = task_key_widget_map_copy['scan_command'].rsplit(' ')
         if confirmation_dialogue('Are you sure to update this task?'):
             try:
-                self.queue_comm.send_receive_message(['update_entry', [queue_id, task_key_widget_map_copy]])
+                self.queue_comm.send_receive_message(['update_entry', [unique_id, task_key_widget_map_copy]])
                 self.statusUpdate('The task is updated!')
             except Exception as err:
                 error_pop_up(str(err), 'Error')
@@ -328,7 +337,7 @@ class queueControl(object):
     def change_state_of_a_task(self, action = 'disabled'):
         assert action in ['enabled','disabled','paused'], 'wrong action, should be in [enabled,disabled,paused]'
         try:
-            task_id = int(self.lineEdit_queue_id.text())
+            task_id = int(self.lineEdit_job_id.text())
             self.queue_comm.send_receive_message(['update_entry', [task_id, {'state':action}]])
             self.display_info_for_a_queue()
             self.update_task_from_server(str(task_id))

@@ -1,37 +1,45 @@
 softwareVersion: 0.1.0
-paintEngine: qt.QPainter
-shapes:
-  rect1:
-    api_class: rectangle
-    paint_api: drawRect
-    paint_pars:
-      x: 0
-      y: 0
-      width: 10
-      height: 20
-    paint_decoration:
-      pen_decoration:
-        color: 255, 0, 0
-        lw: 3
-        ls: Qt.SolidLine
-        transparancy: 1
-      brush_decoration:
-        color: 0, 255, 0
-        fill_pattern: Qt.SolidPattern
-        transparancy: 1
-    anchors:
-      number: 4
-connections:
-  con1:
-    type: left-right-cen
-    components: 
-    - rect1.anchor1
-    - circ1.anchor2
-    gap: 20
-    connection_shape: line
-    connection_way: CONN.ELONGATION
-    offset:
-      shape: rect1
-      value: [20, 30]
+basic_shapes:
+  retangle:
+    type1:
+      dim: [0,0,40,20]
+      anchor_pars: None
+    type2:
+      dim: [0, 0, 20, 10]
+      anchor_pars: None
+  circle:
+    big:
+      dim: [0, 0, 40]
+      anchor_pars: None
+    small:
+      dim: [0, 0, 20]
+      anchor_pars: None
+composite_shapes:
+  composite1:
+    shapes: ['retangle.type1*1', 'retangle.type2*4']
+    ref_shape: None
+    alignment:
+      shapes: [[0,1],[0,2],[0,3],[0,4]]
+      anchors: [['top','bottom'],['left','right'],['right','left'],['bottom','top']]
+      gaps: [0,0,0,0]
+      ref_anchors: [[None, None]]
+    transformation: None
+  composite2:
+    shapes: ['circle.big*1', 'retangle.type2*5']
+    ref_shape: None
+    alignment:
+      shapes: [[0,1],[0,2],[0,3],[0,4], [0,5]]
+      anchors: [['top','bottom'],['left','right'],['right','left'],['bottom','top'],['center','center']]
+      gaps: [0,0,0,0,0]
+      ref_anchors: [[None, None]] 
+    transformation: None
+viewers:
+  viewer1:
+    composites: ['composite1', 'composite2']
+    ref_composite: None
+    alignment:
+      composites: [[0,1]]
+      anchors: [['r','l']]
+      gaps: [50]
 
 
