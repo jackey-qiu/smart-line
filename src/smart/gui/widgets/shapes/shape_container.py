@@ -6,9 +6,11 @@ from PyQt5.QtCore import QTimer
 import numpy as np
 import copy
 import math
+from functools import partial
 import time
 import yaml
 from dataclasses import dataclass
+from .callback_container import *
 from smart.util.geometry_transformation import rotate_multiple_points, angle_between
 
 DECORATION_UPON_CURSOR_ON = {'pen': {'color': (255, 255, 0), 'width': 3, 'ls': 'DotLine'}, 'brush': {'color': (0, 0, 255)}} 
@@ -32,6 +34,8 @@ class baseShape(object):
         #super().__init__(parent = parent)
         self._dim_pars = dim
         self._dim_pars_origin = dim
+        self.ref_geometry = transformation['translate']
+
         # self.cen = self.compute_center_from_dim()
         self._rotcenter = rotation_center
         self._decoration = copy.deepcopy(decoration_cursor_off)
@@ -42,6 +46,9 @@ class baseShape(object):
         self._text_decoration = copy.deepcopy(text_decoration)
         self._labels = copy.deepcopy(lables)
         self.show = True
+
+    def reset_ref_geometry(self):
+        self.ref_geometry = copy.deepcopy(self.transformation['translate'])
 
     def show_shape(self):
         self.show = True
@@ -169,6 +176,8 @@ class baseShape(object):
     def compute_anchor_pos_after_transformation(self, key, return_pos_only = False, ref_anchor = None):
         #calculate anchor pos for key after transformation
         #ref_anchor in [None, 'left', 'right', 'top', 'bottom']
+        if ref_anchor == 'None':
+            ref_anchor = None
         ref_anchor_offset = {'left': np.array([-1, 0]),
                             'right': np.array([1, 0]),
                             'top': np.array([0, -1]),
@@ -254,10 +263,10 @@ class baseShape(object):
         return cen_, (anchor_ - cen_)/or_len
         
     def translate(self, v):
-        self.transformation['translate'] = v
+        self.transformation = {'translate': v}
 
     def rotate(self, angle):
-        self.transformation['rotate'] = angle
+        self.transformation = {'rotate': angle}
 
     def scale(self, sf):
         raise NotImplementedError
@@ -273,7 +282,7 @@ class rectangle(baseShape):
 
     def scale(self, sf):
         self.dim_pars = (np.array(self.dim_pars)*[1,1,sf/self.transformation['scale'],sf/self.transformation['scale']]).astype(int)
-        self.transformation['scale'] = sf
+        self.transformation = {'scale': sf}
 
     def draw_shape(self, qp):
         qp = self.apply_transform(qp)
@@ -678,21 +687,40 @@ class shapeComposite(TaurusBaseComponent):
 
     modelKeys = [TaurusBaseComponent.MLIST]
 
-    def __init__(self, shapes, anchor_args=None, alignment_pattern=None, connection_pattern = None, ref_shape_index = None, model_index_list = []):
+    def __init__(self, shapes, anchor_args=None, alignment_pattern=None, connection_pattern = None, ref_shape_index = None, model_index_list = [], callbacks_upon_model_change = [], callbacks_upon_mouseclick = []):
         #connection_patter = {'shapes':[[0,1],[1,2]], 'anchors':[['left','top'],['right', 'bottom']]}
         #alignment_patter = {'shapes':[[0,1],[1,2]], 'anchors':[['left','top'],['right', 'bottom']]}
         TaurusBaseComponent.__init__(self)
         self._shapes = copy.deepcopy(shapes)
         self._model_shape_index_list = model_index_list
-        self._callbacks_upon_model_change = []
-        self._callbacks_upon_left_mouseclick = []
+        self._callbacks_upon_model_change = callbacks_upon_model_change
+        self._callbacks_upon_left_mouseclick = callbacks_upon_mouseclick
         self.ref_shape = self.shapes[ref_shape_index] if ref_shape_index!=None else self.shapes[0]
         self.anchor_args = anchor_args
         self.make_anchors()
         self.alignment = alignment_pattern
         self.connection = connection_pattern
-        self.lines = []
+        self.lines = None
         self.build_composite()
+        self.callbacks = {}
+        self._models = {}
+
+    def unpack_callbacks_and_models(self):
+        if len(self._models) == 0:
+            return
+        models = list(self._models.values())
+        self.setModel(models)
+        inx_shape = [int(each) for each in self._models.keys()]
+        self.model_shape_index_list = inx_shape
+        self.callbacks_upon_model_change = [self._make_callback(each) for each in self.callbacks['callbacks_upon_model_change'].values()]
+        self.callbacks_upon_left_mouseclick = [self._make_callback(each) for each in self.callbacks['callbacks_upon_leftmouse_click'].values()]
+
+    def _make_callback(self, callback_info_list):
+        if callback_info_list==None or callback_info_list=='None':
+            return lambda:None
+        cb_str = callback_info_list[0]
+        cb_args = callback_info_list[1:]
+        return partial(eval(cb_str), **{cb_args[i]:cb_args[i+1] for i in range(0, len(cb_args),2)})
 
     @property
     def shapes(self):
@@ -709,6 +737,24 @@ class shapeComposite(TaurusBaseComponent):
         for each in model_shape_index_list:
             assert type(each)==int and each<shapes_num, 'index must be integer and smaller than the num of total shape in the composite obj'
         self._model_shape_index_list = model_shape_index_list
+
+    @property
+    def callbacks_upon_model_change(self):
+        return self._callbacks_upon_model_change
+    
+    @callbacks_upon_model_change.setter
+    def callbacks_upon_model_change(self, cbs):
+        assert len(cbs) == len(self.model_shape_index_list), "Length of callbacks must equal to that of model shape index"
+        self._callbacks_upon_model_change = {ix: cb for ix, cb in zip(self.model_shape_index_list, cbs)}
+
+    @property
+    def callbacks_upon_left_mouseclick(self):
+        return self._callbacks_upon_left_mouseclick()
+    
+    @callbacks_upon_left_mouseclick.setter
+    def callbacks_upon_left_mouseclick(self, cbs):
+        assert len(cbs) == len(self.model_shape_index_list), "Length of callbacks must equal to that of model shape index"
+        self._callbacks_upon_left_mouseclick = {ix: cb for ix, cb in zip(self.model_shape_index_list, cbs)}
 
     def make_anchors(self):
         if self.anchor_args==None:
@@ -731,6 +777,8 @@ class shapeComposite(TaurusBaseComponent):
         for shapes_, anchors_, gap_, ref_anchors_ in zip(shape_index, anchors, gaps, ref_anchors):
             ref_shape, target_shape, *_ = [self.shapes[each] for each in shapes_]
             buildTools.align_two_shapes(ref_shape, target_shape, anchors_, gap_, ref_anchors_)
+        for shape in self.shapes:
+           shape.reset_ref_geometry()
 
     def make_line_connection(self):
         if self.lines == None:
@@ -754,30 +802,25 @@ class shapeComposite(TaurusBaseComponent):
         self.build_composite()
 
     def scale(self, sf):
-        for shape in self.shapes:
-            shape.reset()
+        for i, shape in enumerate(self.shapes):
+            if i!=0:
+                shape.reset()
             shape.scale(sf)
         #update anchors first
 
         self.make_anchors()
         self.build_composite()
-    
-    def change_upon_model_change(self, callback_pars):
-        #update _callbacks_upon_model_change
-        raise NotImplementedError
 
-    def change_upon_left_mouseclick(self, callback_pars = {}):
-        #update _callbacks_upon_left_mouseclick
-        #by default doing nothing
-        if len(callback_pars) == 0:
-            self._callbacks_upon_left_mouseclick = [lambda:None for each in self.model_shape_index_list]
-    
+    def uponLeftMouseClicked(self, shape_index):
+        self.callbacks_upon_left_mouseclick[shape_index]()
+
     def handleEvent(self, evt_src, evt_type, evt_value):
         """reimplemented from TaurusBaseComponent"""
         try:
             for i in range(len(self.model_shape_index_list)):
                 if evt_src is self.getModelObj(key=(TaurusBaseComponent.MLIST, i)):
-                    self._callbacks_upon_model_change[i](float(evt_value.rvalue.m))
+                    self._callbacks_upon_model_change[self.model_shape_index_list[i]](self.shapes[self.model_shape_index_list[i]], evt_value)
+                    self.parent.update()
                     break
         except Exception as e:
             self.info("Skipping event. Reason: %s", e)
@@ -792,7 +835,7 @@ class buildTools(object):
         basic_shapes = config['basic_shapes']
         for shape, shape_info in basic_shapes.items():
             for shape_type, shape_type_info in shape_info.items():
-                anchor_pars = shape_type_info.pop('anchor_pars', None)
+                anchor_pars = eval(shape_type_info.pop('anchor_pars', None))
                 shape_obj = eval(shape)(**shape_type_info)
                 shape_container[f'{shape}.{shape_type}'] = shape_obj
                 if anchor_pars!=None:
@@ -809,6 +852,11 @@ class buildTools(object):
         composite_container = config['composite_shapes']
         composite_obj_container = {}
         for composite, composite_info in composite_container.items():
+            _models = composite_info['models']
+            callbacks_upon_model_change = composite_info['callbacks_upon_model_change']
+            callbacks_upon_leftmouse_click = composite_info['callbacks_upon_leftmouse_click']
+            callbacks = {'callbacks_upon_model_change': callbacks_upon_model_change,
+                         'callbacks_upon_leftmouse_click': callbacks_upon_leftmouse_click}
             shapes_tag = composite_info['shapes']
             shapes = [] 
             for each in shapes_tag:
@@ -817,7 +865,7 @@ class buildTools(object):
                 shape_key, num_shape = each.rsplit('*')
                 num_shape = int(num_shape)
                 for i in range(num_shape):
-                    shapes.append(shape_container[shape_key])
+                    shapes.append(copy.deepcopy(shape_container[shape_key]))
             ref_shape = composite_info['ref_shape']
             alignment_pattern = composite_info['alignment']
             if 'connection' in composite_info:
@@ -825,13 +873,16 @@ class buildTools(object):
             else:
                 connection_pattern = None
             composite_obj_container[composite] = shapeComposite(shapes = shapes, alignment_pattern=alignment_pattern, connection_pattern=connection_pattern)
-            if composite_info['transformation']!=None:
+            composite_obj_container[composite].callbacks = callbacks
+            composite_obj_container[composite]._models = _models
+            if composite_info['transformation']!='None':
                 translate = composite_info['transformation'].pop('translate', (0,0))
                 rotation = composite_info['transformation'].pop('rotate', 0)
                 sf = composite_info['transformation'].pop('scale', 1)
                 composite_obj_container[composite].translate(translate)
                 composite_obj_container[composite].rotate(rotation)
                 composite_obj_container[composite].scale(sf)
+            composite_obj_container[composite].unpack_callbacks_and_models()
 
         return composite_obj_container
 
@@ -1031,192 +1082,8 @@ class buildTools(object):
                     line_nodes = [anchor_pos[0], anchor_pos_offset[0], first_anchor_pos_after_extend, cross_pt, second_anchor_pos_after_extend, anchor_pos_offset[1], anchor_pos[1]]
         return np.array(line_nodes).astype(int)
 
-class queueSynopticView(QWidget):
-    FILL_QUEUED = {'brush': {'color': (0, 0, 255)}}
-    FILL_RUN = {'brush': {'color': (50, 255, 0)}}
-    FILL_DISABLED = {'brush': {'color': (50, 50, 50)}}
-    FILL_FAILED = {'brush': {'color': (255, 50, 0)}}
-    FILL_PAUSED = {'brush': {'color': (255, 0, 255)}}
-    CLICKED_SHAPE = {'pen': {'color': (255, 255, 0), 'width': 3, 'ls': 'SolidLine'}}
-    NONCLICKED_SHAPE = {'pen': {'color': (255, 0, 0), 'width': 3, 'ls': 'SolidLine'}}
-
-    def __init__(self, parent = None, padding_vertical = 20, padding_hor = 60, block_width=180, block_height =20) -> None:
-        super().__init__(parent = parent)
-        self.parent = parent
-        self.padding_vertical = padding_vertical
-        self.padding_hor = padding_hor
-        self.block_width = block_width
-        self.block_height = block_height
-        self._data = []
-        self.composite_shape_container = {}
-        self.composite_shapes = []
-        self.legend_shapes = []
-        self.last_clicked_shape = None
-        self.lines_bw_composite = []
-        self.triangle_ends = []
-
-    def set_data(self, data):
-        self._data = data
-        self.build_shapes()
-        self.build_legend_shapes()
-
-    def _calculate_col_num_blocks(self):
-        widget_height = self.size().height()
-        widget_width = self.size().width()
-        num_blocks_each_column = int((widget_height - widget_height%(self.padding_vertical + self.block_height))/(self.padding_vertical + self.block_height))
-        return num_blocks_each_column
-
-    def build_legend_shapes(self):
-        height = 20
-        width = int(self.padding_hor*0.8)
-        x = int(self.padding_hor*0.1)
-        shape_queued = rectangle(dim=[x, self.padding_vertical, width, height])
-        shape_queued.decoration = self.FILL_QUEUED
-        shape_queued.labels = {'text':['queued'],'anchor':['left']}
-        shape_disabled = rectangle(dim=[x, (self.padding_vertical + self.block_height)*1+self.padding_vertical, width, height])
-        shape_disabled.decoration = self.FILL_DISABLED
-        shape_disabled.labels = {'text':['disabled'],'anchor':['left']}
-        shape_failed = rectangle(dim=[x, (self.padding_vertical+ self.block_height)*2+self.padding_vertical, width, height])
-        shape_failed.decoration = self.FILL_FAILED
-        shape_failed.labels = {'text':['failed'],'anchor':['left']}
-        shape_pause = rectangle(dim=[x, (self.padding_vertical+ self.block_height)*3+self.padding_vertical, width, height])
-        shape_pause.decoration = self.FILL_PAUSED
-        shape_pause.labels = {'text':['pause'],'anchor':['left']}
-        shape_run = rectangle(dim=[x, (self.padding_vertical+ self.block_height)*4+self.padding_vertical, width, height])
-        shape_run.decoration = self.FILL_RUN
-        shape_run.labels = {'text':['run'],'anchor':['left']}
-        self.legend_shapes = [shape_queued, shape_disabled, shape_failed, shape_pause, shape_run]
-        
-    def build_shapes(self):
-        self.composite_shape_container = {}
-        if len(self._data)==0:
-            self.shapes = []
-            return
-        size_col = self._calculate_col_num_blocks()
-        for i in range(len(self._data)):
-            which_col = int((i+1)/size_col)
-            shape = rectangle(dim = [self.padding_hor + which_col*(self.block_width + self.padding_hor),self.padding_vertical,self.block_width,self.block_height],rotation_center = None, transformation={'rotate':0, 'translate':(0,0), 'scale':1})
-            state = self._data.iloc[i,:]['state']
-            unique_id = self._data.iloc[i,:]['unique_id']
-            cmd = self._data.iloc[i,:]['scan_command']
-            if state == 'queued':
-                shape.decoration = self.FILL_QUEUED
-                shape.decoration_cursor_off = self.FILL_QUEUED
-                shape.decoration_cursor_on = self.FILL_QUEUED
-            elif state == 'running':
-                shape.decoration = self.FILL_RUN
-                shape.decoration_cursor_off = self.FILL_RUN
-                shape.decoration_cursor_on = self.FILL_RUN
-            elif state == 'failed':
-                shape.decoration = self.FILL_FAILED
-                shape.decoration_cursor_off = self.FILL_FAILED
-                shape.decoration_cursor_on = self.FILL_FAILED
-            elif state == 'paused':
-                shape.decoration = self.FILL_PAUSED
-                shape.decoration_cursor_off = self.FILL_PAUSED
-                shape.decoration_cursor_on = self.FILL_PAUSED
-            elif state == 'disabled':
-                shape.decoration = self.FILL_DISABLED
-                shape.decoration_cursor_off = self.FILL_DISABLED
-                shape.decoration_cursor_on = self.FILL_DISABLED
-            shape.labels = {'text':[f'{cmd}'],'anchor':['left']}
-            setattr(shape, 'unique_id', unique_id)
-            if which_col not in self.composite_shape_container:
-                self.composite_shape_container[which_col] = []
-                self.composite_shape_container[which_col].append(shape)
-            else:
-                self.composite_shape_container[which_col].append(shape)
-        self.build_composite_object()
-        self.update()
-
-    def build_composite_object(self):
-        self.composite_shapes = []
-        self.lines_bw_composite = []
-        self.triangle_ends = []
-        for each, shapes in self.composite_shape_container.items():
-            composite = shapeComposite(shapes = shapes, \
-                                             anchor_args = [4 for i in range(len(shapes))], \
-                                             alignment_pattern= {'shapes':[[i, i+1] for i in range(len(shapes)-1)], \
-                                                                 'anchors':[['bottom', 'top'] for i in range(len(shapes)-1)],\
-                                                                 'gaps': [self.padding_vertical/self.block_height for i in range(len(shapes)-1)],\
-                                                                 'ref_anchors': [['bottom', 'top'] for i in range(len(shapes)-1)],\
-                                                                },
-                                             connection_pattern= {'shapes':[[i, i+1] for i in range(len(shapes)-1)], \
-                                                                 'anchors':[['bottom', 'top'] for i in range(len(shapes)-1)], \
-                                                                 'connect_types':[True for i in range(len(shapes)-1)] })
-            self.composite_shapes.append(composite)
-        #make line connection between two adjacent composit shapes
-        for i in range(len(self.composite_shapes)-1):
-            shapes = [self.composite_shapes[i].shapes[-1], self.composite_shapes[i+1].shapes[0]]
-            anchors = ['right', 'left']
-            rot_cen = [shapes[-1].dim_pars[0], shapes[-1].dim_pars[1]+int(shapes[-1].dim_pars[-1]/2)]
-            self.triangle_ends.append(isocelesTriangle(dim = rot_cen + [10, 60]))
-            self.triangle_ends[-1].transformation = {'rotate':90}
-            self.triangle_ends[-1].rot_center = rot_cen
-            self.triangle_ends[-1].decoration = {'pen': {'color': (0, 255, 0), 'width': 2, 'ls': 'SolidLine'}, 'brush': {'color': (0, 255, 0)}} 
-            self.lines_bw_composite.append(buildTools.make_line_connection_btw_two_anchors(shapes, anchors, short_head_line_len = int(self.padding_hor/2), direct_connection = True))
-
-    def set_parent(self, parent):
-        self.parent = parent
-
-    def paintEvent(self, a0: QPaintEvent | None) -> None:
-        qp = QPainter()
-        qp.begin(self)
-        # for each in self.shapes:            
-        for each in self.composite_shapes:
-            for line in each.lines:
-                qp.setPen(QPen(Qt.green, 2, Qt.SolidLine))        
-                for i in range(len(line)-1):
-                    pts = list(line[i]) + list(line[i+1])
-                    qp.drawLine(*pts)  
-        for line in self.lines_bw_composite:
-            qp.setPen(QPen(Qt.green, 2, Qt.SolidLine))        
-            for i in range(len(line)-1):
-                pts = list(line[i]) + list(line[i+1])
-                qp.drawLine(*pts)              
-        for each in self.composite_shapes:
-            for each_shape in each.shapes:
-                qp.resetTransform()
-                each_shape.paint(qp)
-        for each_shape in self.triangle_ends:
-            qp.resetTransform()
-            each_shape.paint(qp)
-        for each_shape in self.legend_shapes:
-            qp.resetTransform()
-            each_shape.paint(qp)
-        qp.end()
-
-    def mouseMoveEvent(self, event):
-        self.last_x, self.last_y = event.x(), event.y()
-        # if self.parent !=None:
-            # self.parent.statusbar.showMessage('Mouse coords: ( %d : %d )' % (event.x(), event.y()))
-        for each in self.composite_shapes:
-            for each_shape in each.shapes:
-                each_shape.cursor_pos_checker(event.x(), event.y())
-        self.update()
-
-    def mousePressEvent(self, event):
-        x, y = event.x(), event.y()
-        shapes_under_cursor = []
-        for each in self.composite_shapes:
-            for each_shape in each.shapes:
-                if each_shape.check_pos(x, y) and event.button() == Qt.LeftButton:
-                    # queue_id = each_shape.labels['text'][0].rsplit(':')[0]
-                    unique_id = each_shape.unique_id
-                    self.parent.update_task_from_server(unique_id)
-                    if self.parent !=None:
-                        self.parent.statusbar.showMessage(f'Clicked job id is: {unique_id}')
-                    if self.last_clicked_shape==None:
-                        #self.last_clicked_shape.decoration_cursor_off = self.NONCLICKED_SHAPE
-                        self.last_clicked_shape = each_shape
-                        self.last_clicked_shape.decoration_cursor_off = self.CLICKED_SHAPE
-                    else:
-                        self.last_clicked_shape.decoration_cursor_off = self.NONCLICKED_SHAPE
-                        self.last_clicked_shape = each_shape
-                        self.last_clicked_shape.decoration_cursor_off = self.CLICKED_SHAPE
-                    return
-
-class shapeContainer(QWidget):
+from taurus.qt.qtgui.container import TaurusWidget
+class shapeContainer(TaurusWidget):
     
     def __init__(self, parent = None) -> None:
         super().__init__(parent = parent)
