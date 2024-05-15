@@ -4,6 +4,7 @@ from taurus import Device
 from pyqtgraph import GraphicsLayoutWidget
 import pyqtgraph as pg
 from PyQt5 import QtCore
+from ...util.util import findMainWindow
 
 class motorMeter(GraphicsLayoutWidget, TaurusBaseComponent):
     modelKeys = [TaurusBaseComponent.MLIST]
@@ -11,14 +12,18 @@ class motorMeter(GraphicsLayoutWidget, TaurusBaseComponent):
     def __init__(self, parent=None):
         GraphicsLayoutWidget.__init__(self)
         TaurusBaseComponent.__init__(self)
-        self.parent = parent
+        #self.parent = parent
+        self.set_parent()
         self.motor_name_list = []
         self.plot_objs= []
         self.motor_pos_marker_list = []
         self.text_label_list = []
 
-    def set_parent(self, parent):
-        self.parent = parent
+    #def set_parent(self, parent):
+    #    self.parent = parent
+
+    def set_parent(self):
+        self.parent = findMainWindow()
 
     def update_motor_viewer(self):
         motor_keys = [each for each in self.parent.settings_object.allKeys() if each.startswith('Motors')]

@@ -15,7 +15,7 @@ __all__ = ['callback_model_change_with_decoration',
            'callback_leftmouse_click_with_decoration',
            'callback_leftmouse_click_with_transformation']
 
-def _apply_translation_steps(shape, value_model, mv_dir = 'x'):
+def _apply_translation_steps(shape, value_model, mv_dir = 'x', sign = '+'):
     if mv_dir not in ['x', 'y']:
         return
     x, y = shape.ref_geometry
@@ -32,7 +32,10 @@ def _apply_translation_steps(shape, value_model, mv_dir = 'x'):
         lms_widget = lms_widget_y
     pxs_per_step = (lms_widget[1]-lms_widget[0])/(lms_model[1]-lms_model[0])
     model_value = _get_model_value(value_model)
-    new_pxs_widget = int((model_value - lms_model[0])*pxs_per_step + lms_widget[0])
+    if sign == '+':
+        new_pxs_widget = int((model_value - lms_model[0])*pxs_per_step + lms_widget[0])
+    else:
+        new_pxs_widget = int(lms_widget[1] - (model_value - lms_model[0])*pxs_per_step)
     if mv_dir=='x':
         offset = {'translate': (int(new_pxs_widget), shape.transformation['translate'][1])}
     else:
@@ -63,11 +66,12 @@ def callback_model_change_with_decoration(shape, value_model):
     shape.decoration_cursor_on = new_decoration
     shape.decoration_cursor_off = new_decoration
 
-def callback_model_change_with_transformation(shape, value_model, mv_dir):
-    _apply_translation_steps(shape, value_model,mv_dir)
+def callback_model_change_with_transformation(shape, value_model, mv_dir, sign = '+'):
+    _apply_translation_steps(shape, value_model,mv_dir, sign)
+    callback_model_change_with_decoration(shape, value_model)
 
-def callback_model_change_with_text_label(shape, value_model):
-    shape.labels = {'text':[f'{value_model.label}:{round(_get_model_value(value_model),3)}'],'anchor':['left']}
+def callback_model_change_with_text_label(shape, value_model, anchor='left'):
+    shape.labels = {'text':[f'{value_model.label}:{round(_get_model_value(value_model),3)}'],'anchor':[anchor]}
 
 def callback_leftmouse_click_with_decoration(shape, value_model):
     pass

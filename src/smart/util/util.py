@@ -1,5 +1,15 @@
 import numpy as np
 import weakref
+import typing
+from PyQt5.QtWidgets import QMainWindow, QApplication
+
+def findMainWindow() -> typing.Union[QMainWindow, None]:
+    # Global function to find the (open) QMainWindow in application
+    app = QApplication.instance()
+    for widget in app.topLevelWidgets():
+        if isinstance(widget, QMainWindow):
+            return widget
+    return None
 
 def get_stage_coords_from_tif_file_from_p06_desy(file_path):
     #func to extract the motor stage info from the generated tiff file at P06 beamline, DESY

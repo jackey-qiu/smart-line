@@ -2,6 +2,7 @@ from PyQt5.QtGui import QPaintEvent, QPainter, QPen
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QWidget
 from ...widgets.shapes.shape_container import rectangle, shapeComposite, isocelesTriangle, buildTools
+from ....util.util import findMainWindow
 
 class queueSynopticView(QWidget):
     FILL_QUEUED = {'brush': {'color': (0, 0, 255)}}
@@ -14,7 +15,7 @@ class queueSynopticView(QWidget):
 
     def __init__(self, parent = None, padding_vertical = 20, padding_hor = 60, block_width=180, block_height =20) -> None:
         super().__init__(parent = parent)
-        self.parent = parent
+        self.set_parent()
         self.padding_vertical = padding_vertical
         self.padding_hor = padding_hor
         self.block_width = block_width
@@ -128,8 +129,11 @@ class queueSynopticView(QWidget):
             self.triangle_ends[-1].decoration = {'pen': {'color': (0, 255, 0), 'width': 2, 'ls': 'SolidLine'}, 'brush': {'color': (0, 255, 0)}} 
             self.lines_bw_composite.append(buildTools.make_line_connection_btw_two_anchors(shapes, anchors, short_head_line_len = int(self.padding_hor/2), direct_connection = True))
 
-    def set_parent(self, parent):
-        self.parent = parent
+    # def set_parent(self, parent):
+        # self.parent = parent
+
+    def set_parent(self):
+        self.parent = findMainWindow()
 
     def paintEvent(self, a0: QPaintEvent | None) -> None:
         qp = QPainter()

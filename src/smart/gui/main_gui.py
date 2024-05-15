@@ -70,9 +70,9 @@ class smartGui(MacroExecutionWindow, MdiFieldImreg_Wrapper, geometry_widget_wrap
         queueControl.__init__(self)
         self.setMinimumSize(800, 600)
         self.widget_terminal.update_name_space('gui', self)
-        self.widget_motor_widget.set_parent(self)
-        self.widget_synoptic.set_parent(self)
-        self.widget_queue_synoptic_viewer.set_parent(self)
+        # self.widget_motor_widget.set_parent(self)
+        # self.widget_synoptic.set_parent(self)
+        # self.widget_queue_synoptic_viewer.set_parent(self)
         self._parent = self
 
         self.img_backup_path = "ImageBackup.imagedb"
@@ -344,6 +344,8 @@ class smartGui(MacroExecutionWindow, MdiFieldImreg_Wrapper, geometry_widget_wrap
         """
         :return:
         """
+        #synoptic viewer slots
+        self.widget_synoptic.connect_slots_synoptic_viewer()
         #online monitor event
         self.widget_online_monitor.manager.newPrepare.connect(self.connect_mouseClick_event_for_online_monitor)
         self.widget_online_monitor.manager.newShortMessage.connect(self.statusbar.showMessage) 

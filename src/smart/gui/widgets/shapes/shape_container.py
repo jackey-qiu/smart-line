@@ -2,7 +2,7 @@ from PyQt5.QtGui import QPaintEvent, QPainter, QPen, QBrush, QColor, QFont, QPol
 from PyQt5.QtWidgets import QWidget
 from taurus.qt.qtgui.base import TaurusBaseComponent
 from PyQt5.QtCore import Qt, QPointF, pyqtSignal, pyqtSlot
-from PyQt5.QtCore import QTimer
+from PyQt5.QtCore import QTimer, QObject
 import numpy as np
 import copy
 import math
@@ -11,6 +11,7 @@ import time
 import yaml
 from dataclasses import dataclass
 from .callback_container import *
+from ....util.util import findMainWindow
 from smart.util.geometry_transformation import rotate_multiple_points, angle_between
 
 DECORATION_UPON_CURSOR_ON = {'pen': {'color': (255, 255, 0), 'width': 3, 'ls': 'DotLine'}, 'brush': {'color': (0, 0, 255)}} 
@@ -683,13 +684,16 @@ class buildObject(object):
     def build_shapes(self):
         pass
 
-class shapeComposite(TaurusBaseComponent):
+class shapeComposite(TaurusBaseComponent, QObject):
+# class shapeComposite(TaurusBaseComponent):
 
     modelKeys = [TaurusBaseComponent.MLIST]
+    updateSignal = pyqtSignal()
 
-    def __init__(self, shapes, anchor_args=None, alignment_pattern=None, connection_pattern = None, ref_shape_index = None, model_index_list = [], callbacks_upon_model_change = [], callbacks_upon_mouseclick = []):
+    def __init__(self, shapes, parent = None, anchor_args=None, alignment_pattern=None, connection_pattern = None, ref_shape_index = None, model_index_list = [], callbacks_upon_model_change = [], callbacks_upon_mouseclick = []):
         #connection_patter = {'shapes':[[0,1],[1,2]], 'anchors':[['left','top'],['right', 'bottom']]}
         #alignment_patter = {'shapes':[[0,1],[1,2]], 'anchors':[['left','top'],['right', 'bottom']]}
+        super(QObject, shapeComposite).__init__(self)
         TaurusBaseComponent.__init__(self)
         self._shapes = copy.deepcopy(shapes)
         self._model_shape_index_list = model_index_list
@@ -781,9 +785,11 @@ class shapeComposite(TaurusBaseComponent):
            shape.reset_ref_geometry()
 
     def make_line_connection(self):
-        if self.lines == None:
-            return
+        # if self.lines == None:
+            # return
         self.lines = []
+        if self.connection == None:
+            return
         shape_index = self.connection['shapes']
         anchors = self.connection['anchors']
         connect_types = self.connection.get('connect_types', [False]*len(anchors))
@@ -820,8 +826,8 @@ class shapeComposite(TaurusBaseComponent):
             for i in range(len(self.model_shape_index_list)):
                 if evt_src is self.getModelObj(key=(TaurusBaseComponent.MLIST, i)):
                     self._callbacks_upon_model_change[self.model_shape_index_list[i]](self.shapes[self.model_shape_index_list[i]], evt_value)
-                    self.parent.update()
-                    break
+                    self.updateSignal.emit()
+                    # break
         except Exception as e:
             self.info("Skipping event. Reason: %s", e)
 
@@ -835,7 +841,7 @@ class buildTools(object):
         basic_shapes = config['basic_shapes']
         for shape, shape_info in basic_shapes.items():
             for shape_type, shape_type_info in shape_info.items():
-                anchor_pars = eval(shape_type_info.pop('anchor_pars', None))
+                anchor_pars = shape_type_info.pop('anchor_pars')
                 shape_obj = eval(shape)(**shape_type_info)
                 shape_container[f'{shape}.{shape_type}'] = shape_obj
                 if anchor_pars!=None:
@@ -845,7 +851,7 @@ class buildTools(object):
         return shape_container
 
     @classmethod
-    def build_composite_shape_from_yaml(cls, yaml_file_path):
+    def build_composite_shape_from_yaml(cls, yaml_file_path, **kwargs):
         with open(yaml_file_path, 'r', encoding='utf8') as f:
            config = yaml.safe_load(f.read()) 
         shape_container = cls.build_basic_shape_from_yaml(yaml_file_path)
@@ -853,6 +859,7 @@ class buildTools(object):
         composite_obj_container = {}
         for composite, composite_info in composite_container.items():
             _models = composite_info['models']
+            hide_shape_ix = composite_info.pop('hide', [])
             callbacks_upon_model_change = composite_info['callbacks_upon_model_change']
             callbacks_upon_leftmouse_click = composite_info['callbacks_upon_leftmouse_click']
             callbacks = {'callbacks_upon_model_change': callbacks_upon_model_change,
@@ -877,11 +884,15 @@ class buildTools(object):
             composite_obj_container[composite]._models = _models
             if composite_info['transformation']!='None':
                 translate = composite_info['transformation'].pop('translate', (0,0))
+                if 'translate' in kwargs:
+                    translate = kwargs['translate']
                 rotation = composite_info['transformation'].pop('rotate', 0)
                 sf = composite_info['transformation'].pop('scale', 1)
                 composite_obj_container[composite].translate(translate)
                 composite_obj_container[composite].rotate(rotation)
                 composite_obj_container[composite].scale(sf)
+            for i in hide_shape_ix:
+                composite_obj_container[composite].shapes[i].hide_shape()
             composite_obj_container[composite].unpack_callbacks_and_models()
 
         return composite_obj_container
@@ -1087,7 +1098,7 @@ class shapeContainer(TaurusWidget):
     
     def __init__(self, parent = None) -> None:
         super().__init__(parent = parent)
-        self.parent = parent
+        self.set_parent()
         self.build_shapes()
         self.composite_shape = shapeComposite(shapes = self.shapes[0:-2], \
                                              anchor_args = [4, 3, 3, 3, 3], \
@@ -1137,8 +1148,10 @@ class shapeContainer(TaurusWidget):
         #self.align_multiple_shapes(shapes = [[self.shapes[0], self.shapes[1]], [self.shapes[0], self.shapes[2]], [self.shapes[0], self.shapes[3]], [self.shapes[0], self.shapes[4]]], \
         #                           orientations = [['top', 'bottom'], ['bottom', 'top'], ['left', 'right'], ['right', 'left']])
 
-    def set_parent(self, parent):
-        self.parent = parent
+    # def set_parent(self, parent):
+        # self.parent = parent
+    def set_parent(self):
+        self.parent = findMainWindow()
 
     def build_shapes(self):
         self.shapes = [rectangle(dim = [200,180,100*1.,100*1.],rotation_center = None, transformation={'rotate':0, 'translate':(0,0), 'scale':1}), \

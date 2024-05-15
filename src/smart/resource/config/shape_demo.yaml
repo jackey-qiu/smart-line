@@ -1,0 +1,109 @@
+softwareVersion: 0.1.0
+basic_shapes:
+  rectangle:
+    type1:
+      dim: [0,0,120,120]
+      anchor_pars: null
+    type2:
+      dim: [0, 0, 80, 40]
+      anchor_pars: null
+    type3:
+      dim: [0, 0, 80, 30]
+      anchor_pars: null
+    type4:
+      dim: [0, 0, 30, 80]
+      anchor_pars: null
+  circle:
+    big:
+      dim: [0, 0, 120]
+      anchor_pars: null
+    small:
+      dim: [0, 0, 10]
+      anchor_pars: null
+    tiny:
+      dim: [0, 0, 2]
+      anchor_pars: null
+  isocelesTriangle:
+    type1:
+      dim: [0, 0, 40, 60]
+      anchor_pars: null
+composite_shapes:
+  composite1:
+    shapes: ['circle.big*1', 'rectangle.type2*4']
+    ref_shape: null
+    alignment:
+      shapes: [[0,1],[0,2],[0,3],[0,4]]
+      anchors: [['top','bottom'],['left','right'],['right','left'],['bottom','top']]
+      gaps: [0,0,0,0.5]
+      ref_anchors: [[null, null],[null, null], [null, null], [null, null]]
+    transformation: 
+      translate: [100,100]
+    models: 
+      1: motor/motctrl01/1/position
+      2: motor/motctrl02/1/position
+      3: motor/motctrl02/2/position
+      4: motor/motctrl02/3/position
+    callbacks_upon_model_change:
+      1: ['callback_model_change_with_transformation', 'mv_dir', 'x']
+      2: ['callback_model_change_with_text_label']
+      3: ['callback_model_change_with_decoration']
+      4: ['callback_model_change_with_transformation', 'mv_dir', 'y']
+    callbacks_upon_leftmouse_click:
+      1: null
+      2: null
+      3: null
+      4: null
+  slit:
+    shapes: ['circle.tiny*1', 'rectangle.type3*2', 'rectangle.type4*2']
+    ref_shape: null
+    hide: [0]
+    alignment:
+      shapes: [[0,1],[0,2],[0,3],[0,4]]
+      anchors: [['top','bottom'],['bottom','top'], ['left','right'],['right','left'],]
+      gaps: [0.,0.,0.,0.]
+      ref_anchors: [[null, null],[null, null], [null, null], [null, null]]
+    transformation: 
+      translate: [220,220]
+    models: 
+      1: motor/motctrl01/1/position
+      2: motor/motctrl01/1/position
+      3: motor/motctrl02/1/position
+      4: motor/motctrl02/1/position
+    callbacks_upon_model_change:
+      1: ['callback_model_change_with_transformation', 'mv_dir', 'y', 'sign', '+']
+      2: ['callback_model_change_with_transformation', 'mv_dir', 'y', 'sign', '-']
+      3: ['callback_model_change_with_transformation', 'mv_dir', 'x', 'sign', '+']
+      4: ['callback_model_change_with_transformation', 'mv_dir', 'x', 'sign', '-']
+    callbacks_upon_leftmouse_click:
+      1: null
+      2: null
+      3: null
+      4: null      
+  valve:
+    shapes: ['circle.small*1', 'isocelesTriangle.type1*2']
+    ref_shape: null
+    hide: []
+    alignment:
+      shapes: [[0,1],[0,2]]
+      anchors: [['left','top'],['right','top']]
+      gaps: [0.,0.]
+      ref_anchors: [[null, null],[null, null]]
+    transformation: 
+      translate: [220,220]
+    models: []
+    callbacks_upon_model_change:
+      1: ['callback_model_change_with_transformation', 'mv_dir', 'y', 'sign', '+']
+      2: ['callback_model_change_with_transformation', 'mv_dir', 'y', 'sign', '-']
+    callbacks_upon_leftmouse_click:
+      1: null
+      2: null
+viewers:
+  viewer1:
+    composites: ['composite1', 'composite2']
+    ref_composite: null
+    alignment:
+      composites: [[0,1]]
+      anchors: [['r','l']]
+      gaps: [50]
+
+
