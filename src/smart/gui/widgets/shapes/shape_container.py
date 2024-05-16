@@ -296,7 +296,8 @@ class rectangle(baseShape):
         cen = self.compute_center_from_dim(False)
         _, _, w, h = self.dim_pars
         for i, text in enumerate(labels['text']):
-            x, y = cen
+            # x, y = cen
+            x, y, w, h = self.dim_pars
             anchor = labels['anchor'][i]
             if labels['decoration'] == None:
                 decoration = self.text_decoration
@@ -310,13 +311,13 @@ class rectangle(baseShape):
             text_color = decoration['text_color']
             font_size = decoration['font_size']
             if anchor == 'left':
-                x = x - w/2 - padding
+                x = x - w - padding
             elif anchor == 'right':
-                x = x + w/2 + padding
+                x = x + w + padding
             elif anchor == 'top':
-                y = y - h/2 - padding
+                y = y - h - padding
             elif anchor == 'bottom':
-                y = y + h/2 + padding
+                y = y + h + padding
             elif anchor == 'center':
                 x = x + padding
                 y = y + padding
@@ -325,8 +326,8 @@ class rectangle(baseShape):
                     x, y = self.anchors[anchor]
             qp.setPen(QColor(*text_color))
             qp.setFont(QFont('Decorative', font_size))
-            x, y, width, height = self.dim_pars
-            qp.drawText(int(x), int(y), int(width), int(height), getattr(Qt, alignment), text)
+            # x, y, width, height = self.dim_pars
+            qp.drawText(int(x), int(y), int(w), int(h), getattr(Qt, alignment), text)
 
     def calculate_shape_boundary(self):
         x, y, w, h = self.dim_pars
@@ -434,17 +435,18 @@ class circle(baseShape):
             padding = decoration['padding']
             text_color = decoration['text_color']
             font_size = decoration['font_size']
+            R = max([r,15])
             if anchor == 'left':
-                x = x - r
+                x = x - R
                 x = x - padding
             elif anchor == 'right':
                 x = x + r
                 x = x + padding
             elif anchor == 'top':
-                y = y - r
+                y = y - R
                 y = y - padding
             elif anchor == 'bottom':
-                y = y + r
+                y = y + R
                 y = y + padding
             elif anchor == 'center':
                 x, y = x, y
@@ -453,7 +455,7 @@ class circle(baseShape):
                     x, y = self.anchors[anchor]
             qp.setPen(QColor(*text_color))
             qp.setFont(QFont('Decorative', font_size))
-            qp.drawText(int(x), int(y), 100, 20, getattr(Qt, alignment), text)
+            qp.drawText(int(x - r), int(y), int(R), int(R), getattr(Qt, alignment), text)
 
     def calculate_shape_boundary(self):
         cen = np.array(self.compute_center_from_dim(False))
@@ -709,6 +711,11 @@ class shapeComposite(TaurusBaseComponent, QObject):
         self.callbacks = {}
         self._models = {}
 
+    def copy_object_meta(self):
+        return {'shapes': self._shapes, 'anchor_args': self.anchor_args, 'alignment_pattern': self.alignment,\
+                'connection_pattern': self.connection, 'ref_shape_index': self._shapes.index(self.ref_shape), \
+                'model_index_list': self._model_shape_index_list}, self.callbacks, self._models
+
     def unpack_callbacks_and_models(self):
         if len(self._models) == 0:
             return
@@ -722,9 +729,22 @@ class shapeComposite(TaurusBaseComponent, QObject):
     def _make_callback(self, callback_info_list):
         if callback_info_list==None or callback_info_list=='None':
             return lambda:None
-        cb_str = callback_info_list[0]
-        cb_args = callback_info_list[1:]
-        return partial(eval(cb_str), **{cb_args[i]:cb_args[i+1] for i in range(0, len(cb_args),2)})
+        #if there are multiple callbacks linking to one model
+        if type(callback_info_list[0])==list:
+            def call_back_chain(shape, model_value):
+                cbs = []
+                for callback_info in callback_info_list:
+                    cb_str = callback_info[0]
+                    cb_args = callback_info[1:]
+                    cbs.append(partial(eval(cb_str), **{cb_args[i]:cb_args[i+1] for i in range(0, len(cb_args),2)}))
+                for cb in cbs:
+                    cb(shape, model_value)
+            return call_back_chain
+        #if there is only single callback func
+        else:
+            cb_str = callback_info_list[0]
+            cb_args = callback_info_list[1:]
+            return partial(eval(cb_str), **{cb_args[i]:cb_args[i+1] for i in range(0, len(cb_args),2)})
 
     @property
     def shapes(self):
@@ -857,7 +877,7 @@ class buildTools(object):
         shape_container = cls.build_basic_shape_from_yaml(yaml_file_path)
         composite_container = config['composite_shapes']
         composite_obj_container = {}
-        for composite, composite_info in composite_container.items():
+        for i, (composite, composite_info) in enumerate(composite_container.items()):
             _models = composite_info['models']
             hide_shape_ix = composite_info.pop('hide', [])
             callbacks_upon_model_change = composite_info['callbacks_upon_model_change']
@@ -885,7 +905,8 @@ class buildTools(object):
             if composite_info['transformation']!='None':
                 translate = composite_info['transformation'].pop('translate', (0,0))
                 if 'translate' in kwargs:
-                    translate = kwargs['translate']
+                    assert type(kwargs['translate'][0])==list and len(kwargs['translate'])>i, "You should provide a list of translate vector for all composite!"
+                    translate = kwargs['translate'][i]
                 rotation = composite_info['transformation'].pop('rotate', 0)
                 sf = composite_info['transformation'].pop('scale', 1)
                 composite_obj_container[composite].translate(translate)
@@ -899,7 +920,27 @@ class buildTools(object):
 
     @classmethod
     def build_view_from_yaml(cls, yaml_file_path):
-        pass
+        composite_obj_container = cls.build_composite_shape_from_yaml(yaml_file_path)
+        with open(yaml_file_path, 'r', encoding='utf8') as f:
+           viewer_config = yaml.safe_load(f.read())['viewers']
+        viewer_container = {}
+        for viewer, viewer_info in viewer_config.items():
+            composite_obj_container_subset = {}
+            for i, each in enumerate(viewer_info['composites']):
+                init_kwargs, cbs, models = composite_obj_container[each].copy_object_meta() 
+                composite = shapeComposite(**init_kwargs)
+                composite.callbacks = cbs
+                composite._models = models
+                composite.unpack_callbacks_and_models()
+                #composite = copy.deepcopy(composite_obj_container[each])
+                translate = viewer_info['transformation']['translate'][i]
+                composite.translate(translate)
+                if each in composite_obj_container_subset:
+                    composite_obj_container_subset[each+f'{i+1}'] = composite
+                else:
+                    composite_obj_container_subset[each] = composite
+            viewer_container[viewer] = composite_obj_container_subset
+        return viewer_container
 
     @classmethod
     def calculate_boundary_for_combined_shapes(cls, shapes):

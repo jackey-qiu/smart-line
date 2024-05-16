@@ -13,7 +13,9 @@ __all__ = ['callback_model_change_with_decoration',
            'callback_model_change_with_decoration',
            'callback_model_change_with_text_label',
            'callback_leftmouse_click_with_decoration',
-           'callback_leftmouse_click_with_transformation']
+           'callback_leftmouse_click_with_transformation',
+           'callback_model_change_with_decoration_on_off', 
+           'callback_model_change_with_text_label_on_off']
 
 def _apply_translation_steps(shape, value_model, mv_dir = 'x', sign = '+'):
     if mv_dir not in ['x', 'y']:
@@ -60,6 +62,16 @@ def _get_model_value_limits(value_model, lm_type = None):
     elif lm_type == 'alarm':
         return value_model.getWarnings()
 
+def callback_model_change_with_decoration_on_off(shape, value_model):
+    _value = bool(value_model.rvalue)
+    if _value:
+        new_decoration = {'brush': {'color': (0, 255, 0)}}
+    else:
+        new_decoration = {'brush': {'color': (255, 255, 255)}}
+    shape.decoration = new_decoration
+    shape.decoration_cursor_on = new_decoration
+    shape.decoration_cursor_off = new_decoration
+    
 def callback_model_change_with_decoration(shape, value_model):
     new_decoration = {'brush': {'color': _get_model_value_quality_color(value_model)}}
     shape.decoration = new_decoration
@@ -72,6 +84,13 @@ def callback_model_change_with_transformation(shape, value_model, mv_dir, sign =
 
 def callback_model_change_with_text_label(shape, value_model, anchor='left'):
     shape.labels = {'text':[f'{value_model.label}:{round(_get_model_value(value_model),3)}'],'anchor':[anchor]}
+
+def callback_model_change_with_text_label_on_off(shape, value_model, anchor='left', text = ""):
+    checked = bool(value_model.rvalue)
+    if checked:
+        shape.labels = {'text':[f'{text} on'],'anchor':[anchor]}
+    else:
+        shape.labels = {'text':[f'{text} off'],'anchor':[anchor]}
 
 def callback_leftmouse_click_with_decoration(shape, value_model):
     pass

@@ -70,8 +70,12 @@ composite_shapes:
       3: motor/motctrl02/1/position
       4: motor/motctrl02/1/position
     callbacks_upon_model_change:
-      1: ['callback_model_change_with_transformation', 'mv_dir', 'y', 'sign', '+']
-      2: ['callback_model_change_with_transformation', 'mv_dir', 'y', 'sign', '-']
+      1: 
+        - ['callback_model_change_with_transformation', 'mv_dir', 'y', 'sign', '+']
+        - ['callback_model_change_with_text_label', 'anchor', 'top']
+      2:
+        - ['callback_model_change_with_transformation', 'mv_dir', 'y', 'sign', '-']
+        - ['callback_model_change_with_text_label', 'anchor', 'bottom']
       3: ['callback_model_change_with_transformation', 'mv_dir', 'x', 'sign', '+']
       4: ['callback_model_change_with_transformation', 'mv_dir', 'x', 'sign', '-']
     callbacks_upon_leftmouse_click:
@@ -90,20 +94,45 @@ composite_shapes:
       ref_anchors: [[null, null],[null, null]]
     transformation: 
       translate: [220,220]
+    models:
+      0: sys/tg_test/1/boolean_scalar
+      1: sys/tg_test/1/boolean_scalar
+      2: sys/tg_test/1/boolean_scalar
+    callbacks_upon_model_change:
+      0: ['callback_model_change_with_text_label_on_off', 'anchor', 'top']
+      1: ['callback_model_change_with_decoration_on_off']
+      2: ['callback_model_change_with_decoration_on_off']
+    callbacks_upon_leftmouse_click:
+      0: null
+      1: null
+      2: null
+  anchor:
+    shapes: ['circle.small*2']
+    ref_shape: null
+    hide: [0,1]
+    alignment:
+      shapes: [[0,1]]
+      anchors: [['right','left']]
+      gaps: [0.]
+      ref_anchors: [[null, null]]
+    transformation: 
+      translate: [220,220]
     models: []
     callbacks_upon_model_change:
-      1: ['callback_model_change_with_transformation', 'mv_dir', 'y', 'sign', '+']
-      2: ['callback_model_change_with_transformation', 'mv_dir', 'y', 'sign', '-']
+      1: []
+      2: []
     callbacks_upon_leftmouse_click:
       1: null
       2: null
 viewers:
   viewer1:
-    composites: ['composite1', 'composite2']
-    ref_composite: null
-    alignment:
-      composites: [[0,1]]
-      anchors: [['r','l']]
-      gaps: [50]
-
-
+    composites: ['anchor','valve', 'slit', 'slit', 'valve','slit','anchor']
+    transformation:
+      translate:
+        - [50, 220]
+        - [220, 220]
+        - [440, 220]
+        - [660, 220]
+        - [880, 220]
+        - [1100, 220]
+        - [1300, 220]
