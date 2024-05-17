@@ -1,7 +1,7 @@
 from PyQt5.QtGui import QPaintEvent, QPainter, QPen, QBrush, QColor, QFont, QPolygonF, QCursor, QPainterPath,QTransform
 from PyQt5.QtWidgets import QWidget
 from taurus.qt.qtgui.base import TaurusBaseComponent
-from PyQt5.QtCore import Qt, QPointF, pyqtSignal, pyqtSlot
+from PyQt5.QtCore import Qt, QPointF, pyqtSignal, pyqtSlot,QRect
 from PyQt5.QtCore import QTimer, QObject
 import numpy as np
 import copy
@@ -155,6 +155,52 @@ class baseShape(object):
     def text_label(self, qp):
         raise NotImplementedError
 
+    def _draw_text(self, qp, alignment, text, anchor, x, y, width, height, width_txt, height_txt, padding):
+        #qp: qpainter
+        #alignment: Qt alignment enum
+        #text: text label
+        #(x, y) original anchor position
+        #width, height: the width and height of shape
+        #width_txt, height_txt: the width and height of text
+        #padding: additinal padding to applied
+        #net effect: the text will be displayed at the anchor position after considering the final size of text area and orientation sense
+        padding =0
+        if anchor == 'left':
+            x = x - width_txt - padding
+            y = y + int((height-height_txt)/2)
+        elif anchor == 'right':
+            x = x + width + padding
+            y = y + int((height-height_txt)/2)
+        elif anchor == 'top':
+            y = y - height_txt - padding
+            x = x + int((width - width_txt)/2)
+        elif anchor == 'bottom':
+            y = y + height + padding
+            x = x + int((width - width_txt)/2)
+        elif anchor == 'center':
+            x = x + int((width - width_txt)/2) + padding
+            y = y + int((height-height_txt)/2) + padding
+        else:
+            if anchor in self.anchors:
+                x, y = self.anchors[anchor]
+                y = y + int(width_txt/2)
+        if ('left' in anchor) or ('right' in anchor):
+            if 'right' in anchor:
+                qp.translate(int(x+height_txt/2), int(y+width_txt/2+height_txt/2))
+            elif 'left' in anchor:
+                qp.translate(int(x+width_txt-height_txt*1.5), int(y+width_txt/2+height_txt/2))
+            qp.rotate(270)
+            qp.drawText(int(0), int(0), int(width_txt), int(height_txt), getattr(Qt, alignment), text)
+        else:
+            if 'top' in anchor:
+                qp.drawText(int(x), int(y-height_txt/2), int(width_txt), int(height_txt), getattr(Qt, alignment), text)
+            elif 'bottom' in anchor:
+                qp.drawText(int(x), int(y+height_txt/2), int(width_txt), int(height_txt), getattr(Qt, alignment), text)
+            elif 'center' in anchor:
+                qp.drawText(int(x), int(y), int(width_txt), int(height_txt), getattr(Qt, alignment), text)
+            else:
+                raise KeyError('Invalid anchor key for text labeling!')
+            
     def get_proper_extention_dir_for_one_anchor(self, key):
         possible_dirs = []
         possible_dirs_offset = []
@@ -277,9 +323,9 @@ class baseShape(object):
 
 class rectangle(baseShape):
     def __init__(self, dim = [700,100,40,80], rotation_center = None, decoration_cursor_off=DECORATION_UPON_CURSOR_OFF, decoration_cursor_on =DECORATION_UPON_CURSOR_ON, \
-                 transformation={'rotate':0, 'translate':(0,0), 'scale': 1}, text_decoration = DECORATION_TEXT_DEFAULT, lables = {'text':[], 'anchor':[],'decoration':None}):
+                 transformation={'rotate':0, 'translate':(0,0), 'scale': 1}, text_decoration = DECORATION_TEXT_DEFAULT, labels = {'text':[], 'anchor':[],'decoration':None}):
 
-        super().__init__(dim = dim, rotation_center=rotation_center, decoration_cursor_off=decoration_cursor_off, decoration_cursor_on= decoration_cursor_on, transformation=transformation, text_decoration=text_decoration, lables=lables)
+        super().__init__(dim = dim, rotation_center=rotation_center, decoration_cursor_off=decoration_cursor_off, decoration_cursor_on= decoration_cursor_on, transformation=transformation, text_decoration=text_decoration, lables=labels)
 
     def scale(self, sf):
         self.dim_pars = (np.array(self.dim_pars)*[1,1,sf/self.transformation['scale'],sf/self.transformation['scale']]).astype(int)
@@ -293,8 +339,7 @@ class rectangle(baseShape):
     def text_label(self, qp):
         labels = self.labels
         decoration = self.text_decoration 
-        cen = self.compute_center_from_dim(False)
-        _, _, w, h = self.dim_pars
+        qp.save()
         for i, text in enumerate(labels['text']):
             # x, y = cen
             x, y, w, h = self.dim_pars
@@ -310,25 +355,27 @@ class rectangle(baseShape):
             padding = decoration['padding']
             text_color = decoration['text_color']
             font_size = decoration['font_size']
-            if anchor == 'left':
-                x = x - w - padding
-            elif anchor == 'right':
-                x = x + w + padding
-            elif anchor == 'top':
-                y = y - h - padding
-            elif anchor == 'bottom':
-                y = y + h + padding
-            elif anchor == 'center':
-                x = x + padding
-                y = y + padding
-            else:
-                if anchor in self.anchors:
-                    x, y = self.anchors[anchor]
             qp.setPen(QColor(*text_color))
             qp.setFont(QFont('Decorative', font_size))
-            # x, y, width, height = self.dim_pars
-            qp.drawText(int(x), int(y), int(w), int(h), getattr(Qt, alignment), text)
-
+            text_bound_rect = qp.fontMetrics().boundingRect(QRect(), Qt.AlignCenter, text)
+            w_txt, h_txt = text_bound_rect.width(), text_bound_rect.height()
+            self._draw_text(qp, alignment, text, anchor, x, y, w, h, w_txt, h_txt, padding)
+            qp.restore()
+            qp.save()
+            # x, y = self._cal_text_anchor_point(anchor, x, y, w, h, w_txt, h_txt, padding)
+            # qp.drawText(int(x), int(y), int(w_txt), int(h_txt), getattr(Qt, alignment), text)
+            '''
+            if ('left' in anchor) or ('right' in anchor):
+                if 'right' in anchor:
+                    qp.translate(int(x+h_txt/2), int(y+w_txt/2+h_txt/2))
+                elif 'left' in anchor:
+                    qp.translate(int(x+w_txt-h_txt*1.5), int(y+w_txt/2+h_txt/2))
+                qp.rotate(270)
+                qp.drawText(int(0), int(0), int(w_txt), int(h_txt), getattr(Qt, alignment), text)
+                qp.restore()
+            else:
+                qp.drawText(int(x), int(y), int(w_txt), int(h_txt), getattr(Qt, alignment), text)
+            '''
     def calculate_shape_boundary(self):
         x, y, w, h = self.dim_pars
         four_corners = [[x,y], [x+w,y],[x, y+h], [x+w, y+h]]
@@ -403,9 +450,9 @@ class rectangle(baseShape):
 
 class circle(baseShape):
     def __init__(self, dim = [100,100,40], rotation_center = None, decoration_cursor_off=DECORATION_UPON_CURSOR_OFF, decoration_cursor_on =DECORATION_UPON_CURSOR_ON, \
-                 transformation={'rotate':0, 'translate':(0,0), 'scale': 1}, text_decoration = DECORATION_TEXT_DEFAULT, lables = {'text':[], 'anchor':[],'decoration':None}):
+                 transformation={'rotate':0, 'translate':(0,0), 'scale': 1}, text_decoration = DECORATION_TEXT_DEFAULT, labels = {'text':[], 'anchor':[],'decoration':None}):
 
-        super().__init__(dim = dim, rotation_center=rotation_center, decoration_cursor_off=decoration_cursor_off, decoration_cursor_on= decoration_cursor_on, transformation=transformation, text_decoration=text_decoration, lables=lables)
+        super().__init__(dim = dim, rotation_center=rotation_center, decoration_cursor_off=decoration_cursor_off, decoration_cursor_on= decoration_cursor_on, transformation=transformation, text_decoration=text_decoration, lables=labels)
     
     def scale(self, sf):
         self.dim_pars = list((np.array(self.dim_pars)*np.array([1,1,sf/self.transformation['scale']])).astype(int))
@@ -421,8 +468,10 @@ class circle(baseShape):
         decoration = self.text_decoration 
         cen = self.compute_center_from_dim(False)
         r = self.dim_pars[-1]/2
+        qp.save()
         for i, text in enumerate(labels['text']):
             x, y = cen
+            x, y = x-r, y-r
             anchor = labels['anchor'][i]
             if labels['decoration'] == None:
                 decoration = self.text_decoration
@@ -435,27 +484,15 @@ class circle(baseShape):
             padding = decoration['padding']
             text_color = decoration['text_color']
             font_size = decoration['font_size']
-            R = max([r,15])
-            if anchor == 'left':
-                x = x - R
-                x = x - padding
-            elif anchor == 'right':
-                x = x + r
-                x = x + padding
-            elif anchor == 'top':
-                y = y - R
-                y = y - padding
-            elif anchor == 'bottom':
-                y = y + R
-                y = y + padding
-            elif anchor == 'center':
-                x, y = x, y
-            else:
-                if anchor in self.anchors:
-                    x, y = self.anchors[anchor]
             qp.setPen(QColor(*text_color))
             qp.setFont(QFont('Decorative', font_size))
-            qp.drawText(int(x - r), int(y), int(R), int(R), getattr(Qt, alignment), text)
+            text_bound_rect = qp.fontMetrics().boundingRect(QRect(), Qt.AlignCenter, text)
+            w_txt, h_txt = text_bound_rect.width(), text_bound_rect.height()
+            self._draw_text(qp, alignment, text, anchor, x, y, 2*r, 2*r, w_txt, h_txt, padding)
+            qp.restore()
+            qp.save()
+            # x, y = self._cal_text_anchor_point(anchor, x, y, r, r, w_txt, h_txt, padding)
+            # qp.drawText(int(x), int(y), int(w_txt), int(h_txt), getattr(Qt, alignment), text)
 
     def calculate_shape_boundary(self):
         cen = np.array(self.compute_center_from_dim(False))
@@ -482,7 +519,8 @@ class circle(baseShape):
         anchors = {}
         for i in range(num_of_anchors):
             dx, dy = math.cos(ang_step*i), -math.sin(ang_step*i)
-            anchors[f'anchor_{i}'] = cen + [dx, dy] + np.array(self.transformation['translate'])
+            dir = 'left' if i>=(num_of_anchors/2) else 'right'
+            anchors[f'anchor_{dir}_{i}'] = cen + [dx, dy] + np.array(self.transformation['translate'])
         self.anchors = anchors
 
     def calculate_orientation_length(self, orientation = 'top', ref_anchor = None):
@@ -505,9 +543,9 @@ class circle(baseShape):
 
 class isocelesTriangle(baseShape):
     def __init__(self, dim = [100,100,40,60], rotation_center = None, decoration_cursor_off=DECORATION_UPON_CURSOR_OFF, decoration_cursor_on =DECORATION_UPON_CURSOR_ON, \
-                 transformation={'rotate':0, 'translate':(0,0), 'scale': 1}, text_decoration = DECORATION_TEXT_DEFAULT, lables = {'text':[], 'anchor':[],'decoration':None}):
+                 transformation={'rotate':0, 'translate':(0,0), 'scale': 1}, text_decoration = DECORATION_TEXT_DEFAULT, labels = {'text':[], 'anchor':[],'decoration':None}):
 
-        super().__init__(dim = dim, rotation_center=rotation_center, decoration_cursor_off=decoration_cursor_off, decoration_cursor_on= decoration_cursor_on, transformation=transformation, text_decoration=text_decoration, lables=lables)
+        super().__init__(dim = dim, rotation_center=rotation_center, decoration_cursor_off=decoration_cursor_off, decoration_cursor_on= decoration_cursor_on, transformation=transformation, text_decoration=text_decoration, lables=labels)
     
     def scale(self, sf):
         self.dim_pars = (np.array(self.dim_pars)*[1,1,sf/self.transformation['scale'],1]).astype(int)
@@ -540,6 +578,7 @@ class isocelesTriangle(baseShape):
         labels = self.labels
         decoration = self.text_decoration 
         point1, point2, point3 = self._cal_corner_point_coordinates(False)
+        qp.save()
         for i, text in enumerate(labels['text']):
             anchor = labels['anchor'][i]
             if labels['decoration'] == None:
@@ -553,27 +592,33 @@ class isocelesTriangle(baseShape):
             padding = decoration['padding']
             text_color = decoration['text_color']
             font_size = decoration['font_size']
+
+            qp.setPen(QColor(*text_color))
+            qp.setFont(QFont('Decorative', font_size))
+            text_bound_rect = qp.fontMetrics().boundingRect(QRect(), Qt.AlignCenter, text)
+            w_txt, h_txt = text_bound_rect.width(), text_bound_rect.height()
             if anchor == 'left':
                 x, y = point2
-                x = x - padding
             elif anchor == 'right':
                 x, y = point3
-                x = x + padding
             elif anchor == 'top':
                 x, y = point1
-                y = y - padding
             elif anchor == 'bottom':
                 x, y = (point2 + point3)/2
-                y = y + padding
             elif anchor == 'center':
                 x, y = (point2 + point3)/2
                 y = y - abs(point1[1] - y)/2
             else:
                 if anchor in self.anchors:
                     x, y = self.anchors[anchor]
-            qp.setPen(QColor(*text_color))
-            qp.setFont(QFont('Decorative', font_size))
-            qp.drawText(int(x), int(y), 100, 20, getattr(Qt, alignment), text)
+            
+            self._draw_text(qp, alignment, text, anchor, x, y, 0, 0, w_txt, h_txt, padding)
+            qp.restore()
+            qp.save()
+            # x, y = self._cal_text_anchor_point(anchor, x, y, 0, 0, w_txt, h_txt, padding)
+            # qp.setPen(QColor(*text_color))
+            # qp.setFont(QFont('Decorative', font_size))
+            # qp.drawText(int(x), int(y), int(w_txt), int(h_txt), getattr(Qt, alignment), text)
 
     def calculate_shape_boundary(self):
         three_corners = self._cal_corner_point_coordinates(False)

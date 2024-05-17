@@ -41,7 +41,7 @@ class beamlineSynopticViewer(QWidget):
             return
         #make a line simulating x-ray beam path
         if len(self.viewer_shape)>1:
-            qp.setPen(QPen(Qt.yellow, 3, Qt.SolidLine))   
+            qp.setPen(QPen(Qt.yellow, 2, Qt.DotLine))   
             all_composite_shapes = list(self.viewer_shape.values())
             shape_upstream, shape_downstream = all_composite_shapes[0].ref_shape, all_composite_shapes[-1].ref_shape
             lines = buildTools.make_line_connection_btw_two_anchors(shapes = [shape_upstream, shape_downstream], anchors=['right','left'], direct_connection=True)
