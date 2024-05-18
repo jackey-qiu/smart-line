@@ -1,0 +1,148 @@
+softwareVersion: 0.1.0
+basic_shapes:
+  rectangle:
+    handle:
+      dim: [0,0,20,20]
+      anchor_pars: null
+    cellbottom:
+      dim: [0,0,30,20]
+      anchor_pars: null
+    celltop:
+      dim: [0,0,30,30]
+      anchor_pars: null
+    valvezone:
+      dim: [0, 0, 60, 60]
+      anchor_pars: null
+    label_marks:
+      dim: [0, 0, 2, 240]
+      anchor_pars: [6, False] 
+      labels:
+        text: ['2 ml', '4 ml', '6 ml', '8 ml', '10 ml', '12 ml']
+        anchor: ['anchor_right_5','anchor_right_4','anchor_right_3','anchor_right_2','anchor_right_1','anchor_right_0']
+        orientation: ['horizontal', 'horizontal','horizontal','horizontal','horizontal','horizontal']
+        decoration: None
+    tube:    
+      dim: [0, 0, 80, 240]
+      anchor_pars: null      
+    plunger:    
+      dim: [0, 0, 80, 5]
+      anchor_pars: null      
+    bottomtip:    
+      dim: [0, 0, 25, 10]
+      anchor_pars: null      
+    type4:
+      dim: [0, 0, 30, 80]
+      anchor_pars: null
+  circle:
+    big:
+      dim: [0, 0, 60]
+      anchor_pars: null
+    small:
+      dim: [0, 0, 60]
+      anchor_pars: null
+    tiny:
+      dim: [0, 0, 2]
+      anchor_pars: null
+  isocelesTriangle:
+    cellpart:
+      dim: [0, 0, 60, 90]
+      anchor_pars: [3]
+composite_shapes:
+  syringe:
+    shapes: 
+      - 'circle.tiny*1'
+      - 'rectangle.valvezone*1'
+      - 'circle.big*1'
+      - 'rectangle.handle*4'
+      - 'rectangle.tube*1'
+      - 'rectangle.label_marks*1'
+      - 'rectangle.plunger*1'
+      - 'rectangle.bottomtip*1'
+    ref_shape: null
+    hide: [0, 8]
+    alignment:
+      shapes: 
+        - [0, 1]
+        - [0, 2]
+        - [2, 3]
+        - [2, 4]
+        - [2, 5]
+        - [2, 6]
+        - [6, 7]
+        - [7, 8]
+        - [7, 9]
+        - [7, 10]
+      anchors: 
+        - ['cen', 'cen']
+        - ['cen', 'cen']
+        - ['left', 'right']
+        - ['top', 'bottom']
+        - ['right', 'left']
+        - ['bottom', 'top']
+        - ['bottom', 'top']
+        - ['left', 'right']
+        - ['top', 'top']
+        - ['bottom', 'top']
+      gaps: [0,0,0,0,0,0,0,0,0,0]
+      ref_anchors: [['left', 'right'],['left', 'right'], [null, null], [null, null], [null, null],[null, null], [null, null], [null, null],[null, null],[null, null]]
+    transformation: 
+      translate: [100,100]
+    models: []
+    callbacks_upon_model_change:
+      1: ['callback_model_change_with_transformation', 'mv_dir', 'x']
+      2: ['callback_model_change_with_text_label']
+      3: ['callback_model_change_with_decoration']
+      4: ['callback_model_change_with_transformation', 'mv_dir', 'y']
+    callbacks_upon_leftmouse_click:
+      1: null
+      2: null
+      3: null
+      4: null
+  cell:
+    shapes: ['circle.tiny*1','circle.big*1','rectangle.cellbottom*1','rectangle.celltop*1','isocelesTriangle.cellpart*1']
+    ref_shape: null
+    hide: [0]
+    alignment:
+      shapes: [[0,1],[1, 2], [2, 4],[2,3]]
+      anchors: [['cen','cen'], ['top','bottom'], ['top', 'top'],['top','bottom']]
+      gaps: [0.,0,0,0]
+      ref_anchors: [['top', 'bottom'],[null, null],[null, null],[null, 'right']]
+    transformation: 
+      translate: [220,220]
+    models: []
+    callbacks_upon_model_change:
+      1: []
+      2: []
+    callbacks_upon_leftmouse_click:
+      1: null
+      2: null
+  anchor:
+    shapes: ['circle.tiny*2']
+    ref_shape: null
+    hide: [0, 1]
+    alignment:
+      shapes: [[0,1]]
+      anchors: [['right','left']]
+      gaps: [0.]
+      ref_anchors: [[null, null]]
+    transformation: 
+      translate: [220,220]
+    models: []
+    callbacks_upon_model_change:
+      1: []
+      2: []
+    callbacks_upon_leftmouse_click:
+      1: null
+      2: null
+viewers:
+  viewer1:
+    composites: ['anchor','syringe','syringe','cell','syringe','syringe','anchor']
+    transformation:
+      translate:
+        - [50, 220]
+        - [220, 220]
+        - [440, 220]
+        - [640, 120]
+        - [840, 220]
+        - [1040, 220]
+        - [1240, 220]

@@ -9,7 +9,7 @@ from smart import rs_path
 
 class beamlineSynopticViewer(QWidget):
 
-    def __init__(self, parent = None, yaml_config_file = str(rs_path / 'config' / 'shape_demo.yaml')):
+    def __init__(self, parent = None, yaml_config_file = str(rs_path / 'config' / 'shape_psd.yaml')):
         super().__init__(parent = parent)
         self.config_file = yaml_config_file
         self.composite_shape = None

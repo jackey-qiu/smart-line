@@ -5,12 +5,21 @@ basic_shapes:
       dim: [0,0,120,120]
       anchor_pars: null
     type2:
-      dim: [0, 0, 80, 40]
+      dim: [0, 0, 80, 80]
       anchor_pars: null
       labels:
-        text: ['top','bottom','left','right']
-        anchor: ['top','bottom','left','right']
+        text: ['anchor_top_1','anchor_top_4','anchor_bottom_1','anchor_bottom_4','anchor_left_1','anchor_left_4','anchor_right_1','anchor_right_4','center_v','center_h']
+        anchor: ['anchor_top_0','anchor_top_3','anchor_bottom_0','anchor_bottom_3','anchor_left_0','anchor_left_3','anchor_right_0','anchor_right_3','center','center']
+        orientation: ['horizontal', 'vertical','horizontal', 'vertical','horizontal', 'vertical','horizontal', 'vertical','horizontal', 'vertical']
         decoration: None
+    type2b:
+      dim: [0, 0, 80, 80]
+      anchor_pars: null
+      labels:
+        text: ['anchor_top_1','anchor_top_2','anchor_top_3','anchor_top_4','anchor_right_1','anchor_right_2','anchor_right_3','anchor_right_4']
+        anchor: ['anchor_top_0','anchor_top_1','anchor_top_2','anchor_top_3','anchor_right_0','anchor_right_1','anchor_right_2','anchor_right_3']
+        orientation: ['vertical','vertical','vertical','vertical','horizontal', 'horizontal','horizontal','horizontal']
+        decoration: None        
     type3:
       dim: [0, 0, 80, 30]
       anchor_pars: null
@@ -24,6 +33,7 @@ basic_shapes:
       labels:
         text: ['top','bottom','left','right']
         anchor: ['top','bottom','left','right']
+        orientation: ['vertical','vertical','horizontal', 'horizontal']
         decoration: None
     small:
       dim: [0, 0, 60]
@@ -42,6 +52,7 @@ basic_shapes:
       labels:
         text: ['valve']
         anchor: ['bottom']
+        orientation: ['horizontal']
         decoration: None
 composite_shapes:
   composite1:
@@ -88,16 +99,16 @@ composite_shapes:
     callbacks_upon_model_change:
       1: 
         - ['callback_model_change_with_transformation', 'mv_dir', 'y', 'sign', '+']
-        - ['callback_model_change_with_text_label', 'anchor', 'top']
+        - ['callback_model_change_with_text_label', 'anchor', 'top', 'orientation','horizontal']
       2:
         - ['callback_model_change_with_transformation', 'mv_dir', 'y', 'sign', '-']
-        - ['callback_model_change_with_text_label', 'anchor', 'bottom']
+        - ['callback_model_change_with_text_label', 'anchor', 'bottom','orientation','horizontal']
       3: 
         - ['callback_model_change_with_transformation', 'mv_dir', 'x', 'sign', '+']
-        - ['callback_model_change_with_text_label', 'anchor', 'left']
+        - ['callback_model_change_with_text_label', 'anchor', 'left','orientation','vertical']
       4: 
         - ['callback_model_change_with_transformation', 'mv_dir', 'x', 'sign', '-']
-        - ['callback_model_change_with_text_label', 'anchor', 'right']
+        - ['callback_model_change_with_text_label', 'anchor', 'right', 'orientation', 'vertical']
     callbacks_upon_leftmouse_click:
       1: null
       2: null
@@ -145,9 +156,27 @@ composite_shapes:
     callbacks_upon_leftmouse_click:
       1: null
       2: null
+  label_eg:
+    shapes: ['circle.tiny*1','rectangle.type2b*1']
+    ref_shape: null
+    hide: [0]
+    alignment:
+      shapes: [[0,1]]
+      anchors: [['left','right']]
+      gaps: [0.]
+      ref_anchors: [[null, null]]
+    transformation: 
+      translate: [220,220]
+    models: []
+    callbacks_upon_model_change:
+      1: []
+      2: []
+    callbacks_upon_leftmouse_click:
+      1: null
+      2: null      
 viewers:
   viewer1:
-    composites: ['anchor','valve', 'slit', 'slit', 'valve','slit','anchor']
+    composites: ['anchor','valve', 'slit', 'slit', 'valve','slit','label_eg']
     transformation:
       translate:
         - [50, 220]
@@ -156,7 +185,7 @@ viewers:
         - [660, 220]
         - [880, 220]
         - [1100, 220]
-        - [1300, 220]
+        - [1500, 220]
   viewer2:
     composites: ['valve','anchor']
     transformation:

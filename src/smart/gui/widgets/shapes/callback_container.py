@@ -82,8 +82,8 @@ def callback_model_change_with_transformation(shape, value_model, mv_dir, sign =
     _apply_translation_steps(shape, value_model,mv_dir, sign)
     callback_model_change_with_decoration(shape, value_model)
 
-def callback_model_change_with_text_label(shape, value_model, anchor='left'):
-    shape.labels = {'text':[f'{value_model.label}:{round(_get_model_value(value_model),3)}'],'anchor':[anchor]}
+def callback_model_change_with_text_label(shape, value_model, anchor='left', orientation='horizontal'):
+    shape.labels = {'text':[f'{value_model.label}:{round(_get_model_value(value_model),3)}'],'anchor':[anchor], 'orientation': [orientation]}
 
 def callback_model_change_with_text_label_on_off(shape, value_model, anchor='left', text = ""):
     checked = bool(value_model.rvalue)
