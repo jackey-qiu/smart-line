@@ -19,7 +19,7 @@ basic_shapes:
       anchor_pars: [6, False]
       labels:
         text: ['30 ml', '60 ml', '90 ml', '120 ml', '150 ml', '180 ml']
-        anchor: ['anchor_right_5','anchor_right_4','anchor_right_3','anchor_right_2','anchor_right_1','anchor_right_0']
+        anchor: ['anchor_right_0','anchor_right_1','anchor_right_2','anchor_right_3','anchor_right_4','anchor_right_5']
         orientation: ['horizontal', 'horizontal','horizontal','horizontal','horizontal','horizontal']
         decoration: None     
     handle:

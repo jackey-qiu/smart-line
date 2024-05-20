@@ -88,9 +88,9 @@ def callback_model_change_with_text_label(shape, value_model, anchor='left', ori
 def callback_model_change_with_text_label_on_off(shape, value_model, anchor='left', text = ""):
     checked = bool(value_model.rvalue)
     if checked:
-        shape.labels = {'text':[f'{text} on'],'anchor':[anchor]}
+        shape.labels = {'text':[f'{text} on'],'anchor':[anchor],'orientation': ['horizontal']}
     else:
-        shape.labels = {'text':[f'{text} off'],'anchor':[anchor]}
+        shape.labels = {'text':[f'{text} off'],'anchor':[anchor], 'orientation': ['horizontal']}
 
 def callback_leftmouse_click_with_decoration(shape, value_model):
     pass

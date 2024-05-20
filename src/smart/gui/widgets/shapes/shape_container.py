@@ -38,6 +38,7 @@ class baseShape(object):
         self.ref_geometry = transformation['translate']
 
         # self.cen = self.compute_center_from_dim()
+        self.anchor_kwargs = None
         self._rotcenter = rotation_center
         self._decoration = copy.deepcopy(decoration_cursor_off)
         self._decoration_cursor_on = copy.deepcopy(decoration_cursor_on)
@@ -137,9 +138,13 @@ class baseShape(object):
     def compute_center_from_dim(self, apply_translate = True):
         raise NotImplementedError
 
-    def make_anchors(self, *args, **kwargs):
-        raise NotImplementedError
+    def make_anchors(self, **kwargs):
+        self.anchor_kwargs = kwargs
+        #raise NotImplementedError
     
+    def update_anchors(self):
+        self.make_anchors(**self.anchor_kwargs)
+
     def calculate_shape(self):
         raise NotImplementedError
     
@@ -354,9 +359,12 @@ class rectangle(baseShape):
     def scale(self, sf):
         self.dim_pars = (np.array(self.dim_pars)*[1,1,sf/self.transformation['scale'],sf/self.transformation['scale']]).astype(int)
         self.transformation = {'scale': sf}
+        if self.anchor_kwargs!=None:
+            self.update_anchors()
 
     def draw_shape(self, qp):
         qp = self.apply_transform(qp)
+        self.update_anchors()
         if self.show:
             qp.drawRect(*np.array(self.dim_pars).astype(int))
         self.text_label(qp)
@@ -387,20 +395,7 @@ class rectangle(baseShape):
             self._draw_text(qp, alignment, text, anchor, x, y, w, h, w_txt, h_txt, padding, labels['orientation'][i])
             qp.restore()
             qp.save()
-            # x, y = self._cal_text_anchor_point(anchor, x, y, w, h, w_txt, h_txt, padding)
-            # qp.drawText(int(x), int(y), int(w_txt), int(h_txt), getattr(Qt, alignment), text)
-            '''
-            if ('left' in anchor) or ('right' in anchor):
-                if 'right' in anchor:
-                    qp.translate(int(x+h_txt/2), int(y+w_txt/2+h_txt/2))
-                elif 'left' in anchor:
-                    qp.translate(int(x+w_txt-h_txt*1.5), int(y+w_txt/2+h_txt/2))
-                qp.rotate(270)
-                qp.drawText(int(0), int(0), int(w_txt), int(h_txt), getattr(Qt, alignment), text)
-                qp.restore()
-            else:
-                qp.drawText(int(x), int(y), int(w_txt), int(h_txt), getattr(Qt, alignment), text)
-            '''
+
     def calculate_shape_boundary(self):
         x, y, w, h = self.dim_pars
         four_corners = [[x,y], [x+w,y],[x, y+h], [x+w, y+h]]
@@ -419,9 +414,8 @@ class rectangle(baseShape):
     
     def make_anchors(self, num_of_anchors_on_each_side = 4, include_corner = True):
         #num_of_anchors_on_each_side: exclude corners
-        
+        super().make_anchors(num_of_anchors_on_each_side = num_of_anchors_on_each_side, include_corner = include_corner)
         if type(num_of_anchors_on_each_side)==str:
-            print(num_of_anchors_on_each_side)
             num_of_anchors_on_each_side = int(num_of_anchors_on_each_side)
         w, h = self.dim_pars[2:]
         if not include_corner:
@@ -444,8 +438,8 @@ class rectangle(baseShape):
                 anchors[f'anchor_left_{i}'] = top_left_coord + [0, i*h_step]
                 anchors[f'anchor_bottom_{i}'] = bottom_right_coord + [-i*w_step, 0]
                 anchors[f'anchor_right_{i}'] = bottom_right_coord + [0, -i*h_step]
-        for each in anchors:
-            anchors[each] = anchors[each] + np.array(self.transformation['translate'])
+        # for each in anchors:
+            # anchors[each] = anchors[each] + np.array(self.transformation['translate'])
         self.anchors = anchors
 
     def calculate_orientation_length(self, orientation = 'top', ref_anchor = None):
@@ -485,6 +479,8 @@ class circle(baseShape):
     def scale(self, sf):
         self.dim_pars = list((np.array(self.dim_pars)*np.array([1,1,sf/self.transformation['scale']])).astype(int))
         self.transformation['scale'] = sf
+        if self.anchor_kwargs!=None:
+            self.update_anchors()
 
     def draw_shape(self, qp):
         qp = self.apply_transform(qp)
@@ -543,6 +539,7 @@ class circle(baseShape):
         
     def make_anchors(self, num_of_anchors = 4):
         #num_of_anchors_on_each_side: exclude corners
+        super().make_anchors(num_of_anchors = num_of_anchors)
         cen = np.array(self.compute_center_from_dim(False))
         ang_step = math.radians(360/num_of_anchors)
         anchors = {}
@@ -579,6 +576,8 @@ class isocelesTriangle(baseShape):
     def scale(self, sf):
         self.dim_pars = (np.array(self.dim_pars)*[1,1,sf/self.transformation['scale'],1]).astype(int)
         self.transformation['scale'] = sf
+        if self.anchor_kwargs!=None:
+            self.update_anchors()
 
     def _cal_corner_point_coordinates(self, return_type_is_qpointF = True):
         ang = math.radians(self.dim_pars[-1])/2
@@ -672,7 +671,7 @@ class isocelesTriangle(baseShape):
 
     def make_anchors(self, num_of_anchors_on_each_side = 4, include_corner = True):
         #num_of_anchors_on_each_side: exclude corners
-
+        super().make_anchors(num_of_anchors_on_each_side = num_of_anchors_on_each_side, include_corner = include_corner)
         edge, ang = self.dim_pars[2:]
         ang = math.radians(ang/2)
         bottom_edge = edge * math.sin(ang) *2
@@ -739,6 +738,8 @@ class trapezoid(baseShape):
         sf_norm = sf/self.transformation['scale']
         self.dim_pars = (np.array(self.dim_pars)*[1,1,sf_norm, sf_norm, sf_norm]).astype(int)
         self.transformation['scale'] = sf
+        if self.anchor_kwargs!=None:
+            self.update_anchors()
 
     def _cal_corner_point_coordinates(self, return_type_is_qpointF = True):
         edge_lenth_top = self.dim_pars[-3]
@@ -835,7 +836,7 @@ class trapezoid(baseShape):
 
     def make_anchors(self, num_of_anchors_on_each_side = 4, include_corner = True):
         #num_of_anchors_on_each_side: exclude corners
-
+        super().make_anchors(num_of_anchors_on_each_side = num_of_anchors_on_each_side, include_corner = include_corner)
         bottom_edge = self.dim_pars[-2]
         top_edge = self.dim_pars[-3]
         height = self.dim_pars[-1]
@@ -940,7 +941,7 @@ class shapeComposite(TaurusBaseComponent, QObject):
         self._callbacks_upon_left_mouseclick = callbacks_upon_mouseclick
         self.ref_shape = self.shapes[ref_shape_index] if ref_shape_index!=None else self.shapes[0]
         self.anchor_args = anchor_args
-        self.make_anchors()
+        # self.make_anchors()
         self.alignment = alignment_pattern
         self.connection = connection_pattern
         self.lines = None
@@ -1017,11 +1018,12 @@ class shapeComposite(TaurusBaseComponent, QObject):
         assert len(cbs) == len(self.model_shape_index_list), "Length of callbacks must equal to that of model shape index"
         self._callbacks_upon_left_mouseclick = {ix: cb for ix, cb in zip(self.model_shape_index_list, cbs)}
 
-    def make_anchors(self):
-        if self.anchor_args==None:
-            return
-        for shape, arg in zip(self.shapes, self.anchor_args):
-            shape.make_anchors(arg)
+    # def make_anchors(self):
+        # if self.anchor_args==None:
+            # return
+        # for shape, arg in zip(self.shapes, self.anchor_args):
+            # shape.make_anchors(arg)
+            # print(arg)
 
     def build_composite(self):
         self.align_shapes()
@@ -1071,7 +1073,7 @@ class shapeComposite(TaurusBaseComponent, QObject):
             shape.scale(sf)
         #update anchors first
 
-        self.make_anchors()
+        # shape.update_anchors()
         self.build_composite()
 
     def uponLeftMouseClicked(self, shape_index):
@@ -1156,13 +1158,16 @@ class buildTools(object):
         return composite_obj_container
 
     @classmethod
-    def build_view_from_yaml(cls, yaml_file_path):
+    def build_view_from_yaml(cls, yaml_file_path, canvas_width):
         composite_obj_container = cls.build_composite_shape_from_yaml(yaml_file_path)
         with open(yaml_file_path, 'r', encoding='utf8') as f:
            viewer_config = yaml.safe_load(f.read())['viewers']
         viewer_container = {}
         connection_container = {}
         for viewer, viewer_info in viewer_config.items():
+            max_width = 0
+            max_width = max([each[0] for each in viewer_info['transformation']['translate']])
+            sf = canvas_width/max_width
             composite_obj_container_subset = {}
             for i, each in enumerate(viewer_info['composites']):
                 init_kwargs, cbs, models = composite_obj_container[each].copy_object_meta() 
@@ -1172,6 +1177,7 @@ class buildTools(object):
                 composite.unpack_callbacks_and_models()
                 #composite = copy.deepcopy(composite_obj_container[each])
                 translate = viewer_info['transformation']['translate'][i]
+                translate = [int(translate[0]*sf), translate[1]]
                 composite.translate(translate)
                 if each in composite_obj_container_subset:
                     j = 2
@@ -1188,7 +1194,7 @@ class buildTools(object):
             if 'connection' in viewer_info:
                 connection_container[viewer] = viewer_info['connection']
             else:
-                connection_container['viewer'] = {}
+                connection_container[viewer] = {}
         return viewer_container, connection_container
 
     @classmethod

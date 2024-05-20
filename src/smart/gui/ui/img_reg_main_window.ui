@@ -1094,8 +1094,8 @@
               <layout class="QVBoxLayout" name="verticalLayout_16">
                <item>
                 <layout class="QGridLayout" name="gridLayout_14">
-                 <item row="1" column="2">
-                  <widget class="QPushButton" name="pushButton_13">
+                 <item row="0" column="4">
+                  <widget class="QPushButton" name="pushButton_render">
                    <property name="minimumSize">
                     <size>
                      <width>0</width>
@@ -1103,132 +1103,56 @@
                     </size>
                    </property>
                    <property name="text">
-                    <string>Pinhole</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="0" column="3">
-                  <widget class="QPushButton" name="pushButton_6">
-                   <property name="minimumSize">
-                    <size>
-                     <width>0</width>
-                     <height>30</height>
-                    </size>
-                   </property>
-                   <property name="text">
-                    <string>Fast Shutter</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="1" column="0">
-                  <widget class="QPushButton" name="pushButton_slit">
-                   <property name="minimumSize">
-                    <size>
-                     <width>0</width>
-                     <height>30</height>
-                    </size>
-                   </property>
-                   <property name="text">
-                    <string>Beam Slit</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="1" column="1">
-                  <widget class="QPushButton" name="pushButton_8">
-                   <property name="minimumSize">
-                    <size>
-                     <width>0</width>
-                     <height>30</height>
-                    </size>
-                   </property>
-                   <property name="text">
-                    <string>BPM</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="0" column="2">
-                  <widget class="QPushButton" name="pushButton_valve">
-                   <property name="sizePolicy">
-                    <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                     <horstretch>0</horstretch>
-                     <verstretch>0</verstretch>
-                    </sizepolicy>
-                   </property>
-                   <property name="minimumSize">
-                    <size>
-                     <width>0</width>
-                     <height>30</height>
-                    </size>
-                   </property>
-                   <property name="text">
-                    <string>Vacum Valve</string>
+                    <string>Render Viewer</string>
                    </property>
                   </widget>
                  </item>
                  <item row="0" column="1">
-                  <widget class="QPushButton" name="pushButton_2">
+                  <widget class="QComboBox" name="comboBox_viewer_filename">
                    <property name="minimumSize">
                     <size>
-                     <width>0</width>
-                     <height>30</height>
+                     <width>100</width>
+                     <height>0</height>
                     </size>
-                   </property>
-                   <property name="text">
-                    <string>Beam shutter</string>
                    </property>
                   </widget>
                  </item>
-                 <item row="1" column="3">
-                  <widget class="QPushButton" name="pushButton_14">
+                 <item row="0" column="3">
+                  <widget class="QComboBox" name="comboBox_viewer_obj_name">
                    <property name="minimumSize">
                     <size>
-                     <width>0</width>
-                     <height>30</height>
+                     <width>100</width>
+                     <height>0</height>
                     </size>
                    </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="2">
+                  <widget class="QLabel" name="label_80">
                    <property name="text">
-                    <string>CRL</string>
+                    <string>Viewer objects</string>
                    </property>
                   </widget>
                  </item>
                  <item row="0" column="0">
-                  <widget class="QPushButton" name="pushButton">
-                   <property name="minimumSize">
-                    <size>
-                     <width>0</width>
-                     <height>30</height>
-                    </size>
-                   </property>
+                  <widget class="QLabel" name="label_79">
                    <property name="text">
-                    <string>Channel cut</string>
+                    <string>Viewer files</string>
                    </property>
                   </widget>
                  </item>
-                 <item row="0" column="4">
-                  <widget class="QPushButton" name="pushButton_15">
-                   <property name="minimumSize">
+                 <item row="0" column="5">
+                  <spacer name="horizontalSpacer_8">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
                     <size>
-                     <width>0</width>
-                     <height>30</height>
+                     <width>40</width>
+                     <height>20</height>
                     </size>
                    </property>
-                   <property name="text">
-                    <string>Filter set</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="1" column="4">
-                  <widget class="QPushButton" name="pushButton_16">
-                   <property name="minimumSize">
-                    <size>
-                     <width>0</width>
-                     <height>30</height>
-                    </size>
-                   </property>
-                   <property name="text">
-                    <string>Optics Table</string>
-                   </property>
-                  </widget>
+                  </spacer>
                  </item>
                 </layout>
                </item>
@@ -1250,7 +1174,7 @@
                     </sizepolicy>
                    </property>
                    <property name="text">
-                    <string>scale viewer by 1 up to 10</string>
+                    <string>scale viewer by 0.5 up to 2.5</string>
                    </property>
                   </widget>
                  </item>
@@ -1260,10 +1184,19 @@
                     <number>1</number>
                    </property>
                    <property name="maximum">
-                    <number>10</number>
+                    <number>5</number>
+                   </property>
+                   <property name="value">
+                    <number>2</number>
                    </property>
                    <property name="orientation">
                     <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="tickPosition">
+                    <enum>QSlider::NoTicks</enum>
+                   </property>
+                   <property name="tickInterval">
+                    <number>0</number>
                    </property>
                   </widget>
                  </item>

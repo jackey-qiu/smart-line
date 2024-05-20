@@ -36,7 +36,7 @@ basic_shapes:
         orientation: ['vertical','vertical','horizontal', 'horizontal']
         decoration: None
     small:
-      dim: [0, 0, 60]
+      dim: [0, 0, 20]
       anchor_pars: null
       # labels:
         # text: ['right1','top','right3','bottom','left','right2']
@@ -55,31 +55,6 @@ basic_shapes:
         orientation: ['horizontal']
         decoration: None
 composite_shapes:
-  composite1:
-    shapes: ['circle.big*1', 'rectangle.type2*4']
-    ref_shape: null
-    alignment:
-      shapes: [[0,1],[0,2],[0,3],[0,4]]
-      anchors: [['top','bottom'],['left','right'],['right','left'],['bottom','top']]
-      gaps: [0,0,0,0.5]
-      ref_anchors: [[null, null],[null, null], [null, null], [null, null]]
-    transformation: 
-      translate: [100,100]
-    models: 
-      1: motor/motctrl01/1/position
-      2: motor/motctrl02/1/position
-      3: motor/motctrl02/2/position
-      4: motor/motctrl02/3/position
-    callbacks_upon_model_change:
-      1: ['callback_model_change_with_transformation', 'mv_dir', 'x']
-      2: ['callback_model_change_with_text_label']
-      3: ['callback_model_change_with_decoration']
-      4: ['callback_model_change_with_transformation', 'mv_dir', 'y']
-    callbacks_upon_leftmouse_click:
-      1: null
-      2: null
-      3: null
-      4: null
   slit:
     shapes: ['circle.tiny*1', 'rectangle.type3*2', 'rectangle.type4*2']
     ref_shape: null
@@ -93,43 +68,43 @@ composite_shapes:
       translate: [0,0]
     models: 
       1: motor/motctrl01/1/position
-      2: motor/motctrl01/1/position
+      # 2: motor/motctrl01/1/position
       3: motor/motctrl02/1/position
-      4: motor/motctrl02/1/position
+      # 4: motor/motctrl02/1/position
     callbacks_upon_model_change:
       1: 
         - ['callback_model_change_with_transformation', 'mv_dir', 'y', 'sign', '+']
         - ['callback_model_change_with_text_label', 'anchor', 'top', 'orientation','horizontal']
-      2:
-        - ['callback_model_change_with_transformation', 'mv_dir', 'y', 'sign', '-']
-        - ['callback_model_change_with_text_label', 'anchor', 'bottom','orientation','horizontal']
+      # 2:
+        # - ['callback_model_change_with_transformation', 'mv_dir', 'y', 'sign', '-']
+        # - ['callback_model_change_with_text_label', 'anchor', 'bottom','orientation','horizontal']
       3: 
         - ['callback_model_change_with_transformation', 'mv_dir', 'x', 'sign', '+']
         - ['callback_model_change_with_text_label', 'anchor', 'left','orientation','vertical']
-      4: 
-        - ['callback_model_change_with_transformation', 'mv_dir', 'x', 'sign', '-']
-        - ['callback_model_change_with_text_label', 'anchor', 'right', 'orientation', 'vertical']
+      # 4: 
+        # - ['callback_model_change_with_transformation', 'mv_dir', 'x', 'sign', '-']
+        # - ['callback_model_change_with_text_label', 'anchor', 'right', 'orientation', 'vertical']
     callbacks_upon_leftmouse_click:
       1: null
-      2: null
+      # 2: null
       3: null
-      4: null      
+      # 4: null      
   valve:
     shapes: ['circle.tiny*1', 'isocelesTriangle.type1*2']
     # shapes: ['rectangle.type1*1']
     ref_shape: null
-    hide: [0]
+    hide: []
     alignment:
       shapes: [[0,1],[0,2]]
-      anchors: [['top','top'],['bottom','top']]
+      anchors: [['left','top'],['right','top']]
       gaps: [0.,0.]
       ref_anchors: [[null, null],[null, null]]
     transformation: 
       translate: [0,0]
-    models: []
-      # 0: sys/tg_test/1/boolean_scalar
-      # 1: sys/tg_test/1/boolean_scalar
-      # 2: sys/tg_test/1/boolean_scalar
+    models: 
+      0: sys/tg_test/1/boolean_scalar
+      1: sys/tg_test/1/boolean_scalar
+      2: sys/tg_test/1/boolean_scalar
     callbacks_upon_model_change:
       0: ['callback_model_change_with_text_label_on_off', 'anchor', 'top']
       1: ['callback_model_change_with_decoration_on_off']
@@ -176,7 +151,7 @@ composite_shapes:
       2: null      
 viewers:
   viewer1:
-    composites: ['anchor','valve', 'slit', 'slit', 'valve','slit','label_eg']
+    composites: ['anchor','valve', 'slit', 'slit', 'valve','slit','anchor']
     transformation:
       translate:
         - [50, 220]
@@ -186,6 +161,14 @@ viewers:
         - [880, 220]
         - [1100, 220]
         - [1500, 220]
+    connection:
+      anchor.1.right<=>anchor2.1.left:
+        pen:
+          color: [255, 0, 0]
+          width: 2
+          ls: DotLine
+        direct_connect: True
+        draw_after: False         
   viewer2:
     composites: ['valve','anchor']
     transformation:

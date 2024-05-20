@@ -9,18 +9,19 @@ from smart import rs_path
 
 class beamlineSynopticViewer(QWidget):
 
-    def __init__(self, parent = None, yaml_config_file = str(rs_path / 'config' / 'shape_psd.yaml')):
+    def __init__(self, parent = None):
         super().__init__(parent = parent)
-        self.config_file = yaml_config_file
+        #self.config_file = yaml_config_file
         self.composite_shape = None
         self.viewer_shape = None
         self.viewer_connection = {}
         self.set_parent()
-        self.init_viewer()
+        #self.init_viewer()
 
     def connect_slots_synoptic_viewer(self):
-        self.parent.pushButton_slit.clicked.connect(lambda: self.init_shape('slit'))
-        self.parent.pushButton_valve.clicked.connect(lambda: self.init_shape('valve'))
+        pass
+        #self.parent.pushButton_slit.clicked.connect(lambda: self.init_shape('slit'))
+        #self.parent.pushButton_valve.clicked.connect(lambda: self.init_shape('valve'))
 
     def set_parent(self):
         self.parent = findMainWindow()
@@ -28,9 +29,12 @@ class beamlineSynopticViewer(QWidget):
     def init_shape(self, which_composite = 'slit'):
         self.composite_shape = buildTools.build_composite_shape_from_yaml(self.config_file)[which_composite]
         self.composite_shape.updateSignal.connect(self.update_canvas)
+        self.update()
 
-    def init_viewer(self, which_viewer = 'viewer1'):
-        view_shape, view_connection = buildTools.build_view_from_yaml(self.config_file)
+    def init_viewer(self):
+        config_file = str(rs_path / 'config' / (self.parent.comboBox_viewer_filename.currentText() + '.yaml'))
+        which_viewer = self.parent.comboBox_viewer_obj_name.currentText()
+        view_shape, view_connection = buildTools.build_view_from_yaml(config_file, self.size().width())
         self.viewer_shape, self.viewer_connection = view_shape[which_viewer], view_connection[which_viewer]
         for each_composite in self.viewer_shape.values():
             each_composite.updateSignal.connect(self.update_canvas)
@@ -68,19 +72,20 @@ class beamlineSynopticViewer(QWidget):
                 pen_lines_draw_before.append(pen)
         return lines_draw_before, lines_draw_after, pen_lines_draw_before, pen_lines_draw_after
 
-    def scale_composite_shapes_according_to_canvas_size(self):
-        width = self.size().width()
-        height = self.size().height()
-        x_min, x_max, y_min, y_max = buildTools.calculate_boundary_for_combined_shapes(list(self.viewer_shape.values())[0].shapes)
-        for composite_shape in self.viewer_shape.values():
-            _x_min, _x_max, _y_min, _y_max = buildTools.calculate_boundary_for_combined_shapes(composite_shape.shapes)
-            x_min = min([_x_min, x_min])
-            x_max = max([_x_max, x_max])
-            y_min = min([_y_min, y_min])
-            y_max = max([_y_max, y_max])
-        sf_width = width / (x_max - x_min)
-        sf_height = height / (y_max - y_min)
-        sf = min([sf_width, sf_height])
+    def scale_composite_shapes(self, sf = None):
+        if sf==None:
+            width = self.size().width()
+            height = self.size().height()
+            x_min, x_max, y_min, y_max = buildTools.calculate_boundary_for_combined_shapes(list(self.viewer_shape.values())[0].shapes)
+            for composite_shape in self.viewer_shape.values():
+                _x_min, _x_max, _y_min, _y_max = buildTools.calculate_boundary_for_combined_shapes(composite_shape.shapes)
+                x_min = min([_x_min, x_min])
+                x_max = max([_x_max, x_max])
+                y_min = min([_y_min, y_min])
+                y_max = max([_y_max, y_max])
+            sf_width = width / (x_max - x_min)
+            sf_height = height / (y_max - y_min)
+            sf = min([sf_width, sf_height])
         for composite_shape in self.viewer_shape.values():
             composite_shape.scale(sf)
         self.update()
@@ -103,16 +108,7 @@ class beamlineSynopticViewer(QWidget):
             for i in range(len(lines)-1):
                 pts = list(lines[i]) + list(lines[i+1])
                 qp.drawLine(*pts)
-        '''
-        if len(self.viewer_shape)>1:
-            qp.setPen(QPen(Qt.yellow, 2, Qt.DotLine))   
-            all_composite_shapes = list(self.viewer_shape.values())
-            shape_upstream, shape_downstream = all_composite_shapes[0].ref_shape, all_composite_shapes[-1].ref_shape
-            lines = buildTools.make_line_connection_btw_two_anchors(shapes = [shape_upstream, shape_downstream], anchors=['right','left'], direct_connection=True)
-            for i in range(len(lines)-1):
-                pts = list(lines[i]) + list(lines[i+1])
-                qp.drawLine(*pts)
-        '''
+        #draw shapes
         for composite_shape in self.viewer_shape.values():
             for each_shape in composite_shape.shapes:
                 qp.resetTransform()
@@ -125,13 +121,6 @@ class beamlineSynopticViewer(QWidget):
             for i in range(len(lines)-1):
                 pts = list(lines[i]) + list(lines[i+1])
                 qp.drawLine(*pts)                
-        """        
-        if self.composite_shape == None:
-            return
-        for each_shape in self.composite_shape.shapes:
-            qp.resetTransform()
-            each_shape.paint(qp)
-        """
         qp.end()
 
     @Slot()
