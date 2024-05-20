@@ -729,6 +729,167 @@ class isocelesTriangle(baseShape):
         else:
             return False
 
+class trapezoid(baseShape):
+    def __init__(self, dim = [100,100,40,60,50], rotation_center = None, decoration_cursor_off=DECORATION_UPON_CURSOR_OFF, decoration_cursor_on =DECORATION_UPON_CURSOR_ON, \
+                 transformation={'rotate':0, 'translate':(0,0), 'scale': 1}, text_decoration = DECORATION_TEXT_DEFAULT, labels =  {'text':[], 'anchor':[],'orientation': [],'decoration':None}):
+        #dim = [cen_x, cen_y, len_top, len_bottom, height]
+        super().__init__(dim = dim, rotation_center=rotation_center, decoration_cursor_off=decoration_cursor_off, decoration_cursor_on= decoration_cursor_on, transformation=transformation, text_decoration=text_decoration, lables=labels)
+    
+    def scale(self, sf):
+        sf_norm = sf/self.transformation['scale']
+        self.dim_pars = (np.array(self.dim_pars)*[1,1,sf_norm, sf_norm, sf_norm]).astype(int)
+        self.transformation['scale'] = sf
+
+    def _cal_corner_point_coordinates(self, return_type_is_qpointF = True):
+        edge_lenth_top = self.dim_pars[-3]
+        edge_lenth_bottom = self.dim_pars[-2]
+        height = self.dim_pars[-2]
+        dx_top = edge_lenth_top/2
+        dx_bottom = edge_lenth_bottom/2
+        dy = height/2
+        point1 = (np.array(self.dim_pars[0:2]) + np.array([-dx_top, -dy])).astype(int)
+        point2 = (np.array(self.dim_pars[0:2]) + np.array([dx_top, -dy])).astype(int)
+        point3 = (np.array(self.dim_pars[0:2]) + np.array([-dx_bottom, dy])).astype(int)
+        point4 = (np.array(self.dim_pars[0:2]) + np.array([dx_bottom, dy])).astype(int)
+        if return_type_is_qpointF:
+            return QPointF(*point1), QPointF(*point2), QPointF(*point3), QPointF(*point4)
+        else:
+            return point1, point2, point3, point4
+
+    def draw_shape(self, qp):
+        qp = self.apply_transform(qp)
+        if self.show:
+            point1, point2, point3, point4 = self._cal_corner_point_coordinates()
+            polygon = QPolygonF()
+            polygon.append(point1)
+            polygon.append(point2)
+            polygon.append(point4)
+            polygon.append(point3)
+            qp.drawPolygon(polygon)
+        else:
+            self.text_label(qp)
+
+    def _get_width_height(self):
+        #(length_top + length_bottom)/2, height
+        return (self.dim_pars[2] + self.dim_pars[3])/2, self.dim_pars[-1]
+
+    def text_label(self, qp):
+        labels = self.labels
+        decoration = self.text_decoration 
+        point1, point2, point3, point4 = self._cal_corner_point_coordinates(False)
+        qp.save()
+        for i, text in enumerate(labels['text']):
+            anchor = labels['anchor'][i]
+            if labels['decoration'] == None:
+                decoration = self.text_decoration
+            else:
+                if type(labels['decoration'])==list and len(labels['decoration'])==len(labels['text']):
+                    decoration = labels['decoration'][i]
+                else:
+                    decoration = self.text_decoration
+            alignment = decoration['alignment']
+            padding = decoration['padding']
+            text_color = decoration['text_color']
+            font_size = decoration['font_size']
+
+            qp.setPen(QColor(*text_color))
+            qp.setFont(QFont('Decorative', font_size))
+            text_bound_rect = qp.fontMetrics().boundingRect(QRect(), Qt.AlignCenter, text)
+            w_txt, h_txt = text_bound_rect.width(), text_bound_rect.height()
+            if anchor == 'left':
+                x, y = (point1 + point3)/2
+            elif anchor == 'right':
+                x, y = (point2 + point4)/2
+            elif anchor == 'top':
+                x, y = (point1 + point2)/2
+            elif anchor == 'bottom':
+                x, y = (point3 + point4)/2
+            elif anchor == 'center':
+                x, y = self.dim_pars[0:2]
+            else:
+                if anchor in self.anchors:
+                    x, y = self.anchors[anchor]
+            w, h = self._get_width_height()
+            self._draw_text(qp, alignment, text, anchor, x, y, w, h, w_txt, h_txt, padding, labels['orientation'][i])
+            qp.restore()
+            qp.save()
+            # x, y = self._cal_text_anchor_point(anchor, x, y, 0, 0, w_txt, h_txt, padding)
+            # qp.setPen(QColor(*text_color))
+            # qp.setFont(QFont('Decorative', font_size))
+            # qp.drawText(int(x), int(y), int(w_txt), int(h_txt), getattr(Qt, alignment), text)
+
+    def calculate_shape_boundary(self):
+        four_corners = self._cal_corner_point_coordinates(False)
+        four_corners = [np.array(each) + np.array(self.transformation['translate']) for each in four_corners]
+        rot_center = np.array(self.rot_center) + np.array(self.transformation['translate'])
+        four_corners = rotate_multiple_points(four_corners, rot_center, self.transformation['rotate'])
+        #return x_min, x_max, y_min, y_max
+        return int(four_corners[:,0].min()), int(four_corners[:,0].max()), int(four_corners[:,1].min()), int(four_corners[:,1].max())
+
+    def compute_center_from_dim(self, apply_translate = True):
+        x, y, *_ = self.dim_pars
+        if apply_translate:
+            return x + self.transformation['translate'][0], y + self.transformation['translate'][1]
+        else:
+            return x, y
+
+    def make_anchors(self, num_of_anchors_on_each_side = 4, include_corner = True):
+        #num_of_anchors_on_each_side: exclude corners
+
+        bottom_edge = self.dim_pars[-2]
+        top_edge = self.dim_pars[-3]
+        height = self.dim_pars[-1]
+        ang = math.atan(height/((top_edge - bottom_edge)/2))
+        if not include_corner:
+            w_step_bottom, w_step_top, h_step = bottom_edge/(num_of_anchors_on_each_side+1), top_edge/(num_of_anchors_on_each_side+1),  height/(num_of_anchors_on_each_side+1)
+        else:
+            assert num_of_anchors_on_each_side>2, 'At least two achors at each edge'
+            w_step_bottom, w_step_top, h_step = bottom_edge/(num_of_anchors_on_each_side-1), top_edge/(num_of_anchors_on_each_side-1),  height/(num_of_anchors_on_each_side-1)
+
+        p1, p2, p3, p4 = self._cal_corner_point_coordinates(False)
+        anchors = {}
+        for i in range(num_of_anchors_on_each_side):
+            if not include_corner:
+                anchors[f'anchor_left_{i}'] = np.array(p1) + [-(i+1)*h_step*math.tan(ang), (i+1)*h_step]
+                anchors[f'anchor_bottom_{i}'] = np.array(p3) + [(i+1)*w_step_bottom, 0]
+                anchors[f'anchor_top_{i}'] = np.array(p1) + [(i+1)*w_step_top, 0]
+                anchors[f'anchor_right_{i}'] = np.array(p2) + [(i+1)*h_step*math.tan(ang), (i+1)*h_step]
+            else:
+                anchors[f'anchor_left_{i}'] = np.array(p1) + [-i*h_step*math.tan(ang), i*h_step]
+                anchors[f'anchor_bottom_{i}'] = np.array(p3) + [i*w_step_bottom, 0]
+                anchors[f'anchor_top_{i}'] = np.array(p1) + [i*w_step_top, 0]
+                anchors[f'anchor_right_{i}'] = np.array(p2) + [i*h_step*math.tan(ang), i*h_step]                              
+        for each in anchors:
+            anchors[each] = anchors[each] + np.array(self.transformation['translate'])
+        self.anchors = anchors
+
+    def calculate_orientation_length(self, orientation = 'top', ref_anchor = None):
+        if orientation == 'cen':
+            return 1
+        w_top, w_bottom, h = np.array(self.dim_pars[2:])
+        if orientation in ['top', 'bottom']:
+            return h/2
+        elif orientation in ['left', 'right']:
+            return (w_top + w_bottom)/2
+        else:
+            if orientation in self.anchors:
+                if ref_anchor == None:
+                    return np.linalg.norm(np.array(self.anchors[orientation]) - np.array(self.compute_center_from_dim(apply_translate=False)))
+                else:
+                    return 1
+            else:
+                raise KeyError('No such orientation key!')
+
+    def check_pos(self, x, y):
+        p1, p2, p3, p4 = self._cal_corner_point_coordinates(False)
+        pos_ = rotate_multiple_points([(x, y)], np.array(self.rot_center) + np.array(self.transformation['translate']), -self.transformation['rotate'])
+        pos_ = np.array(pos_) - np.array(self.transformation['translate'])
+        x_, y_ = pos_
+        if (p3[0] <= x_ <= p4[0]) and (p1[1] <= y_ <= p3[1]):
+            return True
+        else:
+            return False
+
 class line(baseShape):
     pass
 
@@ -905,8 +1066,8 @@ class shapeComposite(TaurusBaseComponent, QObject):
 
     def scale(self, sf):
         for i, shape in enumerate(self.shapes):
-            if i!=0:
-                shape.reset()
+            # if i!=0:
+                # shape.reset()
             shape.scale(sf)
         #update anchors first
 
@@ -1000,6 +1161,7 @@ class buildTools(object):
         with open(yaml_file_path, 'r', encoding='utf8') as f:
            viewer_config = yaml.safe_load(f.read())['viewers']
         viewer_container = {}
+        connection_container = {}
         for viewer, viewer_info in viewer_config.items():
             composite_obj_container_subset = {}
             for i, each in enumerate(viewer_info['composites']):
@@ -1012,11 +1174,22 @@ class buildTools(object):
                 translate = viewer_info['transformation']['translate'][i]
                 composite.translate(translate)
                 if each in composite_obj_container_subset:
-                    composite_obj_container_subset[each+f'{i+1}'] = composite
+                    j = 2
+                    while True:
+                        if each+f'{j}' in composite_obj_container_subset:
+                            j = j + 1
+                            continue
+                        else:
+                            composite_obj_container_subset[each+f'{j}'] = composite
+                            break
                 else:
                     composite_obj_container_subset[each] = composite
             viewer_container[viewer] = composite_obj_container_subset
-        return viewer_container
+            if 'connection' in viewer_info:
+                connection_container[viewer] = viewer_info['connection']
+            else:
+                connection_container['viewer'] = {}
+        return viewer_container, connection_container
 
     @classmethod
     def calculate_boundary_for_combined_shapes(cls, shapes):
@@ -1096,20 +1269,33 @@ class buildTools(object):
                      }
             return np.array(pos) + offset[dir]
 
-        def _extend_to_beyond_boundary(pos, dir, overshot_pix_ct = 20):
+        def _extend_to_beyond_boundary(pos, dir, pair_pos, overshot_pix_ct = 20):
             x_min, x_max, y_min, y_max = buildTools.calculate_boundary_for_combined_shapes(shapes)
+            x_pair, y_pair = pair_pos
             if dir == 'left':
-                x = min([x_min, pos[0]]) - overshot_pix_ct
-                y = pos[1]
+                if x_pair>pos[0]:
+                    x = min([x_min, pos[0]]) - overshot_pix_ct
+                    y = pos[1]
+                else:
+                    x, y = pos
             elif dir == 'right':
-                x = max([x_max, pos[0]]) + overshot_pix_ct
-                y = pos[1]
+                if x_pair<pos[0]:
+                    x = max([x_max, pos[0]]) + overshot_pix_ct
+                    y = pos[1]
+                else:
+                    x, y = pos
             elif dir == 'top':
-                x = pos[0]
-                y = min([y_min, pos[1]]) - overshot_pix_ct
+                if y_pair<pos[1]:
+                    x = pos[0]
+                    y = min([y_min, pos[1]]) - overshot_pix_ct
+                else:
+                    x, y = pos[0], min([pos[1],100])
             elif dir == 'bottom':
-                x = pos[0]
-                y = max([y_max, pos[1]]) + overshot_pix_ct
+                if y_pair>pos[1]:
+                    x = pos[0]
+                    y = max([y_max, pos[1]]) + overshot_pix_ct
+                else:
+                    x, y = pos
             return [int(x), int(y)]
 
         def _get_sign_from_dir(dir):
@@ -1145,8 +1331,8 @@ class buildTools(object):
         
         if ('left' not in dirs) and ('right' not in dirs):
             if (dirs == ['top', 'top']) or (dirs == ['bottom', 'bottom']):
-                first_anchor_pos_after_extend = _extend_to_beyond_boundary(anchor_pos_offset[0], dir0)
-                second_anchor_pos_after_extend = _extend_to_beyond_boundary(anchor_pos_offset[1], dir1)
+                first_anchor_pos_after_extend = _extend_to_beyond_boundary(anchor_pos_offset[0], dir0,anchor_pos_offset[1])
+                second_anchor_pos_after_extend = _extend_to_beyond_boundary(anchor_pos_offset[1], dir1,anchor_pos_offset[0])
                 if dirs == ['top', 'top']:
                     y_min = min([first_anchor_pos_after_extend[1], second_anchor_pos_after_extend[1]])
                 else:
@@ -1155,17 +1341,25 @@ class buildTools(object):
                 second_anchor_pos_after_extend = [second_anchor_pos_after_extend[0], y_min]
                 line_nodes = [anchor_pos[0], anchor_pos_offset[0], first_anchor_pos_after_extend, second_anchor_pos_after_extend,anchor_pos_offset[1], anchor_pos[1]]
             else:
-                first_anchor_pos_after_extend = _extend_to_beyond_boundary(anchor_pos_offset[0], dir0)
-                second_anchor_pos_after_extend = _extend_to_beyond_boundary(anchor_pos_offset[1], dir1)
-                x_cen = (anchor_pos_offset[0][0] + anchor_pos_offset[1][0])/2
-                first_anchor_pos_after_extend_cen = [x_cen, first_anchor_pos_after_extend[1]]
-                second_anchor_pos_after_extend_cen = [x_cen, second_anchor_pos_after_extend[1]]
-                line_nodes = [anchor_pos[0], anchor_pos_offset[0], first_anchor_pos_after_extend, first_anchor_pos_after_extend_cen, \
-                              second_anchor_pos_after_extend_cen, second_anchor_pos_after_extend,anchor_pos_offset[1], anchor_pos[1]]
+                if ((dir0 == 'top') and (anchor_pos_offset[0][1] < anchor_pos_offset[1][1])) or \
+                   ((dir0 == 'bottom') and (anchor_pos_offset[0][1] > anchor_pos_offset[1][1])):
+                    first_anchor_pos_after_extend = _extend_to_beyond_boundary(anchor_pos_offset[0], dir0,anchor_pos_offset[1])
+                    second_anchor_pos_after_extend = _extend_to_beyond_boundary(anchor_pos_offset[1], dir1,anchor_pos_offset[0])
+                    x_cen = (anchor_pos_offset[0][0] + anchor_pos_offset[1][0])/2
+                    first_anchor_pos_after_extend_cen = [x_cen, first_anchor_pos_after_extend[1]]
+                    second_anchor_pos_after_extend_cen = [x_cen, second_anchor_pos_after_extend[1]]
+                    line_nodes = [anchor_pos[0], anchor_pos_offset[0], first_anchor_pos_after_extend, first_anchor_pos_after_extend_cen, \
+                                second_anchor_pos_after_extend_cen, second_anchor_pos_after_extend,anchor_pos_offset[1], anchor_pos[1]]
+                else:
+                    if anchor_pos_offset[0][1]<anchor_pos_offset[1][1]:
+                        cross_pt = [anchor_pos_offset[1][0], anchor_pos_offset[0][1]]
+                    else:
+                        cross_pt = [anchor_pos_offset[0][0], anchor_pos_offset[1][1]]
+                    line_nodes = [anchor_pos[0], anchor_pos_offset[0], cross_pt,anchor_pos_offset[1], anchor_pos[1]]            
         elif ('top' not in dirs) and ('bottom' not in dirs):
             if (dirs == ['left', 'left']) or (dirs == ['right', 'right']):
-                first_anchor_pos_after_extend = _extend_to_beyond_boundary(anchor_pos_offset[0], dir0)
-                second_anchor_pos_after_extend = _extend_to_beyond_boundary(anchor_pos_offset[1], dir1)
+                first_anchor_pos_after_extend = _extend_to_beyond_boundary(anchor_pos_offset[0], dir0,anchor_pos_offset[1])
+                second_anchor_pos_after_extend = _extend_to_beyond_boundary(anchor_pos_offset[1], dir1,anchor_pos_offset[0])
                 if dirs == ['left', 'left']:
                     x_min = min([first_anchor_pos_after_extend[0], second_anchor_pos_after_extend[0]])
                 else:
@@ -1174,13 +1368,21 @@ class buildTools(object):
                 second_anchor_pos_after_extend = [x_min, second_anchor_pos_after_extend[1]]                
                 line_nodes = [anchor_pos[0], anchor_pos_offset[0], first_anchor_pos_after_extend, second_anchor_pos_after_extend,anchor_pos_offset[1], anchor_pos[1]]
             else:
-                first_anchor_pos_after_extend = _extend_to_beyond_boundary(anchor_pos_offset[0], dir0)
-                second_anchor_pos_after_extend = _extend_to_beyond_boundary(anchor_pos_offset[1], dir1)
-                y_cen = (anchor_pos_offset[0][1] + anchor_pos_offset[1][1])/2
-                first_anchor_pos_after_extend_cen = [first_anchor_pos_after_extend[0], y_cen]
-                second_anchor_pos_after_extend_cen = [second_anchor_pos_after_extend[0], y_cen]
-                line_nodes = [anchor_pos[0], anchor_pos_offset[0], first_anchor_pos_after_extend, first_anchor_pos_after_extend_cen, \
-                              second_anchor_pos_after_extend_cen, second_anchor_pos_after_extend,anchor_pos_offset[1], anchor_pos[1]]            
+                if ((dir0 == 'left') and (anchor_pos_offset[0][0] < anchor_pos_offset[1][0])) or \
+                   ((dir0 == 'right') and (anchor_pos_offset[0][0] > anchor_pos_offset[1][0])):
+                    first_anchor_pos_after_extend = _extend_to_beyond_boundary(anchor_pos_offset[0], dir0,anchor_pos_offset[1])
+                    second_anchor_pos_after_extend = _extend_to_beyond_boundary(anchor_pos_offset[1], dir1, anchor_pos_offset[0])
+                    y_cen = (anchor_pos_offset[0][1] + anchor_pos_offset[1][1])/2
+                    first_anchor_pos_after_extend_cen = [first_anchor_pos_after_extend[0], y_cen]
+                    second_anchor_pos_after_extend_cen = [second_anchor_pos_after_extend[0], y_cen]
+                    line_nodes = [anchor_pos[0], anchor_pos_offset[0], first_anchor_pos_after_extend, first_anchor_pos_after_extend_cen, \
+                                  second_anchor_pos_after_extend_cen, second_anchor_pos_after_extend,anchor_pos_offset[1], anchor_pos[1]]            
+                else:
+                    if anchor_pos_offset[0][1]<anchor_pos_offset[1][1]:
+                        cross_pt = [anchor_pos_offset[1][0], anchor_pos_offset[0][1]]
+                    else:
+                        cross_pt = [anchor_pos_offset[0][0], anchor_pos_offset[1][1]]
+                    line_nodes = [anchor_pos[0], anchor_pos_offset[0], cross_pt,anchor_pos_offset[1], anchor_pos[1]]            
         else: # mixture of top/bottom and left/right
             if dir0 in ['top', 'bottom']:
                 ref_x, ref_y = [anchor_pos_offset[0][0], anchor_pos_offset[1][1]] 
@@ -1191,8 +1393,8 @@ class buildTools(object):
                     cross_pt = [ref_x, ref_y]
                     line_nodes = [anchor_pos[0], anchor_pos_offset[0], cross_pt, anchor_pos_offset[1], anchor_pos[1]]
                 else:
-                    first_anchor_pos_after_extend = _extend_to_beyond_boundary(anchor_pos_offset[0], dir0)
-                    second_anchor_pos_after_extend = _extend_to_beyond_boundary(anchor_pos_offset[1], dir1)
+                    first_anchor_pos_after_extend = _extend_to_beyond_boundary(anchor_pos_offset[0], dir0, anchor_pos_offset[1])
+                    second_anchor_pos_after_extend = _extend_to_beyond_boundary(anchor_pos_offset[1], dir1,anchor_pos_offset[0])
                     cross_pt = [second_anchor_pos_after_extend[0], first_anchor_pos_after_extend[1]]
                     line_nodes = [anchor_pos[0], anchor_pos_offset[0], first_anchor_pos_after_extend, cross_pt, second_anchor_pos_after_extend, anchor_pos_offset[1], anchor_pos[1]]
             else:
@@ -1204,8 +1406,8 @@ class buildTools(object):
                     cross_pt = [ref_x, ref_y]
                     line_nodes = [anchor_pos[0], anchor_pos_offset[0], cross_pt, anchor_pos_offset[1], anchor_pos[1]]
                 else:
-                    first_anchor_pos_after_extend = _extend_to_beyond_boundary(anchor_pos_offset[0], dir0)
-                    second_anchor_pos_after_extend = _extend_to_beyond_boundary(anchor_pos_offset[1], dir1)
+                    first_anchor_pos_after_extend = _extend_to_beyond_boundary(anchor_pos_offset[0], dir0, anchor_pos_offset[1])
+                    second_anchor_pos_after_extend = _extend_to_beyond_boundary(anchor_pos_offset[1], dir1, anchor_pos_offset[0])
                     cross_pt = [first_anchor_pos_after_extend[0], second_anchor_pos_after_extend[1]]
                     line_nodes = [anchor_pos[0], anchor_pos_offset[0], first_anchor_pos_after_extend, cross_pt, second_anchor_pos_after_extend, anchor_pos_offset[1], anchor_pos[1]]
         return np.array(line_nodes).astype(int)
