@@ -364,7 +364,8 @@ class rectangle(baseShape):
 
     def draw_shape(self, qp):
         qp = self.apply_transform(qp)
-        self.update_anchors()
+        if self.anchor_kwargs!=None:
+            self.update_anchors()
         if self.show:
             qp.drawRect(*np.array(self.dim_pars).astype(int))
         self.text_label(qp)
@@ -483,6 +484,8 @@ class circle(baseShape):
             self.update_anchors()
 
     def draw_shape(self, qp):
+        if self.anchor_kwargs!=None:
+            self.update_anchors()
         qp = self.apply_transform(qp)
         if self.show:
             qp.drawEllipse(*(self.dim_pars + [self.dim_pars[-1]]))
@@ -593,6 +596,8 @@ class isocelesTriangle(baseShape):
             return point1, point2, point3
 
     def draw_shape(self, qp):
+        if self.anchor_kwargs!=None:
+            self.update_anchors()
         qp = self.apply_transform(qp)
         if self.show:
             point1, point2, point3 = self._cal_corner_point_coordinates()
@@ -758,6 +763,8 @@ class trapezoid(baseShape):
             return point1, point2, point3, point4
 
     def draw_shape(self, qp):
+        if self.anchor_kwargs!=None:
+            self.update_anchors()
         qp = self.apply_transform(qp)
         if self.show:
             point1, point2, point3, point4 = self._cal_corner_point_coordinates()
@@ -1083,7 +1090,9 @@ class shapeComposite(TaurusBaseComponent, QObject):
         """reimplemented from TaurusBaseComponent"""
         try:
             for i in range(len(self.model_shape_index_list)):
-                if evt_src is self.getModelObj(key=(TaurusBaseComponent.MLIST, i)):
+                #some models could be duplicated, the index needs recalculation
+                ix_model = list(set(list(self._models.values()))).index(list(self._models.values())[i])
+                if evt_src is self.getModelObj(key=(TaurusBaseComponent.MLIST, ix_model)):
                     self._callbacks_upon_model_change[self.model_shape_index_list[i]](self.shapes[self.model_shape_index_list[i]], evt_value)
                     self.updateSignal.emit()
                     # break

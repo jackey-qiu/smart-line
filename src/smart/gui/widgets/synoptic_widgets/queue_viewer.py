@@ -45,19 +45,19 @@ class queueSynopticView(QWidget):
         x = int(self.padding_hor*0.1)
         shape_queued = rectangle(dim=[x, self.padding_vertical, width, height])
         shape_queued.decoration = self.FILL_QUEUED
-        shape_queued.labels = {'text':['queued'],'anchor':['center']}
+        shape_queued.labels = {'text':['queued'],'anchor':['center'],'orientation': ['horizontal']}
         shape_disabled = rectangle(dim=[x, (self.padding_vertical + self.block_height)*1+self.padding_vertical, width, height])
         shape_disabled.decoration = self.FILL_DISABLED
-        shape_disabled.labels = {'text':['disabled'],'anchor':['center']}
+        shape_disabled.labels = {'text':['disabled'],'anchor':['center'],'orientation': ['horizontal']}
         shape_failed = rectangle(dim=[x, (self.padding_vertical+ self.block_height)*2+self.padding_vertical, width, height])
         shape_failed.decoration = self.FILL_FAILED
-        shape_failed.labels = {'text':['failed'],'anchor':['center']}
+        shape_failed.labels = {'text':['failed'],'anchor':['center'],'orientation': ['horizontal']}
         shape_pause = rectangle(dim=[x, (self.padding_vertical+ self.block_height)*3+self.padding_vertical, width, height])
         shape_pause.decoration = self.FILL_PAUSED
-        shape_pause.labels = {'text':['pause'],'anchor':['center']}
+        shape_pause.labels = {'text':['pause'],'anchor':['center'],'orientation': ['horizontal']}
         shape_run = rectangle(dim=[x, (self.padding_vertical+ self.block_height)*4+self.padding_vertical, width, height])
         shape_run.decoration = self.FILL_RUN
-        shape_run.labels = {'text':['run'],'anchor':['center']}
+        shape_run.labels = {'text':['run'],'anchor':['center'],'orientation': ['horizontal']}
         self.legend_shapes = [shape_queued, shape_disabled, shape_failed, shape_pause, shape_run]
         
     def build_shapes(self):
@@ -92,7 +92,7 @@ class queueSynopticView(QWidget):
                 shape.decoration = self.FILL_DISABLED
                 shape.decoration_cursor_off = self.FILL_DISABLED
                 shape.decoration_cursor_on = self.FILL_DISABLED
-            shape.labels = {'text':[f'{cmd}'],'anchor':['center']}
+            shape.labels = {'text':[f'{cmd}'],'anchor':['center'],'orientation': ['horizontal']}
             setattr(shape, 'unique_id', unique_id)
             if which_col not in self.composite_shape_container:
                 self.composite_shape_container[which_col] = []

@@ -68,27 +68,27 @@ composite_shapes:
       translate: [0,0]
     models: 
       1: motor/motctrl01/1/position
-      # 2: motor/motctrl01/1/position
+      2: motor/motctrl01/1/position
       3: motor/motctrl02/1/position
-      # 4: motor/motctrl02/1/position
+      4: motor/motctrl02/1/position
     callbacks_upon_model_change:
       1: 
         - ['callback_model_change_with_transformation', 'mv_dir', 'y', 'sign', '+']
         - ['callback_model_change_with_text_label', 'anchor', 'top', 'orientation','horizontal']
-      # 2:
-        # - ['callback_model_change_with_transformation', 'mv_dir', 'y', 'sign', '-']
-        # - ['callback_model_change_with_text_label', 'anchor', 'bottom','orientation','horizontal']
+      2:
+        - ['callback_model_change_with_transformation', 'mv_dir', 'y', 'sign', '-']
+        - ['callback_model_change_with_text_label', 'anchor', 'bottom','orientation','horizontal']
       3: 
         - ['callback_model_change_with_transformation', 'mv_dir', 'x', 'sign', '+']
         - ['callback_model_change_with_text_label', 'anchor', 'left','orientation','vertical']
-      # 4: 
-        # - ['callback_model_change_with_transformation', 'mv_dir', 'x', 'sign', '-']
-        # - ['callback_model_change_with_text_label', 'anchor', 'right', 'orientation', 'vertical']
+      4: 
+        - ['callback_model_change_with_transformation', 'mv_dir', 'x', 'sign', '-']
+        - ['callback_model_change_with_text_label', 'anchor', 'right', 'orientation', 'vertical']
     callbacks_upon_leftmouse_click:
       1: null
-      # 2: null
+      2: null
       3: null
-      # 4: null      
+      4: null      
   valve:
     shapes: ['circle.tiny*1', 'isocelesTriangle.type1*2']
     # shapes: ['rectangle.type1*1']
