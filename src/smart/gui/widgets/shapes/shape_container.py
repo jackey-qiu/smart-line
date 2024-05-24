@@ -14,8 +14,8 @@ from .callback_container import *
 from ....util.util import findMainWindow
 from smart.util.geometry_transformation import rotate_multiple_points, angle_between
 
-DECORATION_UPON_CURSOR_ON = {'pen': {'color': (255, 255, 0), 'width': 3, 'ls': 'DotLine'}, 'brush': {'color': (0, 0, 255)}} 
-DECORATION_UPON_CURSOR_OFF = {'pen': {'color': (255, 0, 0), 'width': 3, 'ls': 'SolidLine'}, 'brush': {'color': (0, 0, 255)}}
+DECORATION_UPON_CURSOR_ON = {'pen': {'color': (255, 255, 0), 'width': 1, 'ls': 'DotLine'}, 'brush': {'color': (0, 0, 255)}} 
+DECORATION_UPON_CURSOR_OFF = {'pen': {'color': (255, 0, 0), 'width': 1, 'ls': 'SolidLine'}, 'brush': {'color': (0, 0, 255)}}
 
 DECORATION_TEXT_DEFAULT = {'font_size': 8, 'text_color': (255,255,255), 'alignment': 'AlignCenter', 'padding': 0}
 
@@ -47,7 +47,11 @@ class baseShape(object):
         self._transformation = transformation
         self._text_decoration = copy.deepcopy(text_decoration)
         self._labels = copy.deepcopy(lables)
+        self.clickable = False
         self.show = True
+
+    def set_clickable(self, clickable = True):
+        self.clickable = clickable
 
     def reset_ref_geometry(self):
         self.ref_geometry = copy.deepcopy(self.transformation['translate'])
@@ -308,6 +312,8 @@ class baseShape(object):
             return anchor_, ref_anchor_, or_len
     
     def cursor_pos_checker(self, x, y):
+        if not self.clickable:
+            return
         cursor_inside_shape = self.check_pos(x, y)
         if cursor_inside_shape:
             self.decoration = copy.deepcopy(self.decoration_cursor_on)
@@ -935,6 +941,8 @@ class shapeComposite(TaurusBaseComponent, QObject):
 # class shapeComposite(TaurusBaseComponent):
 
     modelKeys = [TaurusBaseComponent.MLIST]
+    model_str_list = []
+    # modelKeys = []
     updateSignal = pyqtSignal()
 
     def __init__(self, shapes, parent = None, anchor_args=None, alignment_pattern=None, connection_pattern = None, ref_shape_index = None, model_index_list = [], callbacks_upon_model_change = [], callbacks_upon_mouseclick = []):
@@ -942,6 +950,7 @@ class shapeComposite(TaurusBaseComponent, QObject):
         #alignment_patter = {'shapes':[[0,1],[1,2]], 'anchors':[['left','top'],['right', 'bottom']]}
         super(QObject, shapeComposite).__init__(self)
         TaurusBaseComponent.__init__(self)
+        self.model_ix_start = len(self.model_str_list)
         self._shapes = copy.deepcopy(shapes)
         self._model_shape_index_list = model_index_list
         self._callbacks_upon_model_change = callbacks_upon_model_change
@@ -964,10 +973,15 @@ class shapeComposite(TaurusBaseComponent, QObject):
     def unpack_callbacks_and_models(self):
         if len(self._models) == 0:
             return
+        # models = list(set(list(self._models.values())))
         models = list(self._models.values())
-        self.setModel(models)
+        # self._models_unique = models
+        self.__class__.model_str_list = self.__class__.model_str_list + list(models)
+        self.setModel(self.__class__.model_str_list)
         inx_shape = [int(each) for each in self._models.keys()]
         self.model_shape_index_list = inx_shape
+        for ix in inx_shape:
+            self.shapes[ix].set_clickable(True)
         self.callbacks_upon_model_change = [self._make_callback(each) for each in self.callbacks['callbacks_upon_model_change'].values()]
         self.callbacks_upon_left_mouseclick = [self._make_callback(each) for each in self.callbacks['callbacks_upon_leftmouse_click'].values()]
 
@@ -1025,13 +1039,6 @@ class shapeComposite(TaurusBaseComponent, QObject):
         assert len(cbs) == len(self.model_shape_index_list), "Length of callbacks must equal to that of model shape index"
         self._callbacks_upon_left_mouseclick = {ix: cb for ix, cb in zip(self.model_shape_index_list, cbs)}
 
-    # def make_anchors(self):
-        # if self.anchor_args==None:
-            # return
-        # for shape, arg in zip(self.shapes, self.anchor_args):
-            # shape.make_anchors(arg)
-            # print(arg)
-
     def build_composite(self):
         self.align_shapes()
         self.make_line_connection()
@@ -1051,8 +1058,6 @@ class shapeComposite(TaurusBaseComponent, QObject):
            shape.reset_ref_geometry()
 
     def make_line_connection(self):
-        # if self.lines == None:
-            # return
         self.lines = []
         if self.connection == None:
             return
@@ -1075,12 +1080,7 @@ class shapeComposite(TaurusBaseComponent, QObject):
 
     def scale(self, sf):
         for i, shape in enumerate(self.shapes):
-            # if i!=0:
-                # shape.reset()
             shape.scale(sf)
-        #update anchors first
-
-        # shape.update_anchors()
         self.build_composite()
 
     def uponLeftMouseClicked(self, shape_index):
@@ -1089,14 +1089,16 @@ class shapeComposite(TaurusBaseComponent, QObject):
     def handleEvent(self, evt_src, evt_type, evt_value):
         """reimplemented from TaurusBaseComponent"""
         try:
-            for i in range(len(self.model_shape_index_list)):
-                #some models could be duplicated, the index needs recalculation
-                ix_model = list(set(list(self._models.values()))).index(list(self._models.values())[i])
-                if evt_src is self.getModelObj(key=(TaurusBaseComponent.MLIST, ix_model)):
-                    self._callbacks_upon_model_change[self.model_shape_index_list[i]](self.shapes[self.model_shape_index_list[i]], evt_value)
+            for i, _ix in enumerate(self.model_shape_index_list):
+                key = (TaurusBaseComponent.MLIST, i+self.model_ix_start)
+                if key not in self.modelKeys:#this could happen when the setModel step is slower than the event polling
+                    return
+                if evt_src is self.getModelObj(key=key):
+                    self._callbacks_upon_model_change[_ix](self.shapes[_ix], evt_value)
                     self.updateSignal.emit()
-                    # break
         except Exception as e:
+            #if i>(len(self.modelKeys)-2):
+            #    return
             self.info("Skipping event. Reason: %s", e)
 
 class buildTools(object):
@@ -1126,6 +1128,10 @@ class buildTools(object):
         composite_container = config['composite_shapes']
         composite_obj_container = {}
         for i, (composite, composite_info) in enumerate(composite_container.items()):
+            inherited = composite_info.pop('inherit', None)
+            if inherited != None:
+                inherited_composite_info = composite_container[inherited]
+                composite_info = {**inherited_composite_info, **composite_info}
             _models = composite_info['models']
             hide_shape_ix = composite_info.pop('hide', [])
             callbacks_upon_model_change = composite_info['callbacks_upon_model_change']
@@ -1242,6 +1248,10 @@ class buildTools(object):
     def align_two_shapes(cls, ref_shape, target_shape, orientations = ['bottom', 'top'],  gap = 0.1, ref_anchors = [None, None]):
         cen_, v_unit = ref_shape.calculate_orientation_vector(orientations[0], ref_anchors[0])
         v_mag = ref_shape.calculate_orientation_length(orientations[0], ref_anchors[0]) + target_shape.calculate_orientation_length(orientations[1], ref_anchors[1])
+        # if orientations[0] == orientations[1]:
+        #    v_mag = -ref_shape.calculate_orientation_length(orientations[0], ref_anchors[0]) + target_shape.calculate_orientation_length(orientations[1], ref_anchors[1])
+        # else:
+        #    v_mag = ref_shape.calculate_orientation_length(orientations[0], ref_anchors[0]) + target_shape.calculate_orientation_length(orientations[1], ref_anchors[1])
         v = v_unit * v_mag * (1+gap)
         #set rot ang to 0 and translate to 0
         target_shape.reset()
@@ -1524,7 +1534,7 @@ class shapeContainer(TaurusWidget):
         for line in self.composite_shape.lines + self.composite_shape_2.lines:
             self.test_draw_connection_lines(qp, line)
 
-    def paintEvent(self, a0: QPaintEvent | None) -> None:
+    def paintEvent(self, a0) -> None:
         qp = QPainter()
         qp.begin(self)
         #self._test_connection(qp)

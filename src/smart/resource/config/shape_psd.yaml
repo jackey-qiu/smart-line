@@ -46,7 +46,7 @@ basic_shapes:
       dim: [0, 0, 80, 240]
       anchor_pars: null      
     plunger:    
-      dim: [0, 0, 80, 5]
+      dim: [0, 0, 80, 1]
       anchor_pars: null      
     bottomtip:    
       dim: [0, 0, 25, 10]
@@ -102,12 +102,20 @@ composite_shapes:
         - ['bottom', 'top']
         - ['bottom', 'top']
         - ['left', 'right']
-        - ['top', 'top']
+        - ['top', 'bottom']
         - ['bottom', 'top']
-      gaps: [0,0,0,0,0,0,0,0,0,0]
+      gaps: [0,0,0,0,0,0,0,0,0.,0]
       ref_anchors: [['left', 'right'],['left', 'right'], [null, null], [null, null], [null, null],[null, null], [null, null], [null, null],[null, null],[null, null]]
     transformation: 
       translate: [100,100]
+    models: 
+      9: motor/motctrl02/3/position 
+    callbacks_upon_model_change:
+      9: ['callback_model_change_with_transformation', 'mv_dir', 'y','model_limits', '[0, 12.5]', 'max_translation_range', '[0,240]', 'translate', 'False']
+    callbacks_upon_leftmouse_click:
+      9: null
+  cell_2:
+    inherit: cell
     models: []
     callbacks_upon_model_change:
       1: ['callback_model_change_with_transformation', 'mv_dir', 'x']

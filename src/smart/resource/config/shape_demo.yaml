@@ -101,10 +101,10 @@ composite_shapes:
       ref_anchors: [[null, null],[null, null]]
     transformation: 
       translate: [0,0]
-    models: 
-      0: sys/tg_test/1/boolean_scalar
-      1: sys/tg_test/1/boolean_scalar
-      2: sys/tg_test/1/boolean_scalar
+    models: []
+      # 0: sys/tg_test/1/boolean_scalar
+      # 1: sys/tg_test/1/boolean_scalar
+      # 2: sys/tg_test/1/boolean_scalar
     callbacks_upon_model_change:
       0: ['callback_model_change_with_text_label_on_off', 'anchor', 'top']
       1: ['callback_model_change_with_decoration_on_off']

@@ -69,6 +69,7 @@ class queueSynopticView(QWidget):
         for i in range(len(self._data)):
             which_col = int((i+1)/size_col)
             shape = rectangle(dim = [self.padding_hor + which_col*(self.block_width + self.padding_hor),self.padding_vertical,self.block_width,self.block_height],rotation_center = None, transformation={'rotate':0, 'translate':(0,0), 'scale':1})
+            shape.set_clickable(True)
             state = self._data.iloc[i,:]['state']
             unique_id = self._data.iloc[i,:]['unique_id']
             cmd = self._data.iloc[i,:]['scan_command']
@@ -135,7 +136,7 @@ class queueSynopticView(QWidget):
     def set_parent(self):
         self.parent = findMainWindow()
 
-    def paintEvent(self, a0: QPaintEvent | None) -> None:
+    def paintEvent(self, a0) -> None:
         qp = QPainter()
         qp.begin(self)
         # for each in self.shapes:            
