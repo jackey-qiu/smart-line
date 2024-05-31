@@ -16,7 +16,8 @@ __all__ = ['callback_model_change_with_decoration',
            'callback_leftmouse_click_with_decoration',
            'callback_leftmouse_click_with_transformation',
            'callback_model_change_with_decoration_on_off', 
-           'callback_model_change_with_text_label_on_off']
+           'callback_model_change_with_text_label_on_off',
+           'callback_model_change_with_decoration_valve_position']
 
 def _apply_translation_steps(shape, value_model, mv_dir = 'x', sign = '+', model_limits = None, max_translation_range = None, val_ix = None, translate = 'True'):
     if type(translate)==str:
@@ -44,7 +45,7 @@ def _apply_translation_steps(shape, value_model, mv_dir = 'x', sign = '+', model
         lms_widget = lms_widget_y
     pxs_per_step = (lms_widget[1]-lms_widget[0])/(lms_model[1]-lms_model[0])
     model_value = _get_model_value(value_model)
-    if type(model_value) in [list, np.array]:
+    if type(model_value) in [list, np.array, np.ndarray]:
         model_value = model_value[int(val_ix)]
     if not translate:
         new_pxs_widget = int((model_value - lms_model[0])*pxs_per_step)
@@ -65,7 +66,8 @@ def _apply_translation_steps(shape, value_model, mv_dir = 'x', sign = '+', model
     shape.transformation = offset
 
 def _get_model_value(value_model):
-    return value_model.rvalue.m
+    rvalue = value_model.rvalue
+    return rvalue.m
 
 def _get_model_value_quality_color(value_model):
     return QT_ATTRIBUTE_QUALITY_PALETTE.rgb(value_model.quality)
@@ -91,7 +93,19 @@ def callback_model_change_with_decoration_on_off(shape, value_model):
     shape.decoration = new_decoration
     shape.decoration_cursor_on = new_decoration
     shape.decoration_cursor_off = new_decoration
-    
+
+def callback_model_change_with_decoration_valve_position(shape, value_model, val_ix, connect_value):
+    model_value = _get_model_value(value_model)
+    if type(model_value) in [list, np.array, np.ndarray]:
+        model_value = model_value[int(val_ix)]
+    if int(model_value) == int(connect_value):
+        new_decoration = {'brush': {'color': (0, 255, 0)}}
+    else:
+        new_decoration = {'brush': {'color': (0, 0, 255)}}
+    shape.decoration = new_decoration
+    shape.decoration_cursor_on = new_decoration
+    shape.decoration_cursor_off = new_decoration
+
 def callback_model_change_with_decoration(shape, value_model):
     new_decoration = {'brush': {'color': tuple(list(_get_model_value_quality_color(value_model))+[100])}}
     shape.decoration = new_decoration
@@ -102,8 +116,13 @@ def callback_model_change_with_transformation(shape, value_model, mv_dir, sign =
     _apply_translation_steps(shape, value_model,mv_dir, sign, model_limits, max_translation_range, val_ix, translate)
     callback_model_change_with_decoration(shape, value_model)
 
-def callback_model_change_with_text_label(shape, value_model, anchor='left', orientation='horizontal'):
-    shape.labels = {'text':[f'{value_model.label}:{round(_get_model_value(value_model),3)}'],'anchor':[anchor], 'orientation': [orientation]}
+def callback_model_change_with_text_label(shape, value_model, anchor='left', orientation='horizontal', val_ix = None, sf = 1, label="", end_txt=""):
+    if len(label)==0:
+        label = value_model.label
+    if val_ix == None or val_ix=='None':
+        shape.labels = {'text':[f'{label}:{round(_get_model_value(value_model)*float(sf),2)} {end_txt}'],'anchor':[anchor], 'orientation': [orientation]}
+    else:
+        shape.labels = {'text':[f'{label}:{round(_get_model_value(value_model)[int(val_ix)]*float(sf),2)} {end_txt}'],'anchor':[anchor], 'orientation': [orientation]}
 
 def callback_model_change_with_text_label_on_off(shape, value_model, anchor='left', text = ""):
     checked = bool(value_model.rvalue)

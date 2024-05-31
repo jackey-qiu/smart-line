@@ -11,6 +11,7 @@ import time
 import yaml
 from dataclasses import dataclass
 from .callback_container import *
+from .customized_callbacks import *
 from ....util.util import findMainWindow
 from smart.util.geometry_transformation import rotate_multiple_points, angle_between
 
@@ -313,12 +314,14 @@ class baseShape(object):
     
     def cursor_pos_checker(self, x, y):
         if not self.clickable:
-            return
+            return False
         cursor_inside_shape = self.check_pos(x, y)
         if cursor_inside_shape:
             self.decoration = copy.deepcopy(self.decoration_cursor_on)
+            return True
         else:
             self.decoration  = copy.deepcopy(self.decoration_cursor_off)
+            return False
     
     def apply_transform(self,qp):
         #translate_values = self.transformation['translate'] if 'translate' in self.transformation else (0,0)
@@ -964,6 +967,7 @@ class shapeComposite(TaurusBaseComponent, QObject):
         self.build_composite()
         self.callbacks = {}
         self._models = {}
+        self.parent = findMainWindow()
 
     def copy_object_meta(self):
         return {'shapes': self._shapes, 'anchor_args': self.anchor_args, 'alignment_pattern': self.alignment,\
@@ -982,12 +986,12 @@ class shapeComposite(TaurusBaseComponent, QObject):
         self.model_shape_index_list = inx_shape
         for ix in inx_shape:
             self.shapes[ix].set_clickable(True)
-        self.callbacks_upon_model_change = [self._make_callback(each) for each in self.callbacks['callbacks_upon_model_change'].values()]
-        self.callbacks_upon_left_mouseclick = [self._make_callback(each) for each in self.callbacks['callbacks_upon_leftmouse_click'].values()]
+        self.callbacks_upon_model_change = [self._make_callback(each, False) for each in self.callbacks['callbacks_upon_model_change'].values()]
+        self.callbacks_upon_left_mouseclick = [self._make_callback(each, True) for each in self.callbacks['callbacks_upon_leftmouse_click'].values()]
 
-    def _make_callback(self, callback_info_list):
+    def _make_callback(self, callback_info_list, mouseclick_callback = True):
         if callback_info_list==None or callback_info_list=='None':
-            return lambda:None
+            return lambda *kwargs:None
         #if there are multiple callbacks linking to one model
         if type(callback_info_list[0])==list:
             def call_back_chain(shape, model_value):
@@ -998,7 +1002,18 @@ class shapeComposite(TaurusBaseComponent, QObject):
                     cbs.append(partial(eval(cb_str), **{cb_args[i]:cb_args[i+1] for i in range(0, len(cb_args),2)}))
                 for cb in cbs:
                     cb(shape, model_value)
-            return call_back_chain
+            def call_back_chain_mouseclick(parent):
+                cbs = []
+                for callback_info in callback_info_list:
+                    cb_str = callback_info[0]
+                    cb_args = callback_info[1:]
+                    cbs.append(partial(eval(cb_str), **{cb_args[i]:cb_args[i+1] for i in range(0, len(cb_args),2)}))
+                for cb in cbs:
+                    cb(parent)
+            if mouseclick_callback:
+                return call_back_chain_mouseclick
+            else:
+                return call_back_chain
         #if there is only single callback func
         else:
             cb_str = callback_info_list[0]
@@ -1032,7 +1047,7 @@ class shapeComposite(TaurusBaseComponent, QObject):
 
     @property
     def callbacks_upon_left_mouseclick(self):
-        return self._callbacks_upon_left_mouseclick()
+        return self._callbacks_upon_left_mouseclick
     
     @callbacks_upon_left_mouseclick.setter
     def callbacks_upon_left_mouseclick(self, cbs):
@@ -1084,7 +1099,7 @@ class shapeComposite(TaurusBaseComponent, QObject):
         self.build_composite()
 
     def uponLeftMouseClicked(self, shape_index):
-        self.callbacks_upon_left_mouseclick[shape_index]()
+        self.callbacks_upon_left_mouseclick[shape_index](self.parent)
 
     def handleEvent(self, evt_src, evt_type, evt_value):
         """reimplemented from TaurusBaseComponent"""

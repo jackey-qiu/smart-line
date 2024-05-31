@@ -54,10 +54,74 @@ basic_shapes:
     type4:
       dim: [0, 0, 30, 80]
       anchor_pars: null
+    fill:
+      dim: [0, 0, 80, 20]
+      anchor_pars: null 
+      labels:
+        text: ['fill']
+        anchor: ['center']
+        orientation: ['horizontal']
+        decoration: None      
+    drain:
+      dim: [0, 0, 80, 20]
+      anchor_pars: null 
+      labels:
+        text: ['drain']
+        anchor: ['center']
+        orientation: ['horizontal']
+        decoration: None   
+    prepare:
+      dim: [0, 0, 80, 20]
+      anchor_pars: null 
+      labels:
+        text: ['prepear']
+        anchor: ['center']
+        orientation: ['horizontal']
+        decoration: None   
+    exchange:
+      dim: [0, 0, 80, 20]
+      anchor_pars: null 
+      labels:
+        text: ['exchange']
+        anchor: ['center']
+        orientation: ['horizontal']
+        decoration: None   
+    connect:
+      dim: [0, 0, 80, 20]
+      anchor_pars: null 
+      labels:
+        text: ['connect pump']
+        anchor: ['center']
+        orientation: ['horizontal']
+        decoration: None   
+    init:
+      dim: [0, 0, 80, 20]
+      anchor_pars: null 
+      labels:
+        text: ['init syringe']
+        anchor: ['center']
+        orientation: ['horizontal']
+        decoration: None   
+    initValve:
+      dim: [0, 0, 80, 20]
+      anchor_pars: null 
+      labels:
+        text: ['init valves']
+        anchor: ['center']
+        orientation: ['horizontal']
+        decoration: None   
   circle:
     big:
       dim: [0, 0, 60]
       anchor_pars: null
+    stop:
+      dim: [0, 0, 80]
+      anchor_pars: null      
+      labels:
+        text: ['STOP']
+        anchor: ['center']
+        orientation: ['horizontal']
+        decoration: None       
     small:
       dim: [0, 0, 60]
       anchor_pars: null
@@ -79,6 +143,8 @@ composite_shapes:
       - 'rectangle.label_marks*1'
       - 'rectangle.plunger*1'
       - 'rectangle.bottomtip*1'
+      - 'rectangle.fill*1'
+      - 'rectangle.drain*1'
     ref_shape: null
     hide: [0, 8]
     alignment:
@@ -93,6 +159,8 @@ composite_shapes:
         - [7, 8]
         - [7, 9]
         - [7, 10]
+        - [10, 11]
+        - [11, 12]
       anchors: 
         - ['cen', 'cen']
         - ['cen', 'cen']
@@ -104,16 +172,251 @@ composite_shapes:
         - ['left', 'right']
         - ['top', 'bottom']
         - ['bottom', 'top']
-      gaps: [0,0,0,0,0,0,0,0,0.,0]
-      ref_anchors: [['left', 'right'],['left', 'right'], [null, null], [null, null], [null, null],[null, null], [null, null], [null, null],[null, null],[null, null]]
+        - ['bottom', 'top']
+        - ['bottom', 'top']
+      gaps: [0,0,0,0,0,0,0,0,0.,0, 2.5, 0.5]
+      ref_anchors: [['left', 'right'],['left', 'right'], [null, null], [null, null], [null, null],[null, null], [null, null], [null, null],[null, null],[null, null], [null, null], [null, null]]
     transformation: 
       translate: [100,100]
     models: 
-      9: motor/motctrl02/3/position 
+      # 9: motor/motctrl02/3/position 
+      9: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/syringepos
+      10: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/syringepos
+      3: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/valvepos
+      4: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/valvepos
+      5: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/valvepos
+      11: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/valvepos
+      12: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/valvepos
     callbacks_upon_model_change:
-      9: ['callback_model_change_with_transformation', 'mv_dir', 'y','model_limits', '[0, 12.5]', 'max_translation_range', '[0,240]', 'translate', 'False']
+      # 9: ['callback_model_change_with_transformation', 'mv_dir', 'y','model_limits', '[0, 12.5]', 'max_translation_range', '[0,240]', 'translate', 'False']
+      9: ['callback_model_change_with_transformation', 'mv_dir', 'y','model_limits', '[0, 192000]', 'max_translation_range', '[0,240]', "val_ix","3",'translate', 'False']
+      10: ['callback_model_change_with_text_label', 'anchor', 'bottom','orientation', 'horizontal', "val_ix","3", "sf","0.0651","label","vol","end_txt","ul"]
+      3: ['callback_model_change_with_decoration_valve_position', "val_ix","3","connect_value","1"]
+      4: ['callback_model_change_with_decoration_valve_position', "val_ix","3","connect_value","2"]
+      5: ['callback_model_change_with_decoration_valve_position', "val_ix","3","connect_value","3"]
+      11: null
+      12: null
     callbacks_upon_leftmouse_click:
       9: null
+      10: null
+      3: ['move_valve', "dev_proxy", "syringe_4", "val_pos", "1"]
+      4: ['move_valve', "dev_proxy", "syringe_4", "val_pos", "2"]
+      5: ['move_valve', "dev_proxy", "syringe_4", "val_pos", "3"]
+      11: ['pickup_solution', "dev_proxy", "syringe_4", "val_pos", "1",'fill','True']
+      12: ['dispense_solution', "dev_proxy", "syringe_4", "val_pos", "2",'drain','True']
+  syringe2:
+    shapes: 
+      - 'circle.tiny*1'
+      - 'rectangle.valvezone*1'
+      - 'circle.big*1'
+      - 'rectangle.handle*4'
+      - 'rectangle.tube*1'
+      - 'rectangle.label_marks*1'
+      - 'rectangle.plunger*1'
+      - 'rectangle.bottomtip*1'
+      - 'rectangle.fill*1'
+      - 'rectangle.drain*1'
+    ref_shape: null
+    hide: [0, 8]
+    alignment:
+      shapes: 
+        - [0, 1]
+        - [0, 2]
+        - [2, 3]
+        - [2, 4]
+        - [2, 5]
+        - [2, 6]
+        - [6, 7]
+        - [7, 8]
+        - [7, 9]
+        - [7, 10]
+        - [10, 11]
+        - [11, 12]
+      anchors: 
+        - ['cen', 'cen']
+        - ['cen', 'cen']
+        - ['left', 'right']
+        - ['top', 'bottom']
+        - ['right', 'left']
+        - ['bottom', 'top']
+        - ['bottom', 'top']
+        - ['left', 'right']
+        - ['top', 'bottom']
+        - ['bottom', 'top']
+        - ['bottom', 'top']
+        - ['bottom', 'top']
+      gaps: [0,0,0,0,0,0,0,0,0.,0,2.5,0.5]
+      ref_anchors: [['left', 'right'],['left', 'right'], [null, null], [null, null], [null, null],[null, null], [null, null], [null, null],[null, null],[null, null],[null, null],[null, null]]
+    transformation: 
+      translate: [100,100]
+    models: 
+      # 9: motor/motctrl02/3/position 
+      9: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/syringepos
+      10: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/syringepos
+      3: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/valvepos
+      4: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/valvepos
+      5: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/valvepos
+      11: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/valvepos
+      12: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/valvepos
+    callbacks_upon_model_change:
+      # 9: ['callback_model_change_with_transformation', 'mv_dir', 'y','model_limits', '[0, 12.5]', 'max_translation_range', '[0,240]', 'translate', 'False']
+      9: ['callback_model_change_with_transformation', 'mv_dir', 'y','model_limits', '[0, 192000]', 'max_translation_range', '[0,240]', "val_ix","1",'translate', 'False']
+      10: ['callback_model_change_with_text_label', 'anchor', 'bottom','orientation', 'horizontal', "val_ix","1", "sf","0.0651","label","vol","end_txt","ul"]
+      3: ['callback_model_change_with_decoration_valve_position', "val_ix","1","connect_value","1"]
+      4: ['callback_model_change_with_decoration_valve_position', "val_ix","1","connect_value","2"]
+      5: ['callback_model_change_with_decoration_valve_position', "val_ix","1","connect_value","3"]
+      11: null
+      12: null      
+    callbacks_upon_leftmouse_click:
+      9: null
+      10: null
+      3: ['move_valve', "dev_proxy", "syringe_2", "val_pos", "1"]
+      4: ['move_valve', "dev_proxy", "syringe_2", "val_pos", "2"]
+      5: ['move_valve', "dev_proxy", "syringe_2", "val_pos", "3"]
+      11: ['pickup_solution', "dev_proxy", "syringe_2", "val_pos", "1",'fill','True']
+      12: ['dispense_solution', "dev_proxy", "syringe_2", "val_pos", "2",'drain','True']      
+  syringe3:
+    shapes: 
+      - 'circle.tiny*1'
+      - 'rectangle.valvezone*1'
+      - 'circle.big*1'
+      - 'rectangle.handle*4'
+      - 'rectangle.tube*1'
+      - 'rectangle.label_marks*1'
+      - 'rectangle.plunger*1'
+      - 'rectangle.bottomtip*1'
+      - 'rectangle.fill*1'
+      - 'rectangle.drain*1'
+    ref_shape: null
+    hide: [0, 8]
+    alignment:
+      shapes: 
+        - [0, 1]
+        - [0, 2]
+        - [2, 3]
+        - [2, 4]
+        - [2, 5]
+        - [2, 6]
+        - [6, 7]
+        - [7, 8]
+        - [7, 9]
+        - [7, 10]
+        - [10, 11]
+        - [11, 12]
+      anchors: 
+        - ['cen', 'cen']
+        - ['cen', 'cen']
+        - ['left', 'right']
+        - ['top', 'bottom']
+        - ['right', 'left']
+        - ['bottom', 'top']
+        - ['bottom', 'top']
+        - ['left', 'right']
+        - ['top', 'bottom']
+        - ['bottom', 'top']
+        - ['bottom', 'top']
+        - ['bottom', 'top']
+      gaps: [0,0,0,0,0,0,0,0,0.,0, 2.5,0.5]
+      ref_anchors: [['left', 'right'],['left', 'right'], [null, null], [null, null], [null, null],[null, null], [null, null], [null, null],[null, null],[null, null],[null, null],[null, null]]
+    transformation: 
+      translate: [100,100]
+    models: 
+      # 9: motor/motctrl02/3/position 
+      9: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/syringepos
+      10: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/syringepos
+      3: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/valvepos
+      4: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/valvepos
+      5: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/valvepos
+      11: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/valvepos
+      12: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/valvepos
+    callbacks_upon_model_change:
+      # 9: ['callback_model_change_with_transformation', 'mv_dir', 'y','model_limits', '[0, 12.5]', 'max_translation_range', '[0,240]', 'translate', 'False']
+      9: ['callback_model_change_with_transformation', 'mv_dir', 'y','model_limits', '[0, 192000]', 'max_translation_range', '[0,240]', "val_ix","2",'translate', 'False']
+      10: ['callback_model_change_with_text_label', 'anchor', 'bottom','orientation', 'horizontal', "val_ix","2", "sf","0.0651","label","vol","end_txt","ul"]
+      3: ['callback_model_change_with_decoration_valve_position', "val_ix","2","connect_value","1"]
+      4: ['callback_model_change_with_decoration_valve_position', "val_ix","2","connect_value","2"]
+      5: ['callback_model_change_with_decoration_valve_position', "val_ix","2","connect_value","3"]
+      11: null
+      12: null
+    callbacks_upon_leftmouse_click:
+      9: null
+      10: null
+      3: ['move_valve', "dev_proxy", "syringe_3", "val_pos", "1"]
+      4: ['move_valve', "dev_proxy", "syringe_3", "val_pos", "2"]
+      5: ['move_valve', "dev_proxy", "syringe_3", "val_pos", "3"]
+      11: ['pickup_solution', "dev_proxy", "syringe_3", "val_pos", "1",'fill','True']
+      12: ['dispense_solution', "dev_proxy", "syringe_3", "val_pos", "2",'drain','True']
+  syringe4:
+    shapes: 
+      - 'circle.tiny*1'
+      - 'rectangle.valvezone*1'
+      - 'circle.big*1'
+      - 'rectangle.handle*4'
+      - 'rectangle.tube*1'
+      - 'rectangle.label_marks*1'
+      - 'rectangle.plunger*1'
+      - 'rectangle.bottomtip*1'
+      - 'rectangle.fill*1'
+      - 'rectangle.drain*1'
+    ref_shape: null
+    hide: [0, 8]
+    alignment:
+      shapes: 
+        - [0, 1]
+        - [0, 2]
+        - [2, 3]
+        - [2, 4]
+        - [2, 5]
+        - [2, 6]
+        - [6, 7]
+        - [7, 8]
+        - [7, 9]
+        - [7, 10]
+        - [10, 11]
+        - [11, 12]
+      anchors: 
+        - ['cen', 'cen']
+        - ['cen', 'cen']
+        - ['left', 'right']
+        - ['top', 'bottom']
+        - ['right', 'left']
+        - ['bottom', 'top']
+        - ['bottom', 'top']
+        - ['left', 'right']
+        - ['top', 'bottom']
+        - ['bottom', 'top']
+        - ['bottom', 'top']
+        - ['bottom', 'top']
+      gaps: [0,0,0,0,0,0,0,0,0.,0,2.5,0.5,0.5]
+      ref_anchors: [['left', 'right'],['left', 'right'], [null, null], [null, null], [null, null],[null, null], [null, null], [null, null],[null, null],[null, null],[null, null],[null, null]]
+    transformation: 
+      translate: [100,100]
+    models: 
+      # 9: motor/motctrl02/3/position 
+      9: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/syringepos
+      10: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/syringepos
+      3: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/valvepos
+      4: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/valvepos
+      5: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/valvepos
+      11: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/valvepos
+      12: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/valvepos
+    callbacks_upon_model_change:
+      # 9: ['callback_model_change_with_transformation', 'mv_dir', 'y','model_limits', '[0, 12.5]', 'max_translation_range', '[0,240]', 'translate', 'False']
+      9: ['callback_model_change_with_transformation', 'mv_dir', 'y','model_limits', '[0, 192000]', 'max_translation_range', '[0,240]', "val_ix","0",'translate', 'False']
+      10: ['callback_model_change_with_text_label', 'anchor', 'bottom','orientation', 'horizontal', "val_ix","0", "sf","0.0651","label","vol","end_txt","ul"]
+      3: ['callback_model_change_with_decoration_valve_position', "val_ix","0","connect_value","1"]
+      4: ['callback_model_change_with_decoration_valve_position', "val_ix","0","connect_value","2"]
+      5: ['callback_model_change_with_decoration_valve_position', "val_ix","0","connect_value","3"]
+      11: null
+      12: null
+    callbacks_upon_leftmouse_click:
+      9: null
+      10: null
+      3: ['move_valve', "dev_proxy", "syringe_1", "val_pos", "1"]
+      4: ['move_valve', "dev_proxy", "syringe_1", "val_pos", "2"]
+      5: ['move_valve', "dev_proxy", "syringe_1", "val_pos", "3"]
+      11: ['pickup_solution', "dev_proxy", "syringe_1", "val_pos", "1",'fill','True']
+      12: ['dispense_solution', "dev_proxy", "syringe_1", "val_pos", "2",'drain','True']
   cell_2:
     inherit: cell
     models: []
@@ -128,19 +431,43 @@ composite_shapes:
       3: null
       4: null
   cell:
-    shapes: ['circle.tiny*1','circle.big*1','rectangle.cellbottom*1','trapezoid.cell*1']
+    shapes: ['circle.tiny*1','circle.big*1','rectangle.cellbottom*1','trapezoid.cell*1','rectangle.prepare*1','rectangle.exchange*1','circle.stop*1','rectangle.connect*1','rectangle.init*1','rectangle.initValve*1']
     ref_shape: null
     hide: [0]
     alignment: 
-      shapes: [[0, 1], [1, 2], [2, 3]]
-      anchors: [['cen','cen'], ['top','bottom'],['top','bottom']]
-      gaps: [0, 0, 0]
-      ref_anchors: [['top', 'bottom'],[null, null],[null, null]]
+      shapes: [[0, 1], [1, 2], [2, 3],[1, 4], [4, 5], [5,6],[6,7],[7,8],[8,9]]
+      anchors: [['cen','cen'], ['top','bottom'],['top','bottom'],['bottom','top'],['bottom','top'],['bottom','top'],['bottom','top'],['bottom','top'],['bottom','top']]
+      gaps: [0, 0, 0, 2, 0.1,0.1,0.1,0.1,0.1]
+      ref_anchors: [['top', 'bottom'],[null, null],[null, null],[null, null],[null, null],[null, null],[null, null],[null, null],[null, null]]
     transformation: 
       translate: [220,220]
-    models: []
-    callbacks_upon_model_change: []
-    callbacks_upon_leftmouse_click: []
+    models:
+      4: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/syringepos
+      5: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/syringepos
+      6: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/syringepos
+      7: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/syringepos
+      8: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/syringepos
+      9: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/syringepos
+    callbacks_upon_model_change:
+      4: null
+      5: null
+      6: null
+      7: null
+      8: null
+      9: null
+    callbacks_upon_leftmouse_click:
+      4: 
+        - ['prepare_exchange']    
+      5: 
+        - ['start_automatic_exchange']    
+      6: 
+        - ['stop_all']    
+      7: 
+        - ['all_setup_in_one', 'firstclient', 'False']
+      8:
+        - ['init_syringe']      
+      9:
+        - ['init_valve']            
   bottle:
     shapes: ['circle.tiny*1','rectangle.bottle_top*1','rectangle.bottle_thread*3','rectangle.bottle_bottom*1', 'rectangle.bottle_marker*1']
     ref_shape: null
@@ -168,14 +495,14 @@ composite_shapes:
       translate: [220,220]
     models: []
     callbacks_upon_model_change:
-      1: []
-      2: []
+      7: []
+      8: []
     callbacks_upon_leftmouse_click:
-      1: null
-      2: null
+      7: []
+      8: []
 viewers:
   viewer1:
-    composites: ['anchor','bottle', 'syringe','syringe','cell','syringe','syringe','bottle', 'anchor']
+    composites: ['anchor','bottle', 'syringe','syringe2','cell','syringe3','syringe4','bottle', 'anchor']
     transformation:
       translate:
         - [50, 220]

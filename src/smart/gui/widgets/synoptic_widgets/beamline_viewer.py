@@ -1,9 +1,10 @@
 from PyQt5.QtGui import QPaintEvent, QPainter, QPen, QColor
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtCore import pyqtSlot as Slot
 from PyQt5.QtWidgets import QWidget
 from ...widgets.shapes.shape_container import rectangle, shapeComposite, isocelesTriangle, buildTools, make_decoration_from_text
 from ...widgets.shapes.callback_container import *
+from ...widgets.shapes.customized_callbacks import *
 from ....util.util import findMainWindow
 from smart import rs_path
 
@@ -17,6 +18,7 @@ class beamlineSynopticViewer(QWidget):
         self.viewer_connection = {}
         self.set_parent()
         #self.init_viewer()
+        self.parent.exchange_timer = QTimer()
 
     def connect_slots_synoptic_viewer(self):
         pass
@@ -157,4 +159,10 @@ class beamlineSynopticViewer(QWidget):
 
     def mousePressEvent(self, event):
         x, y = event.x(), event.y()
-        pass
+        if self.viewer_shape == None:
+            return
+        for composite_shape in self.viewer_shape.values():
+            for i, each_shape in enumerate(composite_shape.shapes):
+                if each_shape.cursor_pos_checker(x, y) and each_shape.clickable:
+                    composite_shape.uponLeftMouseClicked(i)
+                    return
