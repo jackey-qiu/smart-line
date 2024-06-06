@@ -18,7 +18,7 @@ from smart.util.geometry_transformation import rotate_multiple_points, angle_bet
 DECORATION_UPON_CURSOR_ON = {'pen': {'color': (255, 255, 0), 'width': 1, 'ls': 'DotLine'}, 'brush': {'color': (0, 0, 255)}} 
 DECORATION_UPON_CURSOR_OFF = {'pen': {'color': (255, 0, 0), 'width': 1, 'ls': 'SolidLine'}, 'brush': {'color': (0, 0, 255)}}
 
-DECORATION_TEXT_DEFAULT = {'font_size': 8, 'text_color': (255,255,255), 'alignment': 'AlignCenter', 'padding': 0}
+DECORATION_TEXT_DEFAULT = {'font_size': 10, 'text_color': (255,255,255), 'alignment': 'AlignCenter', 'padding': 0}
 
 def make_decoration_from_text(dec = {'pen': {'color': (255, 255, 0), 'width': 3, 'ls': 'DotLine'}, 'brush': {'color': (0, 0, 255)}}):
 

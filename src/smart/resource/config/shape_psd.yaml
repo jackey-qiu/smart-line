@@ -70,6 +70,14 @@ basic_shapes:
         anchor: ['center']
         orientation: ['horizontal']
         decoration: None   
+    fillcell:
+      dim: [0, 0, 80, 20]
+      anchor_pars: null 
+      labels:
+        text: ['fill cell']
+        anchor: ['center']
+        orientation: ['horizontal']
+        decoration: None          
     prepare:
       dim: [0, 0, 80, 20]
       anchor_pars: null 
@@ -78,6 +86,22 @@ basic_shapes:
         anchor: ['center']
         orientation: ['horizontal']
         decoration: None   
+    increase:
+      dim: [0, 0, 30, 80]
+      anchor_pars: null 
+      labels:
+        text: ['increase vol']
+        anchor: ['center']
+        orientation: ['vertical']
+        decoration: None       
+    decrease:
+      dim: [0, 0, 30, 80]
+      anchor_pars: null 
+      labels:
+        text: ['decrease vol']
+        anchor: ['center']
+        orientation: ['vertical']
+        decoration: None              
     exchange:
       dim: [0, 0, 80, 20]
       anchor_pars: null 
@@ -145,6 +169,7 @@ composite_shapes:
       - 'rectangle.bottomtip*1'
       - 'rectangle.fill*1'
       - 'rectangle.drain*1'
+      - 'rectangle.fillcell*1'
     ref_shape: null
     hide: [0, 8]
     alignment:
@@ -161,6 +186,7 @@ composite_shapes:
         - [7, 10]
         - [10, 11]
         - [11, 12]
+        - [12, 13]
       anchors: 
         - ['cen', 'cen']
         - ['cen', 'cen']
@@ -174,8 +200,9 @@ composite_shapes:
         - ['bottom', 'top']
         - ['bottom', 'top']
         - ['bottom', 'top']
-      gaps: [0,0,0,0,0,0,0,0,0.,0, 2.5, 0.5]
-      ref_anchors: [['left', 'right'],['left', 'right'], [null, null], [null, null], [null, null],[null, null], [null, null], [null, null],[null, null],[null, null], [null, null], [null, null]]
+        - ['bottom', 'top']
+      gaps: [0,0,0,0,0,0,0,0,0.,0, 2.5, 0.5,0.5]
+      ref_anchors: [['left', 'right'],['left', 'right'], [null, null], [null, null], [null, null],[null, null], [null, null], [null, null],[null, null],[null, null], [null, null], [null, null],[null, null]]
     transformation: 
       translate: [100,100]
     models: 
@@ -187,6 +214,7 @@ composite_shapes:
       5: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/valvepos
       11: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/valvepos
       12: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/valvepos
+      13: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/valvepos
     callbacks_upon_model_change:
       # 9: ['callback_model_change_with_transformation', 'mv_dir', 'y','model_limits', '[0, 12.5]', 'max_translation_range', '[0,240]', 'translate', 'False']
       9: ['callback_model_change_with_transformation', 'mv_dir', 'y','model_limits', '[0, 192000]', 'max_translation_range', '[0,240]', "val_ix","3",'translate', 'False']
@@ -196,6 +224,7 @@ composite_shapes:
       5: ['callback_model_change_with_decoration_valve_position', "val_ix","3","connect_value","3"]
       11: null
       12: null
+      13: null
     callbacks_upon_leftmouse_click:
       9: null
       10: null
@@ -204,6 +233,7 @@ composite_shapes:
       5: ['move_valve', "dev_proxy", "syringe_4", "val_pos", "3"]
       11: ['pickup_solution', "dev_proxy", "syringe_4", "val_pos", "1",'fill','True']
       12: ['dispense_solution', "dev_proxy", "syringe_4", "val_pos", "2",'drain','True']
+      13: ['fill_cell', "dev_proxy", "syringe_4", 'vol', '500']
   syringe2:
     shapes: 
       - 'circle.tiny*1'
@@ -216,6 +246,7 @@ composite_shapes:
       - 'rectangle.bottomtip*1'
       - 'rectangle.fill*1'
       - 'rectangle.drain*1'
+      - 'rectangle.fillcell*1'
     ref_shape: null
     hide: [0, 8]
     alignment:
@@ -232,6 +263,7 @@ composite_shapes:
         - [7, 10]
         - [10, 11]
         - [11, 12]
+        - [12, 13]
       anchors: 
         - ['cen', 'cen']
         - ['cen', 'cen']
@@ -245,8 +277,9 @@ composite_shapes:
         - ['bottom', 'top']
         - ['bottom', 'top']
         - ['bottom', 'top']
-      gaps: [0,0,0,0,0,0,0,0,0.,0,2.5,0.5]
-      ref_anchors: [['left', 'right'],['left', 'right'], [null, null], [null, null], [null, null],[null, null], [null, null], [null, null],[null, null],[null, null],[null, null],[null, null]]
+        - ['bottom', 'top']
+      gaps: [0,0,0,0,0,0,0,0,0.,0,2.5,0.5,0.5]
+      ref_anchors: [['left', 'right'],['left', 'right'], [null, null], [null, null], [null, null],[null, null], [null, null], [null, null],[null, null],[null, null], [null, null], [null, null],[null, null]]
     transformation: 
       translate: [100,100]
     models: 
@@ -258,6 +291,7 @@ composite_shapes:
       5: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/valvepos
       11: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/valvepos
       12: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/valvepos
+      13: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/valvepos
     callbacks_upon_model_change:
       # 9: ['callback_model_change_with_transformation', 'mv_dir', 'y','model_limits', '[0, 12.5]', 'max_translation_range', '[0,240]', 'translate', 'False']
       9: ['callback_model_change_with_transformation', 'mv_dir', 'y','model_limits', '[0, 192000]', 'max_translation_range', '[0,240]', "val_ix","1",'translate', 'False']
@@ -267,6 +301,7 @@ composite_shapes:
       5: ['callback_model_change_with_decoration_valve_position', "val_ix","1","connect_value","3"]
       11: null
       12: null      
+      13: null
     callbacks_upon_leftmouse_click:
       9: null
       10: null
@@ -275,6 +310,7 @@ composite_shapes:
       5: ['move_valve', "dev_proxy", "syringe_2", "val_pos", "3"]
       11: ['pickup_solution', "dev_proxy", "syringe_2", "val_pos", "1",'fill','True']
       12: ['dispense_solution', "dev_proxy", "syringe_2", "val_pos", "2",'drain','True']      
+      13: ['fill_cell', "dev_proxy", "syringe_2", 'vol', '500']
   syringe3:
     shapes: 
       - 'circle.tiny*1'
@@ -317,7 +353,7 @@ composite_shapes:
         - ['bottom', 'top']
         - ['bottom', 'top']
       gaps: [0,0,0,0,0,0,0,0,0.,0, 2.5,0.5]
-      ref_anchors: [['left', 'right'],['left', 'right'], [null, null], [null, null], [null, null],[null, null], [null, null], [null, null],[null, null],[null, null],[null, null],[null, null]]
+      ref_anchors: [['left', 'right'],['left', 'right'], [null, null], [null, null],[null, null], [null, null], [null, null],[null, null],[null, null], [null, null], [null, null],[null, null]]
     transformation: 
       translate: [100,100]
     models: 
@@ -387,8 +423,8 @@ composite_shapes:
         - ['bottom', 'top']
         - ['bottom', 'top']
         - ['bottom', 'top']
-      gaps: [0,0,0,0,0,0,0,0,0.,0,2.5,0.5,0.5]
-      ref_anchors: [['left', 'right'],['left', 'right'], [null, null], [null, null], [null, null],[null, null], [null, null], [null, null],[null, null],[null, null],[null, null],[null, null]]
+      gaps: [0,0,0,0,0,0,0,0,0.,0,2.5,0.5]
+      ref_anchors: [['left', 'right'],['left', 'right'], [null, null], [null, null],[null, null], [null, null], [null, null],[null, null],[null, null], [null, null], [null, null],[null, null]]
     transformation: 
       translate: [100,100]
     models: 
@@ -431,14 +467,14 @@ composite_shapes:
       3: null
       4: null
   cell:
-    shapes: ['circle.tiny*1','circle.big*1','rectangle.cellbottom*1','trapezoid.cell*1','rectangle.prepare*1','rectangle.exchange*1','circle.stop*1','rectangle.connect*1','rectangle.init*1','rectangle.initValve*1']
+    shapes: ['circle.tiny*1','circle.big*1','rectangle.cellbottom*1','trapezoid.cell*1','rectangle.prepare*1','rectangle.exchange*1','circle.stop*1','rectangle.connect*1','rectangle.init*1','rectangle.initValve*1','rectangle.increase*1','rectangle.decrease*1']
     ref_shape: null
     hide: [0]
     alignment: 
-      shapes: [[0, 1], [1, 2], [2, 3],[1, 4], [4, 5], [5,6],[6,7],[7,8],[8,9]]
-      anchors: [['cen','cen'], ['top','bottom'],['top','bottom'],['bottom','top'],['bottom','top'],['bottom','top'],['bottom','top'],['bottom','top'],['bottom','top']]
-      gaps: [0, 0, 0, 2, 0.1,0.1,0.1,0.1,0.1]
-      ref_anchors: [['top', 'bottom'],[null, null],[null, null],[null, null],[null, null],[null, null],[null, null],[null, null],[null, null]]
+      shapes: [[0, 1], [1, 2], [2, 3],[1, 4], [4, 6], [6,5],[1,7],[7,8],[8,9], [6,10],[6,11]]
+      anchors: [['cen','cen'], ['top','bottom'],['top','bottom'],['bottom','top'],['bottom','top'],['bottom','top'],['bottom','top'],['bottom','top'],['bottom','top'],['left','right'], ['right','left']]
+      gaps: [0, 0, 0, 3, 0.2,0.2,0.2,0.2,0.2,0.2,0.2]
+      ref_anchors: [['top', 'bottom'],[null, null],[null, null],[null, null],[null, null],[null, null],[null, null],[null, null],[null, null],[null, null],[null, null]]
     transformation: 
       translate: [220,220]
     models:
@@ -448,6 +484,9 @@ composite_shapes:
       7: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/syringepos
       8: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/syringepos
       9: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/syringepos
+      10: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/syringepos
+      11: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/syringepos
+
     callbacks_upon_model_change:
       4: null
       5: null
@@ -455,6 +494,8 @@ composite_shapes:
       7: null
       8: null
       9: null
+      10: null
+      11: null
     callbacks_upon_leftmouse_click:
       4: 
         - ['prepare_exchange']    
@@ -467,7 +508,11 @@ composite_shapes:
       8:
         - ['init_syringe']      
       9:
-        - ['init_valve']            
+        - ['init_valve'] 
+      10:
+        - ['increase_liquid_vol_in_cell','vol','50'] 
+      11:
+        - ['decrease_liquid_vol_in_cell','vol', '50'] 
   bottle:
     shapes: ['circle.tiny*1','rectangle.bottle_top*1','rectangle.bottle_thread*3','rectangle.bottle_bottom*1', 'rectangle.bottle_marker*1']
     ref_shape: null

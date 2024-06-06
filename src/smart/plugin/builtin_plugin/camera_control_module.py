@@ -2,11 +2,13 @@ import sys, copy
 from taurus.qt.qtgui.base import TaurusBaseComponent
 from taurus.external.qt import Qt
 from pyqtgraph import GraphicsLayoutWidget, ImageItem
+from PyQt5.QtCore import pyqtSlot as Slot
 import pyqtgraph as pg
-from taurus import Device
+from taurus import Device, Attribute
 from taurus.core import TaurusEventType, TaurusTimeVal
-from smart.gui.widgets.context_menu_actions import VisuaTool, camSwitch
+from smart.gui.widgets.context_menu_actions import VisuaTool, camSwitch, AutoLevelTool, LockCrossTool
 from taurus.qt.qtgui.tpg import ForcedReadTool
+from functools import partial
 import numpy as np
 
 
@@ -14,6 +16,7 @@ class camera_control_panel(object):
 
     def __init__(self):
         self.build_cam_widget()
+        self.illum_pos_latest = {}
 
     def _extract_cam_info_from_config(self):
         gridLayoutWidgetName = self.settings_object.value("Camaras/gridLayoutWidgetName")
@@ -33,7 +36,12 @@ class camera_control_panel(object):
                     getattr(self, gridLayoutWidgetName).addWidget(getattr(self, viewerWidgetName))
 
     def connect_slots_cam(self):
-        return
+        self.pushButton_zoom_level1.clicked.connect(lambda: self.set_zoom_level(50))
+        self.pushButton_zoom_level2.clicked.connect(lambda: self.set_zoom_level(80))
+        self.pushButton_zoom_level3.clicked.connect(lambda: self.set_zoom_level(100))
+        self.comboBox_illum_types.activated.connect(self.upon_change_illum_type)
+        self.pushButton_lighton.clicked.connect(self.callback_light_on)
+        self.pushButton_lightoff.clicked.connect(self.callback_light_off)
         #self.pushButton_camera.clicked.connect(self.control_cam)
 
     def control_cam(self):
@@ -52,6 +60,36 @@ class camera_control_panel(object):
         getattr(self, viewerWidgetName).data_format_cbs = data_format_cbs.rsplit('=>')
 
         self.statusbar.showMessage(f'start cam streaming with model of {camaraStreamModel}')
+
+    @Slot(int)
+    def upon_change_illum_type(self, type_ix):
+        model = self.settings_object.value("Mscope/label_illum_pos").format(type_ix)
+        self.label_illum_pos.model = model
+        current_value = Attribute(model).read().rvalue.m
+        self.horizontalSlider_illum.setValue(int(current_value))
+        self.horizontalSlider_illum.valueChanged.connect(partial(self.write_attr_value, Attribute(model), type_ix))
+
+    @Slot(int)
+    def write_attr_value(self, attribute_proxy,which,value):
+        attribute_proxy.write(float(value))
+        self.illum_pos_latest[which] = float(value)
+
+    def callback_light_on(self):
+        if len(self.illum_pos_latest)==0:
+            return
+        else:
+            ix = self.comboBox_illum_types.currentIndex()
+            self.horizontalSlider_illum.setValue(int(self.illum_pos_latest[ix]))
+
+    def callback_light_off(self):
+        ix = self.comboBox_illum_types.currentIndex()
+        current_value = self.illum_pos_latest.pop(ix, None)
+        if current_value!=None:
+            self.horizontalSlider_illum.setValue(int(0))
+            self.illum_pos_latest[ix] = current_value
+
+    def set_zoom_level(self, level = 50):
+        Attribute(self.settings_object.value("Mscope/label_zoom_pos")).write(level)
 
     def stop_cam_stream(self):
         _, viewerWidgetName, *_ = self._extract_cam_info_from_config()
@@ -93,7 +131,11 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self.width = None
         self.width = None
         self.data_format_cbs = [lambda x: x]
+        self.autolevel = True
         # self.setModel('sys/tg_test/1/long64_image_ro')
+
+    def update_autolevel(self, autolevel):
+        self.autolevel = autolevel
 
     def _init_ui(self):
         if self.rgb_viewer:
@@ -110,6 +152,10 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self.fr.attachToPlotItem(self.img_viewer)
         self.cam_switch = camSwitch(self._parent)
         self.cam_switch.attachToPlotItem(self.img_viewer)
+        self.autolevel = AutoLevelTool(self)
+        self.autolevel.attachToPlotItem(self.img_viewer) 
+        self.crosshair = LockCrossTool(self)
+        self.crosshair.attachToPlotItem(self.img_viewer) 
 
     def _setup_one_channel_viewer(self):
         #for horizontal profile
@@ -161,6 +207,12 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self.img_viewer.addItem(self.isoLine_v, ignoreBounds = True)
         self.img_viewer.addItem(self.isoLine_h, ignoreBounds = True)
 
+        self.hist = pg.HistogramLUTItem(levelMode='rgba')
+        #self.isoLine = pg.InfiniteLine(angle=0, movable=True, pen='g')
+        #self.hist.vb.addItem(self.isoLine)
+        self.hist.vb.setMouseEnabled(y=True) # makes user interaction a little easier
+        self.addItem(self.hist, row = 2, col = 0, rowspan = 5, colspan = 1)
+        self.hist.setImageItem(self.img)
 
     def handleEvent(self, evt_src, evt_type, evt_val):
         """Reimplemented from :class:`TaurusImageItem`"""
@@ -176,6 +228,10 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
                 #data = np.clip(data, 0, 255).astype(np.ubyte)
 
             self.img.setImage(data)
+            if self.autolevel:
+                self.hist.imageChanged(self.autolevel, self.autolevel)
+            else:
+                self.hist.regionChanged()
             if not self.rgb_viewer:
                 hor_region_down,  hor_region_up= self.region_cut_hor.getRegion()
                 ver_region_l, ver_region_r = self.region_cut_ver.getRegion()

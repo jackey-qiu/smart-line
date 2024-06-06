@@ -90,6 +90,9 @@ def pickup_solution(parent, dev_proxy, vol = 0, val_pos = -1, speed = -1, fill =
     else:
         dev_proxy.fill(int(val_pos), float(speed))
 
+def fill_cell(parent, dev_proxy, vol):
+    dispense_solution(parent, dev_proxy, float(vol), 3, speed = -1, drain = False)
+
 def dispense_solution(parent,dev_proxy, vol = 0, val_pos = -1, speed = -1, drain = True):
     dev_proxy = getattr(parent, dev_proxy)
     dev_proxy.valve = int(val_pos)
@@ -105,6 +108,14 @@ def move_valve(parent, dev_proxy,val_pos):
 def exchange_solution(parent, operation_pair = 1, leftover_vol = 1000, rate = 150):
     exchange_obj = parent.pump_client.operations[f"Exchanger {operation_pair}"]
     exchange_obj.exchange(exchange_obj.exchangeableVolume - leftover_vol, rate)
+
+def increase_liquid_vol_in_cell(parent, vol = 50):
+    exchange_obj = parent.pump_client.operations[f"Exchanger {parent.operation_pair}"]
+    exchange_obj.increaseVolume(volume = float(vol))
+
+def decrease_liquid_vol_in_cell(parent, vol = 50):
+    exchange_obj = parent.pump_client.operations[f"Exchanger {parent.operation_pair}"]
+    exchange_obj.decreaseVolume(volume = vol)
 
 def prepare_exchange(parent):
     parent.pump_client.operations["Exchanger 1"].pullSyr.valve = "Waste"
