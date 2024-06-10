@@ -1,5 +1,8 @@
-import psdrive as psd
-from psdrive import device
+try:
+    import psdrive as psd
+    from psdrive import device
+except:
+    pass
 from smart import rs_path
 import yaml
 

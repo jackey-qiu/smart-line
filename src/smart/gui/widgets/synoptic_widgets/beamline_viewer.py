@@ -7,6 +7,7 @@ from ...widgets.shapes.callback_container import *
 from ...widgets.shapes.customized_callbacks import *
 from ....util.util import findMainWindow
 from smart import rs_path
+from magicgui import magicgui
 
 class beamlineSynopticViewer(QWidget):
 
@@ -51,6 +52,17 @@ class beamlineSynopticViewer(QWidget):
         self.viewer_shape, self.viewer_connection = view_shape[which_viewer], view_connection[which_viewer]
         for each_composite in self.viewer_shape.values():
             each_composite.updateSignal.connect(self.update_canvas)
+
+    def method_temp_outside(self, sigma_outside):
+        @magicgui(auto_call=True,sigma={'max':10})
+        def method_temp(sigma: float = sigma_outside):
+            """Example class method."""
+            #sigma = sigma_outside
+            print(f"instance: sigma: {sigma}")
+            #self.counter = self.counter + sigma
+            self.sigma_temp = sigma
+            return sigma
+        return method_temp
 
     def _generate_connection(self):
         lines_draw_before = []
@@ -159,6 +171,14 @@ class beamlineSynopticViewer(QWidget):
 
     def mousePressEvent(self, event):
         x, y = event.x(), event.y()
+        if event.button() == Qt.RightButton:
+            #set the title
+            mggui_func = self.method_temp_outside(0.2)
+            mggui_func.native.setWindowTitle('method_temp')
+            pos = self.parentWidget().mapToGlobal(self.pos())
+            mggui_func.native.move(pos.x()+x, pos.y()+y)
+            mggui_func.show(run=True)
+            return
         if self.viewer_shape == None:
             return
         for composite_shape in self.viewer_shape.values():

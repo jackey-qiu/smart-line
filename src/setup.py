@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 install_requires=["PyQt5", "pyqtgraph", "opencv-python-headless", "lmfit", \
                   "QDarkStyle", "qimage2ndarray", "tifffile", \
                   "pytango", "taurus", "taurus-pyqtgraph", "sardana", \
-                  "scikit-learn", "pandas", "traitlets", "IPython", "qtconsole", 'itango']
+                  "scikit-learn", "pandas", "traitlets", "IPython", "qtconsole", 'itango','magicgui']
 if sys.version_info.minor>7:
     install_requires = install_requires + ["trackpy", "imreg-dft"]
 
