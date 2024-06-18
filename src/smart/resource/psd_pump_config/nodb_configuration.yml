@@ -1,185 +1,153 @@
-server:
-  tangoname: test/pumpserver/1
-  database: True # indicate whether Tango database is available
-  serialport: /dev/ttyUSB0
-  host: hasep25lab01 #IP address or hostname; only required if no Tango database is set up
-  port: 10000 # only required if no Tango database is set up 
-  name: test/pumpserver/1 # only required when the server is started from python
-
-#possible valve types:
-#0: 3-way 120 degree Y valve
-#1: 4-way 90 degree T valve
-#2: 3-way 90 degree distribution valve
-#3: 8-way 45 degree valve
-#4: 4-way 90 degree valve
-#6: 6-way 45 degree valve
-
-# supported device types: PSD smooth flow, MVP
-
 devices:
-  1: #hardware address (in the order of [4 2 3 1])
+  1:
+    acceleration: 10000
+    backoff volume: 500
+    class: PSD4_smooth
+    default init rate: 200
+    default rate: 50
     name: Reservoir cell inlet 1
+    return volume: 0
+    start rate: 20
+    stop rate: 20
+    syringevolume: 12500
     type: PSD
-    class: PSD4_smooth
-    valve type: 3-way 90 degree distribution valve
     valve alias:
       1: Cell
       2: Waste
       3: open
-    syringevolume: 12500 #muL
-    start rate: 20 #muL/s
-    stop rate: 20 #muL/s
-    return volume: 0 #muL
-    acceleration: 10000 #steps/s^2
-    backoff volume: 500 #muL
-    default init rate: 200 #muL/s
-    default rate: 50 #muL/s
-    # you can override rates with their motor steps:
-    #start velocity: 100
-    #stop velocity: 100
-    #return steps: 20
-    #backoff steps: 100
-    
-  3: #hardware address (in the order of [4 2 3 1])
-    name: Reservoir cell inlet 2
-    type: PSD
-    class: PSD4_smooth
     valve type: 3-way 90 degree distribution valve
-    valve alias:
-      1: Cell
-      2: Waste
-      3: open
-    syringevolume: 12500 #muL
-    start rate: 20 #muL/s
-    stop rate: 20 #muL/s
-    return volume: 0 #muL
-    acceleration: 10000 #steps/s^2
-    backoff volume: 500 #muL
-    default init rate: 200 #muL/s
-    default rate: 50 #muL/s
-    
-  2: #hardware address (in the order of [4 2 3 1])
+  2:
+    acceleration: 10000
+    backoff volume: 500
+    class: PSD4_smooth
+    default init rate: 200
+    default rate: 50
     name: Cell outlet 1
+    return volume: 0
+    start rate: 20
+    stop rate: 20
+    syringevolume: 12500
     type: PSD
-    class: PSD4_smooth
-    valve type: 3-way 90 degree distribution valve
     valve alias:
       1: Reservoir
       2: Waste
       3: Cell
-    syringevolume: 12500 #muL
-    start rate: 20 #muL/s
-    stop rate: 20 #muL/s
-    return volume: 0 #muL
-    acceleration: 10000 #steps/s^2
-    backoff volume: 500 #muL
-    default init rate: 200 #muL/s
-    default rate: 50 #muL/s
-    
-  4: #hardware address
+    valve type: 3-way 90 degree distribution valve
+  3:
+    acceleration: 10000
+    backoff volume: 500
+    class: PSD4_smooth
+    default init rate: 200
+    default rate: 50
+    name: Reservoir cell inlet 2
+    return volume: 0
+    start rate: 20
+    stop rate: 20
+    syringevolume: 12500
+    type: PSD
+    valve alias:
+      1: Cell
+      2: Waste
+      3: open
+    valve type: 3-way 90 degree distribution valve
+  4:
+    acceleration: 10000
+    backoff volume: 1000
+    class: PSD4_smooth
+    default init rate: 200
+    default rate: 50
     name: Cell outlet 2
+    return volume: 0
+    start rate: 20
+    stop rate: 20
+    syringevolume: 12500
     type: PSD
-    class: PSD4_smooth
-    valve type: 3-way 90 degree distribution valve
     valve alias:
       1: Reservoir
       2: Waste
       3: Cell
-    syringevolume: 12500 #muL
-    start rate: 20 #muL/s
-    stop rate: 20 #muL/s
-    return volume: 0 #muL
-    acceleration: 10000 #steps/s^2
-    backoff volume: 1000 #muL
-    default init rate: 200 #muL/s
-    default rate: 50 #muL/s
-    
-  5: #hardware address
+    valve type: 3-way 90 degree distribution valve
+  5:
+    class: Valve
     name: Distribution valve
     type: MVP
-    class: Valve
-    valve type: 4-way 90 degree valve
     valve alias:
-      1: Reservoir cell inlet 1 #for example...
+      1: Reservoir cell inlet 1
       2: Reservoir cell inlet 2
       3: Cell outlet 1
       4: Cell outlet 2
-
+    valve type: 4-way 90 degree valve
 operations:
   ExchangePair:
-      Exchanger 1: # name of the ExchangePair
-         args:
-            - Syringe 4 # pushSyr either syringe name or id
-            - Syringe 3 # pullSyr either syringe name or id
-         pushSyr: # valve connections
-            Reservoir: Reservoir #give valve position either numerical or valve alias
-            Cell: Cell 
-            Waste: Waste
-         pullSyr:
-            Cell: Cell #give valve position either numerical or valve alias
-            Waste: Waste
-         prePressure: 0 #muL, pushes amount when connecting the pushSyr syringe to Cell to exchange
-         prePressureRate: 60 #muL/s
-         underPressure: 50 #muL, pulls amount when connecting the pullSyr syringe to Cell to exchange
-         underPressureRate: 60 #muL/s
-         defaultFillRate: 400 #muL/s
-         defaultDrainRate: 400 #muL/s
-         defaultRate: 60 #muL/s
-         dispenseDelay: 0.0 #s
-         bubbleDispense: 500 # muL
-         
-      Exchanger 2: # name of the ExchangePair
-         args:
-            - Syringe 2 # pushSyr either syringe name or id
-            - Syringe 1 # pullSyr either syringe name or id
-         pushSyr: # valve connections
-            Reservoir: Reservoir #give valve position either numerical or valve alias
-            Cell: Cell 
-            Waste: Waste
-         pullSyr:
-            Cell: Cell #give valve position either numerical or valve alias
-            Waste: Waste
-         prePressure: 0 #muL, pushes amount when connecting the pushSyr syringe to Cell to exchange
-         prePressureRate: 60 #muL/s
-         underPressure: 50 #muL, pulls amount when connecting the pullSyr syringe to Cell to exchange
-         underPressureRate: 60 #muL/s
-         defaultFillRate: 400 #muL/s
-         defaultDrainRate: 400 #muL/s
-         defaultRate: 60 #muL/s
-         dispenseDelay: 0.0 #s
-         bubbleDispense: 500 # muL 
-         
+    Exchanger 1:
+      args:
+      - Syringe 4
+      - Syringe 3
+      bubbleDispense: 500
+      defaultDrainRate: 400
+      defaultFillRate: 400
+      defaultRate: 60
+      dispenseDelay: 0.0
+      prePressure: 0
+      prePressureRate: 60
+      pullSyr:
+        Cell: Cell
+        Waste: Waste
+      pushSyr:
+        Cell: Cell
+        Reservoir: Reservoir
+        Waste: Waste
+      underPressure: 50
+      underPressureRate: 60
+    Exchanger 2:
+      args:
+      - Syringe 2
+      - Syringe 1
+      bubbleDispense: 500
+      defaultDrainRate: 400
+      defaultFillRate: 400
+      defaultRate: 60
+      dispenseDelay: 0.0
+      prePressure: 0
+      prePressureRate: 60
+      pullSyr:
+        Cell: Cell
+        Waste: Waste
+      pushSyr:
+        Cell: Cell
+        Reservoir: Reservoir
+        Waste: Waste
+      underPressure: 50
+      underPressureRate: 60
 psd_widget:
-  #S1_vol: 0
-  #S2_vol: 0
-  #S3_vol: 0
-  #S4_vol: 0
-  #valve_pos:
-  #  1: 'up'
-  #  2: 'up'
-  #  3: 'up'
-  #  4: 'up'
-  cell_vol: 0
-  mvp_valve: 1
-  resevoir_vol: 250
-  waste_vol: 0
-  operation_mode: 'not_ready_mode'
-  connect_status:
-    1: 'disconnected'
-    2: 'disconnected'
-    3: 'disconnected'
-    4: 'disconnected'
-    mvp: 'disconnected'
-  filling_status:
-    1: True
-    2: False
-    3: True
-    4: False
-  resume_advance_exchange: False
-  init_motion_stage: False
-  prepressure_S2_ready: False
-  prepressure_S1_ready: False
-  times_prepresssure_S1: 0
-  times_prepresssure_S2: 0
   S1_S3_pull_syringe_id: 4
   S2_S4_pull_syringe_id: 1
+  cell_vol: 0
+  connect_status:
+    1: disconnected
+    2: disconnected
+    3: disconnected
+    4: disconnected
+    mvp: disconnected
+  filling_status:
+    1: true
+    2: false
+    3: true
+    4: false
+  init_motion_stage: false
+  mvp_valve: 1
+  operation_mode: not_ready_mode
+  prepressure_S1_ready: false
+  prepressure_S2_ready: false
+  resevoir_vol: 250
+  resume_advance_exchange: false
+  times_prepresssure_S1: 0
+  times_prepresssure_S2: 0
+  waste_vol: 0
+server:
+  database: true
+  host: hasep25lab01
+  name: test/pumpserver/1
+  port: 10000
+  serialport: /dev/ttyUSB0
+  tangoname: test/pumpserver/1

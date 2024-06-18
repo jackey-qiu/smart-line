@@ -9,20 +9,22 @@ from ....util.util import findMainWindow
 from smart import rs_path
 from magicgui import magicgui
 
-line_pen = QPen(QColor(100,100,100), 2, Qt.DotLine)
-line_pen_actived = QPen(QColor(255,0,0), 2, Qt.DotLine)
-
 class beamlineSynopticViewer(QWidget):
 
     def __init__(self, parent = None):
         super().__init__(parent = parent)
+        #self.config_file = yaml_config_file
         self.composite_shape = None
         self.viewer_shape = None
         self.viewer_connection = {}
         self.set_parent()
+        #self.init_viewer()
+        self.parent.exchange_timer = QTimer()
 
     def connect_slots_synoptic_viewer(self):
         pass
+        #self.parent.pushButton_slit.clicked.connect(lambda: self.init_shape('slit'))
+        #self.parent.pushButton_valve.clicked.connect(lambda: self.init_shape('valve'))
 
     def set_parent(self):
         self.parent = findMainWindow()
@@ -32,16 +34,24 @@ class beamlineSynopticViewer(QWidget):
         self.composite_shape.updateSignal.connect(self.update_canvas)
         self.update()
 
+    def detach_models(self):
+        #not working this way, need a right solution in the future
+        return
+        if self.viewer_shape!=None:
+            print('Detach models!')
+            for each, shape in self.viewer_shape.items():
+                if len(shape._models)!=0:
+                    for key in shape.modelKeys:
+                        shape._removeModelKey(key)
+
     def init_viewer(self):
+        self.detach_models()
         config_file = str(rs_path / 'config' / (self.parent.comboBox_viewer_filename.currentText() + '.yaml'))
         which_viewer = self.parent.comboBox_viewer_obj_name.currentText()
         view_shape, view_connection = buildTools.build_view_from_yaml(config_file, self.size().width())
         self.viewer_shape, self.viewer_connection = view_shape[which_viewer], view_connection[which_viewer]
         for each_composite in self.viewer_shape.values():
             each_composite.updateSignal.connect(self.update_canvas)
-        self.parent.lines_draw_before, self.parent.lines_draw_after, \
-        self.parent.pen_lines_draw_before, self.parent.pen_lines_draw_after, \
-        self.parent.syringe_lines_container = self._generate_connection()
 
     def method_temp_outside(self, sigma_outside):
         @magicgui(auto_call=True,sigma={'max':10})
@@ -59,14 +69,12 @@ class beamlineSynopticViewer(QWidget):
         lines_draw_after = []
         pen_lines_draw_before = []
         pen_lines_draw_after = []
-        syringe_lines_container = {}
         if len(self.viewer_connection) == 0:
             return lines_draw_before, lines_draw_after
         
         def _unpack_str(str_):
-            
             composite_key, shape_ix, direction = str_.rsplit('.')
-            return self.viewer_shape[composite_key].shapes[int(shape_ix)], direction, composite_key, int(shape_ix)
+            return self.viewer_shape[composite_key].shapes[int(shape_ix)], direction
         
         def _make_qpen_from_txt(pen):
             pen_color = QColor(*pen['color'])
@@ -75,30 +83,19 @@ class beamlineSynopticViewer(QWidget):
             return QPen(pen_color, pen_width, pen_style)
         
         for key, con_info in self.viewer_connection.items():
-            shape_lf, anchor_lf, composite_key_lf, shape_ix_lf = _unpack_str(key.rsplit('<=>')[0])
-            shape_rg, anchor_rg, composite_key_rg, shape_ix_rg = _unpack_str(key.rsplit('<=>')[1])
-                
+            shape_lf, anchor_lf = _unpack_str(key.rsplit('<=>')[0])
+            shape_rg, anchor_rg = _unpack_str(key.rsplit('<=>')[1])
             pen = _make_qpen_from_txt(con_info['pen'])
             direct_connect = con_info['direct_connect']
             draw_after = con_info['draw_after']
             lines = buildTools.make_line_connection_btw_two_anchors(shapes = [shape_lf, shape_rg], anchors=[anchor_lf, anchor_rg], direct_connection=direct_connect)
-            if 'syringe' in composite_key_lf:
-                if composite_key_lf not in syringe_lines_container:
-                    syringe_lines_container[composite_key_lf] = {shape_ix_lf: [lines, False]}
-                else:
-                    syringe_lines_container[composite_key_lf][shape_ix_lf] = [lines, False]
-            if 'syringe' in composite_key_rg:
-                if composite_key_rg not in syringe_lines_container:
-                    syringe_lines_container[composite_key_rg] = {shape_ix_rg: [lines, False]}
-                else:
-                    syringe_lines_container[composite_key_rg][shape_ix_rg] = [lines, False]    
             if draw_after:
                 lines_draw_after.append(lines)
                 pen_lines_draw_after.append(pen)
             else:
                 lines_draw_before.append(lines)
                 pen_lines_draw_before.append(pen)
-        return lines_draw_before, lines_draw_after, pen_lines_draw_before, pen_lines_draw_after, syringe_lines_container
+        return lines_draw_before, lines_draw_after, pen_lines_draw_before, pen_lines_draw_after
 
     def scale_composite_shapes(self, sf = None):
         if sf==None:
@@ -125,50 +122,30 @@ class beamlineSynopticViewer(QWidget):
         if self.viewer_shape == None:
             return
         #make line connections
-        #if len(self.viewer_connection)!=0:
-        #    self.parent.lines_draw_before, self.parent.lines_draw_after, self.parent.pen_lines_draw_before, self.parent.pen_lines_draw_after, self.parent.syringe_lines_container = self._generate_connection()
-        #else:
-        #    lines_draw_before = []
-        #    lines_draw_after = []
-        for line_set in self.parent.syringe_lines_container:
-            for shape_ix in self.parent.syringe_lines_container[line_set]:
-                lines, draw = self.parent.syringe_lines_container[line_set][shape_ix]
-                if draw:
-                    for i in range(len(lines)-1):
-                        pts = list(lines[i]) + list(lines[i+1])
-                        if hasattr(self.parent, "exchange_pair"):
-                            if (self.parent.exchange_pair==1 and line_set in ["syringe","syringe3"]) or \
-                               (self.parent.exchange_pair==2 and line_set in ["syringe2","syringe4"]):
-                                qp.setPen(line_pen_actived)
-                                qp.drawLine(*pts)
-                            else:
-                                qp.setPen(line_pen)
-                                qp.drawLine(*pts)
-                        else:
-                            qp.setPen(line_pen)
-                            qp.drawLine(*pts)
-        '''            
+        if len(self.viewer_connection)!=0:
+            lines_draw_before, lines_draw_after, pen_lines_draw_before, pen_lines_draw_after = self._generate_connection()
+        else:
+            lines_draw_before = []
+            lines_draw_after = []
         #lines to be draw before
-        for k, lines in enumerate(self.parent.lines_draw_before):
-            qp.setPen(self.parent.pen_lines_draw_before[k])
+        for k, lines in enumerate(lines_draw_before):
+            qp.setPen(pen_lines_draw_before[k])
             for i in range(len(lines)-1):
                 pts = list(lines[i]) + list(lines[i+1])
                 qp.drawLine(*pts)
-        '''
         #draw shapes
         for composite_shape in self.viewer_shape.values():
             for each_shape in composite_shape.shapes:
                 qp.resetTransform()
                 each_shape.paint(qp)
-        '''
+
         #lines to be draw after
-        for k, lines in enumerate(self.parent.lines_draw_after):
+        for k, lines in enumerate(lines_draw_after):
             qp.resetTransform()
-            qp.setPen(self.parent.pen_lines_draw_after[k])
+            qp.setPen(pen_lines_draw_after[k])
             for i in range(len(lines)-1):
                 pts = list(lines[i]) + list(lines[i+1])
-                qp.drawLine(*pts)    
-        '''            
+                qp.drawLine(*pts)                
         qp.end()
 
     @Slot()
@@ -177,18 +154,23 @@ class beamlineSynopticViewer(QWidget):
 
     def mouseMoveEvent(self, event):
         self.last_x, self.last_y = event.x(), event.y()
-        # if self.parent !=None:
-            # self.parent.statusbar.showMessage('Mouse coords: ( %d : %d )' % (event.x(), event.y()))
+        if self.parent !=None:
+            self.parent.statusbar.showMessage('Mouse coords: ( %d : %d )' % (event.x(), event.y()))
         if self.viewer_shape == None:
             return
         for composite_shape in self.viewer_shape.values():
             for each_shape in composite_shape.shapes:
                 each_shape.cursor_pos_checker(event.x(), event.y())
+        """
+        if self.composite_shape == None:
+            return
+        for each_shape in self.composite_shape.shapes:
+            each_shape.cursor_pos_checker(event.x(), event.y())
+        """
         self.update()
 
     def mousePressEvent(self, event):
         x, y = event.x(), event.y()
-        '''
         if event.button() == Qt.RightButton:
             #set the title
             mggui_func = self.method_temp_outside(0.2)
@@ -197,21 +179,10 @@ class beamlineSynopticViewer(QWidget):
             mggui_func.native.move(pos.x()+x, pos.y()+y)
             mggui_func.show(run=True)
             return
-        '''
         if self.viewer_shape == None:
             return
         for composite_shape in self.viewer_shape.values():
             for i, each_shape in enumerate(composite_shape.shapes):
                 if each_shape.cursor_pos_checker(x, y) and each_shape.clickable:
-                    if event.button() == Qt.LeftButton:
-                        composite_shape.uponLeftMouseClicked(i)
-                        return
-                    elif event.button() == Qt.RightButton:
-                        mggui_func = composite_shape.uponRightMouseClicked(i)
-                        if mggui_func==None:
-                            return
-                        mggui_func.native.setWindowTitle('setup_pars')
-                        pos = self.parentWidget().mapToGlobal(self.pos())
-                        mggui_func.native.move(pos.x()+x, pos.y()+y)
-                        mggui_func.show(run=True)                        
-                        return
+                    composite_shape.uponLeftMouseClicked(i)
+                    return

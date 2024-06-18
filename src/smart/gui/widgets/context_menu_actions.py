@@ -58,7 +58,7 @@ class camSwitch(QtWidgets.QAction, BaseConfigurableClass):
     def __init__(
         self,
         parent=None,
-        text="Toggle switch on/off camera streaming",
+        text="Start camera streaming",
     ):
         BaseConfigurableClass.__init__(self)
         QtWidgets.QAction.__init__(self, text, parent)
@@ -76,8 +76,10 @@ class camSwitch(QtWidgets.QAction, BaseConfigurableClass):
     def _onTriggered(self):
         self._on = not self._on
         if self._on:
+            self.setText('Stop cam streaming!')
             self._parent.start_cam_stream()
         else:
+            self.setText('Start cam streaming!')
             self._parent.stop_cam_stream()
 
     def attachToPlotItem(self, plot_item):
@@ -138,7 +140,7 @@ class AutoLevelTool(QtWidgets.QAction):
     def __init__(
         self,
         parent=None,
-        text="Toggle to autolevel the cam image",
+        text="Disable autolevelling the cam image",
     ):
         QtWidgets.QAction.__init__(self, text, parent)
         tt = "Toggle to autolevel the cam image"
@@ -155,8 +157,10 @@ class AutoLevelTool(QtWidgets.QAction):
     def _onTriggered(self):
         self._autolevel = not self._autolevel
         if self._autolevel:
+            self.setText('Disable autolevelling the cam image')
             self.parent.update_autolevel(True)
         else:
+            self.setText('Enable autolevelling the cam image')
             self.parent.update_autolevel(False)
 
     def attachToPlotItem(self, plot_item):
@@ -188,9 +192,11 @@ class LockCrossTool(QtWidgets.QAction):
     def _onTriggered(self):
         self._lock = not self._lock
         if self._lock:
+            self.setText('Unlock crosshair')
             self.parent.isoLine_h.setMovable(False)
             self.parent.isoLine_v.setMovable(False)
         else:
+            self.setText('Lock crosshair')
             self.parent.isoLine_h.setMovable(True)
             self.parent.isoLine_v.setMovable(True)
 

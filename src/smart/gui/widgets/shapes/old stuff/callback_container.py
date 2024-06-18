@@ -17,8 +17,7 @@ __all__ = ['callback_model_change_with_decoration',
            'callback_leftmouse_click_with_transformation',
            'callback_model_change_with_decoration_on_off', 
            'callback_model_change_with_text_label_on_off',
-           'callback_model_change_with_decoration_valve_position',
-           "callback_model_change_with_text_label_main_gui"]
+           'callback_model_change_with_decoration_valve_position']
 
 def _apply_translation_steps(shape, value_model, mv_dir = 'x', sign = '+', model_limits = None, max_translation_range = None, val_ix = None, translate = 'True'):
     if type(translate)==str:
@@ -85,7 +84,7 @@ def _get_model_value_limits(value_model, lm_type = None):
     elif lm_type == 'alarm':
         return value_model.getWarnings()
 
-def callback_model_change_with_decoration_on_off(parent, shape, value_model):
+def callback_model_change_with_decoration_on_off(shape, value_model):
     _value = bool(value_model.rvalue)
     if _value:
         new_decoration = {'brush': {'color': (0, 255, 0)}}
@@ -95,23 +94,14 @@ def callback_model_change_with_decoration_on_off(parent, shape, value_model):
     shape.decoration_cursor_on = new_decoration
     shape.decoration_cursor_off = new_decoration
 
-def _update_connection(parent,syringe_key, shape_ix, set_true):
-    if shape_ix in parent.syringe_lines_container[syringe_key]:
-        parent.syringe_lines_container[syringe_key][shape_ix][1] = set_true
-    else:
-        pass
-        #print(list(parent.syringe_lines_container[syringe_key].keys()))
-
-def callback_model_change_with_decoration_valve_position(parent, shape, value_model, val_ix, connect_value, syringe_shape_name):
+def callback_model_change_with_decoration_valve_position(shape, value_model, val_ix, connect_value):
     model_value = _get_model_value(value_model)
     if type(model_value) in [list, np.array, np.ndarray]:
         model_value = model_value[int(val_ix)]
     if int(model_value) == int(connect_value):
         new_decoration = {'brush': {'color': (0, 255, 0)}}
-        _update_connection(parent, syringe_shape_name, int(connect_value)+2, True)
     else:
         new_decoration = {'brush': {'color': (0, 0, 255)}}
-        _update_connection(parent, syringe_shape_name, int(connect_value)+2, False)
     shape.decoration = new_decoration
     shape.decoration_cursor_on = new_decoration
     shape.decoration_cursor_off = new_decoration
@@ -122,30 +112,29 @@ def callback_model_change_with_decoration(shape, value_model):
     shape.decoration_cursor_on = new_decoration
     shape.decoration_cursor_off = new_decoration
 
-def callback_model_change_with_transformation(parent, shape, value_model, mv_dir, sign = '+',model_limits = None, max_translation_range = None, val_ix = None, translate = 'True'):
+def callback_model_change_with_transformation(shape, value_model, mv_dir, sign = '+',model_limits = None, max_translation_range = None, val_ix = None, translate = 'True'):
     _apply_translation_steps(shape, value_model,mv_dir, sign, model_limits, max_translation_range, val_ix, translate)
     callback_model_change_with_decoration(shape, value_model)
 
-def callback_model_change_with_text_label(parent, shape, value_model, anchor='left', orientation='horizontal', val_ix = None, sf = 1, label="", end_txt=""):
+def callback_model_change_with_text_label(shape, value_model, anchor='left', orientation='horizontal', val_ix = None, sf = 1, label="", end_txt=""):
     if len(label)==0:
         label = value_model.label
     if val_ix == None or val_ix=='None':
         shape.labels = {'text':[f'{label}:{round(_get_model_value(value_model)*float(sf),2)} {end_txt}'],'anchor':[anchor], 'orientation': [orientation]}
+        print('sensor', shape.labels)
     else:
         shape.labels = {'text':[f'{label}:{round(_get_model_value(value_model)[int(val_ix)]*float(sf),2)} {end_txt}'],'anchor':[anchor], 'orientation': [orientation]}
 
-#state updated from main gui attribute
-def callback_model_change_with_text_label_main_gui(parent, shape, value_model, anchor='left', orientation='horizontal', attr= "attr", label="", end_txt=""):
-    shape.labels = {'text':[f'{label}:{getattr(parent, attr)} {end_txt}'],'anchor':[anchor], 'orientation': [orientation]}
-
-def callback_model_change_with_text_label_on_off(parent, shape, value_model, anchor='left', text = ""):
+def callback_model_change_with_text_label_on_off(shape, value_model, anchor='left', text = ""):
     checked = bool(value_model.rvalue)
     if checked:
         shape.labels = {'text':[f'{text} on'],'anchor':[anchor],'orientation': ['horizontal']}
     else:
         shape.labels = {'text':[f'{text} off'],'anchor':[anchor], 'orientation': ['horizontal']}
 
-def callback_leftmouse_click_with_decoration(parent, shape, value_model): ...
+def callback_leftmouse_click_with_decoration(shape, value_model):
+    pass
 
-def callback_leftmouse_click_with_transformation(parent, shape, value_model): ...
+def callback_leftmouse_click_with_transformation(shape, value_model):
+    pass
 

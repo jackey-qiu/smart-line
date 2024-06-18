@@ -10,7 +10,7 @@ from smart.gui.widgets.context_menu_actions import VisuaTool, camSwitch, AutoLev
 from taurus.qt.qtgui.tpg import ForcedReadTool
 from functools import partial
 import numpy as np
-
+from ...util.util import findMainWindow
 
 class camera_control_panel(object):
 
@@ -36,9 +36,13 @@ class camera_control_panel(object):
                     getattr(self, gridLayoutWidgetName).addWidget(getattr(self, viewerWidgetName))
 
     def connect_slots_cam(self):
-        self.pushButton_zoom_level1.clicked.connect(lambda: self.set_zoom_level(50))
-        self.pushButton_zoom_level2.clicked.connect(lambda: self.set_zoom_level(80))
-        self.pushButton_zoom_level3.clicked.connect(lambda: self.set_zoom_level(100))
+        # print(self.settings_object.value("General/presetZoom"))
+        #print(self.settings_object.value("General"))
+        level1, level2, level3 = eval(self.settings_object.value("Camaras/presetZoom"))
+        # level1, level2, level3 = [50, 80, 100]
+        self.pushButton_zoom_level1.clicked.connect(lambda: self.set_zoom_level(level1))
+        self.pushButton_zoom_level2.clicked.connect(lambda: self.set_zoom_level(level2))
+        self.pushButton_zoom_level3.clicked.connect(lambda: self.set_zoom_level(level3))
         self.comboBox_illum_types.activated.connect(self.upon_change_illum_type)
         self.pushButton_lighton.clicked.connect(self.callback_light_on)
         self.pushButton_lightoff.clicked.connect(self.callback_light_off)
@@ -214,6 +218,9 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self.addItem(self.hist, row = 2, col = 0, rowspan = 5, colspan = 1)
         self.hist.setImageItem(self.img)
 
+        self.img_viewer.vb.scene().sigMouseMoved.connect(self._connect_mouse_move_event)
+
+
     def handleEvent(self, evt_src, evt_type, evt_val):
         """Reimplemented from :class:`TaurusImageItem`"""
         if evt_val is None or getattr(evt_val, "rvalue", None) is None:
@@ -280,6 +287,15 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         if period > 0:
             self.insertEventFilter(self.__ONLY_OWN_EVENTS)
             self._timer.start(period)
+
+    def _connect_mouse_move_event(self, evt):
+        vp_pos = self.img_viewer.vb.mapSceneToView(evt)
+        x, y = vp_pos.x(), vp_pos.y()
+        #in_side_scene, coords = self._scale_rotate_and_translate([x,y])
+        #if not in_side_scene:
+        #    self._parent.statusbar.showMessage('viewport coords:'+str(self.mapSceneToView(evt)))
+        #else:
+        findMainWindow().statusbar.showMessage('viewport coords:'+str(self.img_viewer.vb.mapSceneToView(evt)))
 
     def _forceRead(self, cache=False):
         """Forces a read of the associated attribute.

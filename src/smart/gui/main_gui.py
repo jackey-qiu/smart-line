@@ -11,7 +11,7 @@ import pyqtgraph.functions as fn
 from PyQt5 import QtGui, QtCore, QtWidgets, uic
 from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtCore import pyqtSignal as Signal
-from PyQt5.QtCore import pyqtSlot as Slot
+from PyQt5.QtCore import pyqtSlot as Slot, QTimer
 from ..gui.widgets.scale_bar_tool import ScaleBar
 from ..plugin.builtin_plugin.geometry_unit import geometry_widget_wrapper
 from ..plugin.builtin_plugin.field_dft_registration import MdiFieldImreg_Wrapper
@@ -154,8 +154,29 @@ class smartGui(MacroExecutionWindow, MdiFieldImreg_Wrapper, geometry_widget_wrap
         # // draw scalebar
         self.draw_scalebar()
         self.connect_slots()
+        self.init_attribute_values()
         self.imageBuffer.recallImgBackup()
         self.highlightFirstImg()
+
+
+    def init_attribute_values(self):
+        self.first_client = True
+        self.leftover_vol = 1000
+        self.volume_change_on_the_fly = 50
+        self.volume_syringe_1 = 0
+        self.volume_syringe_2 = 0
+        self.volume_syringe_3 = 0
+        self.volume_syringe_4 = 0
+        self.volume_reservoir = 0
+        self.volume_cell = 0
+        self.volume_waste = 0
+        self.exchange_timer = QTimer()
+        self.check_vol_timer = QTimer()
+        self.syringe_lines_container = {}
+        self.lines_draw_before = [] 
+        self.lines_draw_after = []
+        self.pen_lines_draw_before = [] 
+        self.pen_lines_draw_after = []
 
     def init_taurus(self):
         #ui is a *.ui file from qt designer
