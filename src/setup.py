@@ -18,7 +18,7 @@ setup(
     classifiers=['Topic :: x ray data analysis, beamline control',
                  'Programming Language :: Python'],
     license='MIT',
-    python_requires='>=3.7, <=3.10',
+    python_requires='>=3.7, <=3.12',
     install_requires = install_requires,
     packages=find_packages(),
     package_data={'':['*.ui','*.ini','*.qrc'],'smart.bin':['*.png'], 'smart.gui.ui':['icons/*/*.png'],\

@@ -1,8 +1,10 @@
 import sys, copy
 from taurus.qt.qtgui.base import TaurusBaseComponent
 from taurus.external.qt import Qt
+from pyqtgraph.Qt import QtCore
+from pyqtgraph.Point import Point
 from pyqtgraph import GraphicsLayoutWidget, ImageItem
-from PyQt5.QtCore import pyqtSlot as Slot
+from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal
 import pyqtgraph as pg
 from taurus import Device, Attribute
 from taurus.core import TaurusEventType, TaurusTimeVal
@@ -122,7 +124,7 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
     """
     Displays 2D and 3D image data
     """
-
+    sigScanRoiAdded = Signal(float, float, float, float)
     # TODO: clear image if .setModel(None)
     def __init__(self, parent = None, rgb_viewer = True, *args, **kwargs):
         GraphicsLayoutWidget.__init__(self, *args, **kwargs)
@@ -136,6 +138,8 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self.width = None
         self.data_format_cbs = [lambda x: x]
         self.autolevel = True
+        self.roi_scan = None
+        self.sigScanRoiAdded.connect(self.set_reference_zone)
         # self.setModel('sys/tg_test/1/long64_image_ro')
 
     def update_autolevel(self, autolevel):
@@ -219,7 +223,49 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self.hist.setImageItem(self.img)
 
         self.img_viewer.vb.scene().sigMouseMoved.connect(self._connect_mouse_move_event)
+        self.img_viewer.vb.mouseDragEvent = partial(self._mouseDragEvent, self.img_viewer.vb)
 
+    @Slot(float,float,float,float)
+    def set_reference_zone(self, x0, y0, x1, y1):
+        """
+        Sets the coordinates of the rectangle selection within the reference zone
+
+        :param x0: left-top corner x coordinate
+        :param y0: left-top corner y coordinate
+        :param x1: right-bottom corner x coordinate
+        :param y1: right-bottom corner y coordinate
+        :return:
+        """
+        if self.roi_scan != None:
+            self.img_viewer.vb.removeItem(self.roi_scan)
+        pen = pg.mkPen((0, 200, 200), width=1)
+        self.roi_scan = pg.ROI([x0, y0], [x1-x0, y1-y0], pen=pen)
+        self.roi_scan.setZValue(10000)
+        self.roi_scan.handleSize = 10
+        self.roi_scan.handlePen = pg.mkPen("#FFFFFF")
+        self.roi_scan.addScaleHandle([0, 0], [0.5, 0.5])
+        self.roi_scan.addScaleHandle([1, 1], [0.5, 0.5])
+        self.img_viewer.vb.addItem(self.roi_scan)
+
+    def _mouseDragEvent(self, vb, ev):
+        ev.accept() 
+        # pos = ev.pos()
+        if ev.button() == QtCore.Qt.LeftButton:
+            if ev.isFinish():
+                # x0, x1, y0, y1 = ev.buttonDownPos().x(), ev.pos().x(),  ev.buttonDownPos().y(),  ev.pos().y()
+                x0, x1, y0, y1 = ev.buttonDownScenePos().x(), ev.lastScenePos().x(),  ev.buttonDownScenePos().y(),  ev.lastScenePos().y()
+                if x0 > x1:
+                    x0, x1 = x1, x0
+                if y0 > y1:
+                    y0, y1 = y1, y0
+                p1 = vb.mapSceneToView(QtCore.QPointF(x0,y0))
+                p2 = vb.mapSceneToView(QtCore.QPointF(x1,y1))
+                # // emit the signal to other widgets
+                self.sigScanRoiAdded.emit(p1.x(), p1.y(), p2.x(), p2.y())
+                findMainWindow().statusbar.showMessage("Extend of the rectangle: X(lef-right): [{:.4}:{:.4}],  Y(top-bottom): [{:.4}:{:.4}]".format(p1.x(), p2.x(), p1.y(), p2.y()))
+                #self.getdataInRect()
+
+                # self.changePointsColors()
 
     def handleEvent(self, evt_src, evt_type, evt_val):
         """Reimplemented from :class:`TaurusImageItem`"""
