@@ -171,6 +171,65 @@ class AutoLevelTool(QtWidgets.QAction):
         menu.addAction(self)
         self.plot_item = plot_item
 
+class SaveCrossHair(QtWidgets.QAction):
+    def __init__(
+        self,
+        parent=None,
+        text="Save current crosshair position",
+    ):
+        QtWidgets.QAction.__init__(self, text, parent)
+        tt = "save currentcrosshair position"
+        self.setToolTip(tt)
+        self.parent = parent
+
+        # register config properties
+        # self.registerConfigProperty(self.buffersize, self.setBufferSize, "buffersize")
+
+        # internal conections
+        self.triggered.connect(self._onTriggered)
+
+    def _onTriggered(self):
+        x, y = self.parent.isoLine_v.value(),self.parent.isoLine_h.value()
+        self.parent.saved_crosshair_pos = [x, y]
+
+    def attachToPlotItem(self, plot_item):
+        """Use this method to add this tool to a plot
+        :param plot_item: (PlotItem)
+        """
+        menu = plot_item.getViewBox().menu
+        menu.addAction(self)
+        self.plot_item = plot_item
+
+class ResumeCrossHair(QtWidgets.QAction):
+    def __init__(
+        self,
+        parent=None,
+        text="Resume to saved crosshair position",
+    ):
+        QtWidgets.QAction.__init__(self, text, parent)
+        tt = "resume to saved crosshair position"
+        self.setToolTip(tt)
+        self.parent = parent
+
+        # register config properties
+        # self.registerConfigProperty(self.buffersize, self.setBufferSize, "buffersize")
+
+        # internal conections
+        self.triggered.connect(self._onTriggered)
+
+    def _onTriggered(self):
+        x, y = self.parent.saved_crosshair_pos
+        self.parent.isoLine_v.setValue(x)
+        self.parent.isoLine_h.setValue(y)
+
+    def attachToPlotItem(self, plot_item):
+        """Use this method to add this tool to a plot
+        :param plot_item: (PlotItem)
+        """
+        menu = plot_item.getViewBox().menu
+        menu.addAction(self)
+        self.plot_item = plot_item
+
 class LockCrossTool(QtWidgets.QAction):
     def __init__(
         self,

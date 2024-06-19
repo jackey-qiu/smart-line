@@ -7,6 +7,28 @@ from scipy import ndimage
 from PyQt5 import QtCore
 import pyqtgraph as pg
 
+class scale_pixel(pg.AxisItem):
+    def __init__(self, scale, shift, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.scale = scale
+        self.shift = shift
+
+    def tickStrings(self, values, scale, spacing):
+        return [round(value*self.scale+self.shift,3) for value in values]
+
+    def attachToPlotItem(self, plotItem):
+        """Add this axis to the given PlotItem
+        :param plotItem: (PlotItem)
+        """
+        self.setParentItem(plotItem)
+        viewBox = plotItem.getViewBox()
+        self.linkToView(viewBox)
+        self._oldAxis = plotItem.axes[self.orientation]['item']
+        self._oldAxis.hide()
+        plotItem.axes[self.orientation]['item'] = self
+        pos = plotItem.axes[self.orientation]['pos']
+        plotItem.layout.addItem(self, *pos)
+        self.setZValue(-1000)
 
 def registration_dft_stack(dset, z_axis=(2,),channel=(0,), channel_axis=(3,), scale=[1,0], angle=[0,0], tx=[0,0], ty=[0,0], \
 	iterations=100, display=True, quiet=False, simulation=False, progressbar='', display_window=''):

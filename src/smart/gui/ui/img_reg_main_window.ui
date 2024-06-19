@@ -51,7 +51,7 @@
            <item>
             <widget class="QTabWidget" name="tabWidget_3">
              <property name="currentIndex">
-              <number>0</number>
+              <number>1</number>
              </property>
              <widget class="QWidget" name="tab_9">
               <attribute name="title">
@@ -2290,122 +2290,63 @@
                     </property>
                     <layout class="QVBoxLayout" name="verticalLayout_14">
                      <item>
-                      <layout class="QGridLayout" name="gridLayout_7">
-                       <item row="0" column="6">
-                        <widget class="QPushButton" name="pushButton_zoom_level3">
-                         <property name="text">
-                          <string>High</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="3" column="3">
-                        <widget class="QLabel" name="label_26">
+                      <layout class="QGridLayout" name="gridLayout_cam_stage">
+                       <item row="0" column="2">
+                        <widget class="QPushButton" name="pushButton_zoom_level1">
                          <property name="sizePolicy">
-                          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+                          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                            <horstretch>0</horstretch>
                            <verstretch>0</verstretch>
                           </sizepolicy>
                          </property>
                          <property name="text">
-                          <string>%</string>
+                          <string>Low</string>
                          </property>
                         </widget>
                        </item>
-                       <item row="3" column="5">
-                        <widget class="QPushButton" name="pushButton_lightoff">
+                       <item row="0" column="3">
+                        <widget class="QPushButton" name="pushButton_zoom_level2">
+                         <property name="sizePolicy">
+                          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                           <horstretch>0</horstretch>
+                           <verstretch>0</verstretch>
+                          </sizepolicy>
+                         </property>
                          <property name="text">
-                          <string>Lightoff</string>
+                          <string>Midium</string>
                          </property>
                         </widget>
                        </item>
-                       <item row="3" column="4">
-                        <widget class="QPushButton" name="pushButton_lighton">
-                         <property name="text">
-                          <string>Lighton</string>
+                       <item row="0" column="4">
+                        <widget class="QPushButton" name="pushButton_zoom_level3">
+                         <property name="sizePolicy">
+                          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                           <horstretch>0</horstretch>
+                           <verstretch>0</verstretch>
+                          </sizepolicy>
                          </property>
-                        </widget>
-                       </item>
-                       <item row="3" column="0">
-                        <widget class="QLabel" name="label_23">
                          <property name="text">
-                          <string>illum. pos.</string>
+                          <string>High</string>
                          </property>
                         </widget>
                        </item>
                        <item row="0" column="0">
                         <widget class="QLabel" name="label_27">
                          <property name="text">
-                          <string>zoom pos.</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="0" column="4">
-                        <widget class="QPushButton" name="pushButton_zoom_level1">
-                         <property name="text">
-                          <string>Low</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="0" column="5">
-                        <widget class="QPushButton" name="pushButton_zoom_level2">
-                         <property name="text">
-                          <string>Midium</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="3" column="2">
-                        <widget class="TaurusLabel" name="label_illum_pos">
-                         <property name="minimumSize">
-                          <size>
-                           <width>59</width>
-                           <height>0</height>
-                          </size>
-                         </property>
-                         <property name="text">
-                          <string/>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="3" column="1">
-                        <widget class="QSlider" name="horizontalSlider_illum">
-                         <property name="minimum">
-                          <number>1</number>
-                         </property>
-                         <property name="maximum">
-                          <number>100</number>
-                         </property>
-                         <property name="orientation">
-                          <enum>Qt::Horizontal</enum>
+                          <string>zoom pos.(um)</string>
                          </property>
                         </widget>
                        </item>
                        <item row="0" column="1">
                         <widget class="TaurusLabel" name="label_zoom_pos">
+                         <property name="sizePolicy">
+                          <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                           <horstretch>0</horstretch>
+                           <verstretch>0</verstretch>
+                          </sizepolicy>
+                         </property>
                          <property name="text">
                           <string/>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="0" column="2">
-                        <widget class="QLabel" name="label_22">
-                         <property name="sizePolicy">
-                          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-                           <horstretch>0</horstretch>
-                           <verstretch>0</verstretch>
-                          </sizepolicy>
-                         </property>
-                         <property name="text">
-                          <string>um</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="3" column="6">
-                        <widget class="TaurusAttrListComboBox" name="comboBox_illum_types">
-                         <property name="sizePolicy">
-                          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                           <horstretch>0</horstretch>
-                           <verstretch>0</verstretch>
-                          </sizepolicy>
                          </property>
                         </widget>
                        </item>
@@ -2432,7 +2373,7 @@
                         <widget class="TaurusLabel" name="label_x_stage_value">
                          <property name="minimumSize">
                           <size>
-                           <width>59</width>
+                           <width>100</width>
                            <height>0</height>
                           </size>
                          </property>
@@ -2445,7 +2386,7 @@
                         <widget class="TaurusLabel" name="label_y_stage_value">
                          <property name="minimumSize">
                           <size>
-                           <width>59</width>
+                           <width>100</width>
                            <height>0</height>
                           </size>
                          </property>
@@ -2454,16 +2395,10 @@
                          </property>
                         </widget>
                        </item>
-                       <item row="2" column="1">
-                        <widget class="TaurusLabel" name="label_z_stage_value">
-                         <property name="minimumSize">
-                          <size>
-                           <width>59</width>
-                           <height>0</height>
-                          </size>
-                         </property>
+                       <item row="1" column="0">
+                        <widget class="QLabel" name="label_24">
                          <property name="text">
-                          <string/>
+                          <string>sampleY</string>
                          </property>
                         </widget>
                        </item>
@@ -2480,6 +2415,19 @@
                          </property>
                         </widget>
                        </item>
+                       <item row="2" column="1">
+                        <widget class="TaurusLabel" name="label_z_stage_value">
+                         <property name="minimumSize">
+                          <size>
+                           <width>100</width>
+                           <height>0</height>
+                          </size>
+                         </property>
+                         <property name="text">
+                          <string/>
+                         </property>
+                        </widget>
+                       </item>
                        <item row="0" column="0">
                         <widget class="QLabel" name="label_21">
                          <property name="text">
@@ -2487,23 +2435,10 @@
                          </property>
                         </widget>
                        </item>
-                       <item row="1" column="0">
-                        <widget class="QLabel" name="label_24">
+                       <item row="2" column="0">
+                        <widget class="QLabel" name="label_25">
                          <property name="text">
-                          <string>sampleY</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="0" column="2">
-                        <widget class="QLabel" name="label_43">
-                         <property name="sizePolicy">
-                          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                           <horstretch>0</horstretch>
-                           <verstretch>0</verstretch>
-                          </sizepolicy>
-                         </property>
-                         <property name="text">
-                          <string>mm</string>
+                          <string>sampleZ</string>
                          </property>
                         </widget>
                        </item>
@@ -2520,25 +2455,18 @@
                          </property>
                         </widget>
                        </item>
-                       <item row="2" column="0">
-                        <widget class="QLabel" name="label_25">
+                       <item row="0" column="2">
+                        <widget class="QLabel" name="label_43">
+                         <property name="sizePolicy">
+                          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                           <horstretch>0</horstretch>
+                           <verstretch>0</verstretch>
+                          </sizepolicy>
+                         </property>
                          <property name="text">
-                          <string>sampleZ</string>
+                          <string>mm</string>
                          </property>
                         </widget>
-                       </item>
-                       <item row="0" column="3">
-                        <spacer name="horizontalSpacer_9">
-                         <property name="orientation">
-                          <enum>Qt::Horizontal</enum>
-                         </property>
-                         <property name="sizeHint" stdset="0">
-                          <size>
-                           <width>40</width>
-                           <height>20</height>
-                          </size>
-                         </property>
-                        </spacer>
                        </item>
                       </layout>
                      </item>
@@ -2659,11 +2587,6 @@
    <extends>QWidget</extends>
    <header>smart.gui.widgets.synoptic_widgets.beamline_viewer.h</header>
    <container>1</container>
-  </customwidget>
-  <customwidget>
-   <class>TaurusAttrListComboBox</class>
-   <extends>QComboBox</extends>
-   <header>taurus.qt.qtgui.input.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

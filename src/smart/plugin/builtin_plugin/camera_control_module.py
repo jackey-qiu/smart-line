@@ -8,7 +8,7 @@ from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal
 import pyqtgraph as pg
 from taurus import Device, Attribute
 from taurus.core import TaurusEventType, TaurusTimeVal
-from smart.gui.widgets.context_menu_actions import VisuaTool, camSwitch, AutoLevelTool, LockCrossTool
+from smart.gui.widgets.context_menu_actions import VisuaTool, camSwitch, AutoLevelTool, LockCrossTool, SaveCrossHair, ResumeCrossHair
 from taurus.qt.qtgui.tpg import ForcedReadTool
 from functools import partial
 import numpy as np
@@ -18,7 +18,6 @@ class camera_control_panel(object):
 
     def __init__(self):
         self.build_cam_widget()
-        self.illum_pos_latest = {}
 
     def _extract_cam_info_from_config(self):
         gridLayoutWidgetName = self.settings_object.value("Camaras/gridLayoutWidgetName")
@@ -38,17 +37,10 @@ class camera_control_panel(object):
                     getattr(self, gridLayoutWidgetName).addWidget(getattr(self, viewerWidgetName))
 
     def connect_slots_cam(self):
-        # print(self.settings_object.value("General/presetZoom"))
-        #print(self.settings_object.value("General"))
         level1, level2, level3 = eval(self.settings_object.value("Camaras/presetZoom"))
-        # level1, level2, level3 = [50, 80, 100]
         self.pushButton_zoom_level1.clicked.connect(lambda: self.set_zoom_level(level1))
         self.pushButton_zoom_level2.clicked.connect(lambda: self.set_zoom_level(level2))
         self.pushButton_zoom_level3.clicked.connect(lambda: self.set_zoom_level(level3))
-        self.comboBox_illum_types.activated.connect(self.upon_change_illum_type)
-        self.pushButton_lighton.clicked.connect(self.callback_light_on)
-        self.pushButton_lightoff.clicked.connect(self.callback_light_off)
-        #self.pushButton_camera.clicked.connect(self.control_cam)
 
     def control_cam(self):
         gridLayoutWidgetName, viewerWidgetName, camaraStreamModel, *_ = self._extract_cam_info_from_config()
@@ -64,38 +56,10 @@ class camera_control_panel(object):
         getattr(self, viewerWidgetName).width = _device.width
         getattr(self, viewerWidgetName).height = _device.height
         getattr(self, viewerWidgetName).data_format_cbs = data_format_cbs.rsplit('=>')
-
         self.statusbar.showMessage(f'start cam streaming with model of {camaraStreamModel}')
 
-    @Slot(int)
-    def upon_change_illum_type(self, type_ix):
-        model = self.settings_object.value("Mscope/label_illum_pos").format(type_ix)
-        self.label_illum_pos.model = model
-        current_value = Attribute(model).read().rvalue.m
-        self.horizontalSlider_illum.setValue(int(current_value))
-        self.horizontalSlider_illum.valueChanged.connect(partial(self.write_attr_value, Attribute(model), type_ix))
-
-    @Slot(int)
-    def write_attr_value(self, attribute_proxy,which,value):
-        attribute_proxy.write(float(value))
-        self.illum_pos_latest[which] = float(value)
-
-    def callback_light_on(self):
-        if len(self.illum_pos_latest)==0:
-            return
-        else:
-            ix = self.comboBox_illum_types.currentIndex()
-            self.horizontalSlider_illum.setValue(int(self.illum_pos_latest[ix]))
-
-    def callback_light_off(self):
-        ix = self.comboBox_illum_types.currentIndex()
-        current_value = self.illum_pos_latest.pop(ix, None)
-        if current_value!=None:
-            self.horizontalSlider_illum.setValue(int(0))
-            self.illum_pos_latest[ix] = current_value
-
     def set_zoom_level(self, level = 50):
-        Attribute(self.settings_object.value("Mscope/label_zoom_pos")).write(level)
+        Attribute(self.settings_object.value("SampleStages/label_zoom_pos")).write(level)
 
     def stop_cam_stream(self):
         _, viewerWidgetName, *_ = self._extract_cam_info_from_config()
@@ -164,6 +128,10 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self.autolevel.attachToPlotItem(self.img_viewer) 
         self.crosshair = LockCrossTool(self)
         self.crosshair.attachToPlotItem(self.img_viewer) 
+        self.savecrosshair = SaveCrossHair(self)
+        self.savecrosshair.attachToPlotItem(self.img_viewer) 
+        self.resumecrosshair = ResumeCrossHair(self)
+        self.resumecrosshair.attachToPlotItem(self.img_viewer) 
 
     def _setup_one_channel_viewer(self):
         #for horizontal profile
@@ -206,9 +174,14 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self.isoLine_v.setZValue(100000) # bring iso line above contrast controls
         self.isoLine_h.setValue(0.8)
         self.isoLine_h.setZValue(100000) # bring iso line above contrast controls
-
+        self.isoLine_h.sigPositionChangeFinished.connect(lambda:self.update_stage_pos_at_prim_beam(self.isoLine_h,'y'))
+        self.isoLine_v.sigPositionChangeFinished.connect(lambda:self.update_stage_pos_at_prim_beam(self.isoLine_v,'x'))
         self.img_viewer = self.addPlot(row = 2, col = 1, rowspan = 5, colspan = 10)
         self.img_viewer.setAspectLocked()
+        # ax_item_img_hor = scale_pixel(scale = 0.036, shift = 0, orientation = 'bottom')
+        # ax_item_img_ver = scale_pixel(scale = 0.036, shift = 0, orientation = 'left')
+        # ax_item_img_hor.attachToPlotItem(self.img_viewer)
+        # ax_item_img_ver.attachToPlotItem(self.img_viewer)
         self.img = pg.ImageItem()
         self.img_viewer.addItem(self.img)
 
@@ -246,6 +219,17 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self.roi_scan.addScaleHandle([0, 0], [0.5, 0.5])
         self.roi_scan.addScaleHandle([1, 1], [0.5, 0.5])
         self.img_viewer.vb.addItem(self.roi_scan)
+
+    def update_stage_pos_at_prim_beam(self, infline_obj = None, dir='x'):
+        main_gui = findMainWindow()
+        if dir=='x':
+            attr = Attribute(main_gui.settings_object.value("SampleStages/label_x_stage_value")).read()
+            main_gui.stage_pos_at_prim_beam[0] = attr.value
+            main_gui.crosshair_pos_at_prim_beam[0] = infline_obj.value()
+        elif dir == 'y':
+            attr = Attribute(main_gui.settings_object.value("SampleStages/label_y_stage_value")).read()
+            main_gui.stage_pos_at_prim_beam[1] = attr.value
+            main_gui.crosshair_pos_at_prim_beam[1] = infline_obj.value()
 
     def _mouseDragEvent(self, vb, ev):
         ev.accept() 
