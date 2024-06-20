@@ -783,12 +783,11 @@ class trapezoid(baseShape):
             polygon.append(point4)
             polygon.append(point3)
             qp.drawPolygon(polygon)
-        else:
-            self.text_label(qp)
+        self.text_label(qp)
 
     def _get_width_height(self):
         #(length_top + length_bottom)/2, height
-        return (self.dim_pars[2] + self.dim_pars[3])/2, self.dim_pars[-1]
+        return max([self.dim_pars[2],self.dim_pars[3]]), self.dim_pars[-1]
 
     def text_label(self, qp):
         labels = self.labels
@@ -818,7 +817,8 @@ class trapezoid(baseShape):
             elif anchor == 'right':
                 x, y = (point2 + point4)/2
             elif anchor == 'top':
-                x, y = (point1 + point2)/2
+                # x, y = (point1 + point2)/2
+                x, y = self.dim_pars[0:2] 
             elif anchor == 'bottom':
                 x, y = (point3 + point4)/2
             elif anchor == 'center':
@@ -826,8 +826,12 @@ class trapezoid(baseShape):
             else:
                 if anchor in self.anchors:
                     x, y = self.anchors[anchor]
+            x, y = self.dim_pars[0:2]
+            y = y - self.dim_pars[-1]/2
+            x = x - max(self.dim_pars[2:4])/2
             w, h = self._get_width_height()
             self._draw_text(qp, alignment, text, anchor, x, y, w, h, w_txt, h_txt, padding, labels['orientation'][i])
+            #print(x, y, h, w, self.dim_pars)
             qp.restore()
             qp.save()
             # x, y = self._cal_text_anchor_point(anchor, x, y, 0, 0, w_txt, h_txt, padding)

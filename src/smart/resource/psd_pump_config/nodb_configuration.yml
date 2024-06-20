@@ -147,7 +147,7 @@ psd_widget:
 server:
   database: true
   host: hasep25lab01
-  name: test/pumpserver/1
+  name: psd
   port: 10000
   serialport: /dev/ttyUSB0
   tangoname: test/pumpserver/1

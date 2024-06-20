@@ -99,7 +99,13 @@ def init_syringe(parent, val_pos="Waste", speed=250):
     parent.syringe_4.initSyringe(val_pos, speed)
 
 def init_valve(parent):
+    #this step is needed at the moment, otherwise the mvp type was wrongly set as 3 channel one
+    parent.pump_client.setValveType(5,4)
     parent.mvp.initValve()
+    parent.mvp.join()
+    parent.mvp.valve = 1
+    parent.mvp_pos = 1
+    #init 3 channel valves
     parent.syringe_1.join()
     parent.syringe_2.join()
     parent.syringe_3.join()
@@ -233,6 +239,25 @@ def _update_connection(parent,syringe_key, shape_ix):
         parent.syringe_lines_container[syringe_key][key][1] = False
     parent.syringe_lines_container[syringe_key][shape_ix][1] = True
 
+def move_mvp_valve(parent):
+    nx_valve_port = parent.mvp_pos + 1 if parent.mvp_pos < 4 else 1
+    parent.mvp.valve = nx_valve_port
+    parent.mvp_pos = nx_valve_port
+    original_valve = parent.syringe_1.valve
+    which = list(parent.syringe_1.valveAlias.values()).index(original_valve)
+    if which==0:
+        parent.syringe_1.valve = 2
+        parent.syringe_1.join()
+        parent.syringe_1.valve = 1
+    elif which==1:
+        parent.syringe_1.valve = 3
+        parent.syringe_1.join()
+        parent.syringe_1.valve = 2
+    elif which==2:
+        parent.syringe_1.valve = 1
+        parent.syringe_1.join()
+        parent.syringe_1.valve = 3
+
 def exchange_solution(parent, operation_pair = 1):
     exchange_obj = parent.pump_client.operations[f"Exchanger {operation_pair}"]
     exchange_obj.exchange(exchange_obj.exchangeableVolume - parent.leftover_vol)
@@ -309,6 +334,9 @@ def start_automatic_exchange(parent):
 def check_automatic_exchange(parent):
     if not parent.syringe_1.busy and not parent.syringe_2.busy and not parent.syringe_3.busy and not parent.syringe_4.busy:
         #all has stopped
+        if not parent.auto_exchange:
+            parent.exchange_timer.stop()
+            return
         if parent.exchange_pair == 1:
             parent.exchange_pair = 2
             exchange_solution(parent, 2)
@@ -360,22 +388,28 @@ def reset_volumes(parent):
 def setup_client_par(parent):
     with open(config_file, 'r', encoding='utf8') as f:
         config = yaml.safe_load(f.read())
-
+    name = config['server']['name']
     host = config['server']['host']
     port = config['server']['port']
+    database = config['server']['database']
     tango_name = config['server']['tangoname']
     serial_port = config['server']['serialport']
-
+    first_client = parent.first_client
+    auto_exchange = parent.auto_exchange
+    cmd = f"PumpServer {name} -ORBendPoint giop:tcp::{port} -nodb -dlist {tango_name}"
     @magicgui(call_button='apply')
-    def setup_func(host=host, port=port, tango_name = tango_name, serial_port = serial_port,first_client = bool(parent.first_client)):
+    def setup_func(host=host, port=port, tango_name = tango_name, serial_port = serial_port,database = database,first_client = first_client, auto_exchange = auto_exchange, cmd = cmd):
         config['server']['host'] = host
         config['server']['port'] = port
         config['server']['tangoname'] = tango_name
         config['server']['serialport'] = serial_port
+        config['server']['database'] = database
 
         with open(config_file,'w') as f:
             yaml.dump(config, f, default_flow_style=False)
         parent.first_client = first_client
+        parent.auto_exchange = auto_exchange
+        cmd = f"PumpServer {name} -ORBendPoint giop:tcp::{port} -nodb -dlist {tango_name}"
     return setup_func
 
 def stop_all(parent):

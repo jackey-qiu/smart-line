@@ -161,6 +161,8 @@ class smartGui(MacroExecutionWindow, MdiFieldImreg_Wrapper, geometry_widget_wrap
 
     def init_attribute_values(self):
         self.first_client = True
+        self.mvp_pos = 1
+        self.auto_exchange = True
         self.leftover_vol = 1000
         self.volume_change_on_the_fly = 50
         self.volume_syringe_1 = 0

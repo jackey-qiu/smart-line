@@ -499,7 +499,7 @@ composite_shapes:
     transformation: 
       translate: [220,220]
     models:
-      1: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/syringepos
+      1: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/valvepos
       3: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/syringepos
       4: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/syringepos
       5: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/syringepos
@@ -510,8 +510,8 @@ composite_shapes:
       10: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/syringepos
       11: tango://hasep25lab01.desy.de:10000/test/pumpserver/1/syringepos
     callbacks_upon_model_change:
-      1: ["callback_model_change_with_text_label_main_gui", "anchor", 'center', "orientation", 'horizontal', "attr", "volume_cell", "label","", "end_txt", "ul"]
-      3: ["callback_model_change_with_text_label_main_gui", "anchor", 'center', "orientation", 'horizontal', "attr", "volume_cell", "label","cell vol:", "end_txt", "ul"]
+      1: ["callback_model_change_with_text_label_main_gui", "anchor", 'center', "orientation", 'horizontal', "attr", "mvp_pos", "label",">", "end_txt", ":<"]
+      3: ["callback_model_change_with_text_label_main_gui", "anchor", 'top', "orientation", 'horizontal', "attr", "volume_cell", "label","cell vol", "end_txt", "ul"]
       4: null
       5: null
       6: null
@@ -521,7 +521,7 @@ composite_shapes:
       10: null
       11: null
     callbacks_upon_leftmouse_click:
-      1: null
+      1: ['move_mvp_valve']
       3: null
       4: 
         - ['prepare_exchange']    
