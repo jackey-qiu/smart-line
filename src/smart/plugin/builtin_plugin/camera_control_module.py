@@ -1,7 +1,7 @@
 import sys, copy
 from taurus.qt.qtgui.base import TaurusBaseComponent
 from taurus.external.qt import Qt
-from pyqtgraph.Qt import QtCore
+from pyqtgraph.Qt import QtCore, QtGui
 from pyqtgraph.Point import Point
 from pyqtgraph import GraphicsLayoutWidget, ImageItem
 from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal
@@ -170,9 +170,9 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
 
         self.isoLine_v = pg.InfiniteLine(angle=90, movable=True, pen='g')
         self.isoLine_h = pg.InfiniteLine(angle=0, movable=True, pen='g')
-        self.isoLine_v.setValue(0.8)
+        self.isoLine_v.setValue(0)
         self.isoLine_v.setZValue(100000) # bring iso line above contrast controls
-        self.isoLine_h.setValue(0.8)
+        self.isoLine_h.setValue(0)
         self.isoLine_h.setZValue(100000) # bring iso line above contrast controls
         self.isoLine_h.sigPositionChangeFinished.connect(lambda:self.update_stage_pos_at_prim_beam(self.isoLine_h,'y'))
         self.isoLine_v.sigPositionChangeFinished.connect(lambda:self.update_stage_pos_at_prim_beam(self.isoLine_v,'x'))
@@ -198,27 +198,57 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self.img_viewer.vb.scene().sigMouseMoved.connect(self._connect_mouse_move_event)
         self.img_viewer.vb.mouseDragEvent = partial(self._mouseDragEvent, self.img_viewer.vb)
 
+        #set the img to origin (0,0)
+        self._mv_img_to_pos(0, 0)
+
+    #suppose to move the bottomleft corner of image to the pos(x, y)
+    def _mv_img_to_pos(self, x, y):
+        self.img.setX(0)
+        self.img.setY(0)
+        tr = QtGui.QTransform()
+        tr.translate(x, y)
+        self.img.setTransform(tr)
+
     @Slot(float,float,float,float)
-    def set_reference_zone(self, x0, y0, x1, y1):
+    def set_reference_zone(self, x0, y0, w, h):
         """
         Sets the coordinates of the rectangle selection within the reference zone
 
         :param x0: left-top corner x coordinate
         :param y0: left-top corner y coordinate
-        :param x1: right-bottom corner x coordinate
-        :param y1: right-bottom corner y coordinate
+        :param w: roi width in hor direction
+        :param h: roi height in ver direction
         :return:
         """
         if self.roi_scan != None:
             self.img_viewer.vb.removeItem(self.roi_scan)
         pen = pg.mkPen((0, 200, 200), width=1)
-        self.roi_scan = pg.ROI([x0, y0], [x1-x0, y1-y0], pen=pen)
+        self.roi_scan = pg.ROI([x0, y0], [w, h], pen=pen)
         self.roi_scan.setZValue(10000)
         self.roi_scan.handleSize = 10
         self.roi_scan.handlePen = pg.mkPen("#FFFFFF")
         self.roi_scan.addScaleHandle([0, 0], [0.5, 0.5])
         self.roi_scan.addScaleHandle([1, 1], [0.5, 0.5])
         self.img_viewer.vb.addItem(self.roi_scan)
+        self._cal_scan_coordinates()
+
+    def _cal_scan_coordinates(self):
+        main_gui = findMainWindow()
+        scan_cmd = main_gui.lineEdit_scan_cmd.text()
+        stage_x = main_gui.lineEdit_sample_stage_name_x.text()
+        stage_y = main_gui.lineEdit_sample_stage_name_y.text()
+        step_size = main_gui.lineEdit_step_size.text()
+        steps_x = main_gui.spinBox_steps_hor.value()
+        steps_y = main_gui.spinBox_steps_ver.value()
+        topleft = np.array(self.roi_scan.pos())
+        dist_from_prim_beam_pos = (topleft - main_gui.crosshair_pos_at_prim_beam)*main_gui.camara_pixel_size
+        sample_x_stage_start_pos, sample_y_stage_start_pos = main_gui.stage_pos_at_prim_beam + dist_from_prim_beam_pos
+        width, height = abs(np.array(self.roi_scan.size()))*main_gui.camara_pixel_size
+        scan_cmd_str = f'{scan_cmd} {stage_x}' + \
+                       f' {round(sample_x_stage_start_pos,2)} {round(sample_x_stage_start_pos+width,2)} {steps_x}' + \
+                       f' {stage_y} {round(sample_y_stage_start_pos,2)} {round(sample_y_stage_start_pos-height,2)} {steps_y}'
+        main_gui.lineEdit_full_macro_name.setText(scan_cmd_str)
+        return scan_cmd_str
 
     def update_stage_pos_at_prim_beam(self, infline_obj = None, dir='x'):
         main_gui = findMainWindow()
@@ -230,6 +260,22 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
             attr = Attribute(main_gui.settings_object.value("SampleStages/label_y_stage_value")).read()
             main_gui.stage_pos_at_prim_beam[1] = attr.value
             main_gui.crosshair_pos_at_prim_beam[1] = infline_obj.value()
+        
+    def mv_img_to_ref(self):
+        #after this movement, the pos of crosshair pos reflect the current sample stage position
+        main_gui = findMainWindow()
+        self.update_stage_pos_at_prim_beam(self.isoLine_h, 'y')
+        self.update_stage_pos_at_prim_beam(self.isoLine_v, 'x')
+        x_pix, y_pix = main_gui.crosshair_pos_at_prim_beam
+        x, y = x_pix * main_gui.camara_pixel_size, y_pix * main_gui.camara_pixel_size
+        stage_x, stage_y = main_gui.stage_pos_at_prim_beam
+        dx, dy = (stage_x - x)/main_gui.camara_pixel_size, (stage_y - y)/main_gui.camara_pixel_size
+        self.img.setX(dx)
+        self.img.setY(dy)
+        self.isoLine_h.setValue(self.isoLine_h.value()+dy)
+        self.isoLine_v.setValue(self.isoLine_v.value()+dx)
+        main_gui.crosshair_pos_at_prim_beam[0] = self.isoLine_v.value()
+        main_gui.crosshair_pos_at_prim_beam[1] = self.isoLine_h.value()
 
     def _mouseDragEvent(self, vb, ev):
         ev.accept() 
@@ -245,7 +291,7 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
                 p1 = vb.mapSceneToView(QtCore.QPointF(x0,y0))
                 p2 = vb.mapSceneToView(QtCore.QPointF(x1,y1))
                 # // emit the signal to other widgets
-                self.sigScanRoiAdded.emit(p1.x(), p1.y(), p2.x(), p2.y())
+                self.sigScanRoiAdded.emit(p1.x(), p1.y(), (p2.x()-p1.x()), (p2.y()-p1.y()))
                 findMainWindow().statusbar.showMessage("Extend of the rectangle: X(lef-right): [{:.4}:{:.4}],  Y(top-bottom): [{:.4}:{:.4}]".format(p1.x(), p2.x(), p1.y(), p2.y()))
                 #self.getdataInRect()
 
@@ -325,7 +371,9 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         #if not in_side_scene:
         #    self._parent.statusbar.showMessage('viewport coords:'+str(self.mapSceneToView(evt)))
         #else:
-        findMainWindow().statusbar.showMessage('viewport coords:'+str(self.img_viewer.vb.mapSceneToView(evt)))
+        point = self.img_viewer.vb.mapSceneToView(evt).toPoint()
+        px_size = findMainWindow().camara_pixel_size
+        findMainWindow().statusbar.showMessage(f'viewport coords: ({round(point.x()*px_size,2), round(point.y()*px_size,2)})')
 
     def _forceRead(self, cache=False):
         """Forces a read of the associated attribute.
