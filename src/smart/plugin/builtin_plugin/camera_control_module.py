@@ -8,7 +8,7 @@ from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal
 import pyqtgraph as pg
 from taurus import Device, Attribute
 from taurus.core import TaurusEventType, TaurusTimeVal
-from smart.gui.widgets.context_menu_actions import VisuaTool, camSwitch, AutoLevelTool, LockCrossTool, SaveCrossHair, ResumeCrossHair
+from smart.gui.widgets.context_menu_actions import setRef, mvMotors, VisuaTool, camSwitch, AutoLevelTool, LockCrossTool, SaveCrossHair, ResumeCrossHair
 from taurus.qt.qtgui.tpg import ForcedReadTool
 from functools import partial
 import numpy as np
@@ -17,6 +17,7 @@ from ...util.util import findMainWindow
 class camera_control_panel(object):
 
     def __init__(self):
+        self.last_cursor_pos_on_camera_viewer = [0,0]
         self.build_cam_widget()
 
     def _extract_cam_info_from_config(self):
@@ -132,6 +133,10 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self.savecrosshair.attachToPlotItem(self.img_viewer) 
         self.resumecrosshair = ResumeCrossHair(self)
         self.resumecrosshair.attachToPlotItem(self.img_viewer) 
+        self.setPosRef = setRef(self)
+        self.setPosRef.attachToPlotItem(self.img_viewer) 
+        self.mvMotors = mvMotors(self._parent)
+        self.mvMotors.attachToPlotItem(self.img_viewer) 
 
     def _setup_one_channel_viewer(self):
         #for horizontal profile
@@ -224,6 +229,7 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
             self.img_viewer.vb.removeItem(self.roi_scan)
         pen = pg.mkPen((0, 200, 200), width=1)
         self.roi_scan = pg.ROI([x0, y0], [w, h], pen=pen)
+        self.roi_scan.sigRegionChanged.connect(self._cal_scan_coordinates)
         self.roi_scan.setZValue(10000)
         self.roi_scan.handleSize = 10
         self.roi_scan.handlePen = pg.mkPen("#FFFFFF")
@@ -237,16 +243,21 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         scan_cmd = main_gui.lineEdit_scan_cmd.text()
         stage_x = main_gui.lineEdit_sample_stage_name_x.text()
         stage_y = main_gui.lineEdit_sample_stage_name_y.text()
-        step_size = main_gui.lineEdit_step_size.text()
+        step_size = eval(main_gui.lineEdit_step_size.text())
         steps_x = main_gui.spinBox_steps_hor.value()
         steps_y = main_gui.spinBox_steps_ver.value()
         topleft = np.array(self.roi_scan.pos())
         dist_from_prim_beam_pos = (topleft - main_gui.crosshair_pos_at_prim_beam)*main_gui.camara_pixel_size
         sample_x_stage_start_pos, sample_y_stage_start_pos = main_gui.stage_pos_at_prim_beam + dist_from_prim_beam_pos
         width, height = abs(np.array(self.roi_scan.size()))*main_gui.camara_pixel_size
+        if main_gui.checkBox_use_step_size.isChecked():
+            steps_x = int(width/step_size[0]*1000)
+            steps_y = int(height/step_size[1]*1000)
+        exposure_time = float(main_gui.lineEdit_exposure_time.text())
         scan_cmd_str = f'{scan_cmd} {stage_x}' + \
-                       f' {round(sample_x_stage_start_pos,2)} {round(sample_x_stage_start_pos+width,2)} {steps_x}' + \
-                       f' {stage_y} {round(sample_y_stage_start_pos,2)} {round(sample_y_stage_start_pos-height,2)} {steps_y}'
+                       f' {round(sample_x_stage_start_pos,4)} {round(sample_x_stage_start_pos+width,4)} {steps_x}' + \
+                       f' {stage_y} {round(sample_y_stage_start_pos,4)} {round(sample_y_stage_start_pos-height,4)} {steps_y}'+\
+                       f' {exposure_time}'
         main_gui.lineEdit_full_macro_name.setText(scan_cmd_str)
         return scan_cmd_str
 
@@ -365,6 +376,7 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
             self._timer.start(period)
 
     def _connect_mouse_move_event(self, evt):
+        main_gui = findMainWindow()
         vp_pos = self.img_viewer.vb.mapSceneToView(evt)
         x, y = vp_pos.x(), vp_pos.y()
         #in_side_scene, coords = self._scale_rotate_and_translate([x,y])
@@ -372,8 +384,10 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         #    self._parent.statusbar.showMessage('viewport coords:'+str(self.mapSceneToView(evt)))
         #else:
         point = self.img_viewer.vb.mapSceneToView(evt).toPoint()
-        px_size = findMainWindow().camara_pixel_size
-        findMainWindow().statusbar.showMessage(f'viewport coords: ({round(point.x()*px_size,2), round(point.y()*px_size,2)})')
+        px_size = main_gui.camara_pixel_size
+        main_gui.last_cursor_pos_on_camera_viewer = [round(point.x()*px_size,4), round(point.y()*px_size,4)]
+        main_gui.statusbar.showMessage(f'viewport coords: {main_gui.last_cursor_pos_on_camera_viewer}')
+        #findMainWindow().statusbar.showMessage(f'viewport coords: {round(point.x()*px_size,4), round(point.y()*px_size,4)}')
 
     def _forceRead(self, cache=False):
         """Forces a read of the associated attribute.

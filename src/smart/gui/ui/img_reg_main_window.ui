@@ -51,7 +51,7 @@
            <item>
             <widget class="QTabWidget" name="tabWidget_3">
              <property name="currentIndex">
-              <number>1</number>
+              <number>0</number>
              </property>
              <widget class="QWidget" name="tab_9">
               <attribute name="title">
@@ -2360,7 +2360,7 @@
                     <property name="minimumSize">
                      <size>
                       <width>0</width>
-                      <height>200</height>
+                      <height>0</height>
                      </size>
                     </property>
                     <property name="title">
@@ -2497,10 +2497,20 @@
                        <item row="1" column="1">
                         <widget class="QLineEdit" name="lineEdit_step_size">
                          <property name="text">
-                          <string>2</string>
+                          <string>(2,2)</string>
                          </property>
                          <property name="placeholderText">
                           <string>1</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="4" column="4">
+                        <widget class="QLineEdit" name="lineEdit_scan_queue_name"/>
+                       </item>
+                       <item row="4" column="0" colspan="2">
+                        <widget class="QLabel" name="label_83">
+                         <property name="text">
+                          <string>queue section name</string>
                          </property>
                         </widget>
                        </item>
@@ -2510,6 +2520,16 @@
                           <string>horizontal steps.</string>
                          </property>
                         </widget>
+                       </item>
+                       <item row="4" column="5">
+                        <widget class="QPushButton" name="pushButton_append_job">
+                         <property name="text">
+                          <string>append</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="4" column="2">
+                        <widget class="QLineEdit" name="lineEdit_queue_section_name"/>
                        </item>
                        <item row="1" column="0">
                         <widget class="QLabel" name="label_54">
@@ -2522,6 +2542,23 @@
                         <widget class="QLabel" name="label_26">
                          <property name="text">
                           <string>hor stage name</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="3" column="2" colspan="4">
+                        <widget class="QLineEdit" name="lineEdit_full_macro_name"/>
+                       </item>
+                       <item row="4" column="3">
+                        <widget class="QLabel" name="label_84">
+                         <property name="text">
+                          <string>queue name</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="3" column="0" colspan="2">
+                        <widget class="QLabel" name="label_85">
+                         <property name="text">
+                          <string>full scan macro name</string>
                          </property>
                         </widget>
                        </item>
@@ -2545,7 +2582,7 @@
                        <item row="0" column="1">
                         <widget class="QLineEdit" name="lineEdit_scan_cmd">
                          <property name="text">
-                          <string>meshc</string>
+                          <string>cmesh</string>
                          </property>
                          <property name="placeholderText">
                           <string>meshc</string>
@@ -2586,42 +2623,33 @@
                          </property>
                         </widget>
                        </item>
-                       <item row="3" column="0" colspan="2">
-                        <widget class="QLabel" name="label_83">
-                         <property name="text">
-                          <string>queue section name</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="3" column="2">
-                        <widget class="QLineEdit" name="lineEdit_queue_section_name"/>
-                       </item>
-                       <item row="3" column="3">
-                        <widget class="QLabel" name="label_84">
-                         <property name="text">
-                          <string>queue name</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="3" column="4">
-                        <widget class="QLineEdit" name="lineEdit_scan_queue_name"/>
-                       </item>
-                       <item row="3" column="5">
-                        <widget class="QPushButton" name="pushButton_submit_job">
-                         <property name="text">
-                          <string>submit job</string>
-                         </property>
-                        </widget>
-                       </item>
                        <item row="2" column="0" colspan="2">
-                        <widget class="QLabel" name="label_85">
+                        <widget class="QCheckBox" name="checkBox_use_step_size">
                          <property name="text">
-                          <string>full scan macro name</string>
+                          <string>use step size to cal steps</string>
                          </property>
                         </widget>
                        </item>
-                       <item row="2" column="2" colspan="4">
-                        <widget class="QLineEdit" name="lineEdit_full_macro_name"/>
+                       <item row="2" column="2">
+                        <widget class="QLabel" name="label_22">
+                         <property name="text">
+                          <string>exposure time</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="2" column="3">
+                        <widget class="QLineEdit" name="lineEdit_exposure_time">
+                         <property name="text">
+                          <string>1</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="2" column="4">
+                        <widget class="QLabel" name="label_86">
+                         <property name="text">
+                          <string>sec.</string>
+                         </property>
+                        </widget>
                        </item>
                       </layout>
                      </item>
@@ -2629,17 +2657,51 @@
                    </widget>
                   </item>
                   <item>
-                   <spacer name="verticalSpacer_4">
-                    <property name="orientation">
-                     <enum>Qt::Vertical</enum>
+                   <widget class="QGroupBox" name="groupBox_5">
+                    <property name="title">
+                     <string>ScanViewer</string>
                     </property>
-                    <property name="sizeHint" stdset="0">
-                     <size>
-                      <width>20</width>
-                      <height>40</height>
-                     </size>
-                    </property>
-                   </spacer>
+                    <layout class="QVBoxLayout" name="verticalLayout_28">
+                     <item>
+                      <widget class="QTableView" name="tableView_scan_list_camera_viewer">
+                       <property name="sortingEnabled">
+                        <bool>true</bool>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <layout class="QHBoxLayout" name="horizontalLayout_16">
+                       <item>
+                        <spacer name="horizontalSpacer_9">
+                         <property name="orientation">
+                          <enum>Qt::Horizontal</enum>
+                         </property>
+                         <property name="sizeHint" stdset="0">
+                          <size>
+                           <width>40</width>
+                           <height>20</height>
+                          </size>
+                         </property>
+                        </spacer>
+                       </item>
+                       <item>
+                        <widget class="QPushButton" name="pushButton_remove_one_task">
+                         <property name="text">
+                          <string>remove one row</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item>
+                        <widget class="QPushButton" name="pushButton_submit_all">
+                         <property name="text">
+                          <string>submit all to queue server</string>
+                         </property>
+                        </widget>
+                       </item>
+                      </layout>
+                     </item>
+                    </layout>
+                   </widget>
                   </item>
                  </layout>
                 </widget>

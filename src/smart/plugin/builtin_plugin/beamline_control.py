@@ -1,10 +1,13 @@
-from PyQt5.QtWidgets import QLabel, QPushButton, QSlider
+from PyQt5.QtWidgets import QLabel, QPushButton, QSlider, QAbstractItemView, QMessageBox
 from PyQt5.QtCore import Qt, pyqtSlot as Slot
 from PyQt5.QtGui import QFont
+from PyQt5 import QtCore
 from functools import partial
 from taurus.qt.qtgui.display import TaurusLabel
 from taurus import Attribute
-
+import pandas as pd
+from smart.util.util import PandasModel
+from smart.plugin.user_plugin.queue_control import REQUIRED_KEYS
 
 class beamlineControl(object):
 
@@ -18,8 +21,13 @@ class beamlineControl(object):
         # self.set_models()
 
     def connect_slots_beamline_control(self):
+        self.init_pandas_model_queue_camara_viewer()
         self.update_pixel_size()
         self.pushButton_connect_model.clicked.connect(self.set_models)
+        self.pushButton_append_job.clicked.connect(self.add_one_task_to_scan_viewer)
+        self.tableView_scan_list_camera_viewer.clicked.connect(self.update_roi_upon_click_tableview_camera_widget)
+        self.pushButton_remove_one_task.clicked.connect(self.remove_currently_selected_row)
+        self.pushButton_submit_all.clicked.connect(self.submit_jobs_to_queue_server)
 
     def update_pixel_size(self):
         from taurus import Attribute
@@ -39,6 +47,11 @@ class beamlineControl(object):
         #get the num of illum devices
         num_illum_devices = len(Attribute(self.settings_object.value('Mscope/comboBox_illum_types')).read().value)
         self.populate_illum_widgets(num_illum_devices, 3)
+
+    def mv_stages_to_cursor_pos(self):
+        self.statusUpdate(f'moving sample stages to {self.last_cursor_pos_on_camera_viewer}')
+        Attribute(self.settings_object.value('SampleStages/label_x_stage_value')).write(self.last_cursor_pos_on_camera_viewer[0])
+        Attribute(self.settings_object.value('SampleStages/label_y_stage_value')).write(self.last_cursor_pos_on_camera_viewer[1])
 
     def populate_illum_widgets(self, rows = 0, first_row = 4):
         cols = ['label_illum','horizontalSlider_illum', 'label_illum_pos', 'pushButton_lighton','pushButton_lightoff']
@@ -83,3 +96,59 @@ class beamlineControl(object):
         if current_value!=None:
             getattr(self, f'horizontalSlider_illum_{ix}').setValue(int(0))
             self.illum_pos_latest[ix] = current_value
+
+    def init_pandas_model_queue_camara_viewer(self, table_view_widget_name='tableView_scan_list_camera_viewer'):
+        data = pd.DataFrame.from_dict({'session':[], 'queue':[],'scan_command':[], 'scan_info':[], 'geo_roi':[]})
+        #disable_all_tabs_but_one(self, tab_widget_name, tab_indx)
+        self.pandas_model_queue_camara_viewer = PandasModel(data = data, tableviewer = getattr(self, table_view_widget_name), main_gui=self)
+        getattr(self, table_view_widget_name).setModel(self.pandas_model_queue_camara_viewer)
+        getattr(self, table_view_widget_name).resizeColumnsToContents()
+        getattr(self, table_view_widget_name).setSelectionBehavior(QAbstractItemView.SelectRows)
+        getattr(self, table_view_widget_name).horizontalHeader().setStretchLastSection(True)
+
+    def add_one_task_to_scan_viewer(self):
+        num_of_existing_task = self.pandas_model_queue_camara_viewer._data.shape[0]
+        roi = self.camara_widget.roi_scan
+        value_list = [self.lineEdit_queue_section_name.text(),\
+                      self.lineEdit_scan_queue_name.text(),\
+                      self.lineEdit_full_macro_name.text(),\
+                      'To be added',
+                      f'[{roi.x()},{roi.y()},{roi.size()[0]},{roi.size()[1]}]'
+                      ]
+        self.pandas_model_queue_camara_viewer._data.loc[num_of_existing_task] = value_list
+        self.pandas_model_queue_camara_viewer.update_view()
+
+    def remove_currently_selected_row(self):
+        which_row = self.tableView_scan_list_camera_viewer.selectionModel().selectedRows()[0].row()
+        self.pandas_model_queue_camara_viewer._data.drop([which_row], inplace=True)
+        self.pandas_model_queue_camara_viewer._data.reset_index(drop=True, inplace=True)
+        self.pandas_model_queue_camara_viewer.update_view()
+
+    @Slot(QtCore.QModelIndex)
+    def update_roi_upon_click_tableview_camera_widget(self, modelindex):
+        row = modelindex.row()
+        roi = eval(self.pandas_model_queue_camara_viewer._data.iloc[row,:]['geo_roi'])
+        x, y, w, h = roi
+        self.camara_widget.roi_scan.setX(x)
+        self.camara_widget.roi_scan.setY(y)
+        self.camara_widget.roi_scan.setSize((w, h))
+     
+    def submit_jobs_to_queue_server(self):
+        if self.queue_comm==None:
+            self.statusUpdate('queue server is not created. Create the connection first.')
+            return
+        def _make_job_list():
+            jobs = []
+            rows = self.pandas_model_queue_camara_viewer._data.shape[0]
+            for i in range(rows):
+                jobs.append({
+                    'queue': self.lineEdit_scan_queue_name.text(),
+                    'session': self.lineEdit_queue_section_name.text(),
+                    'scan_command': self.lineEdit_full_macro_name.text()
+                })
+            return jobs
+        try:
+            self.queue_comm.send_receive_message(['add', _make_job_list()])
+            self.statusUpdate('Jobs are submitted to queue server.')
+        except Exception as e:
+            self.statusUpdate('Fail to submit the jobs.'+str(e))
