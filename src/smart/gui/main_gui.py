@@ -349,6 +349,15 @@ class smartGui(MacroExecutionWindow, MdiFieldImreg_Wrapper, geometry_widget_wrap
             self.set_pars_for_locating_particle_on_gui()
             self.radioButton_particle.click()
 
+
+    @Slot(int)    
+    def switch_mode_viewer_tab(self, tabIndex):
+        tabText = self.tabWidget_viewer.tabText(tabIndex).lower()
+        if 'camerastream' in tabText:
+            self.camToolBar.show()
+        else:
+            self.camToolBar.hide()
+
     def set_cursor_icon(self, cursor_type="cross"):
         """
         Change the cursor icon
@@ -376,6 +385,8 @@ class smartGui(MacroExecutionWindow, MdiFieldImreg_Wrapper, geometry_widget_wrap
         self.saveimagedb_sig.connect(self.imageBuffer.writeImgBackup)
         #tabwidget signal
         self.tabWidget.tabBarClicked.connect(self.switch_mode)
+        #viewer tabwidget signal
+        self.tabWidget_viewer.tabBarClicked.connect(self.switch_mode_viewer_tab)
         #dft slots
         self.connect_slots_dft()
         #fiducial slots

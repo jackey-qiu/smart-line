@@ -31,7 +31,10 @@ class beamlineControl(object):
 
     def update_pixel_size(self):
         from taurus import Attribute
-        self.camara_pixel_size = Attribute(self.settings_object.value("Camaras/pixel_size")).read().value
+        try:
+            self.camara_pixel_size = Attribute(self.settings_object.value("Camaras/pixel_size")).read().value
+        except:
+            pass
         self.camara_widget.img_viewer.axes['left']['item'].setScale(self.camara_pixel_size)
         self.camara_widget.img_viewer.axes['left']['item'].setLabel('ver (mm)')
         self.camara_widget.img_viewer.axes['bottom']['item'].setScale(self.camara_pixel_size)
@@ -129,6 +132,9 @@ class beamlineControl(object):
         row = modelindex.row()
         roi = eval(self.pandas_model_queue_camara_viewer._data.iloc[row,:]['geo_roi'])
         x, y, w, h = roi
+        scan_cmd_list = self.pandas_model_queue_camara_viewer._data.iloc[row,:]['scan_command'].rsplit(' ')
+        x, y = float(scan_cmd_list[2]), float(scan_cmd_list[6])
+        x, y = self.camara_widget._convert_stage_coord_to_pix_unit(x, y)
         self.camara_widget.roi_scan.setX(x)
         self.camara_widget.roi_scan.setY(y)
         self.camara_widget.roi_scan.setSize((w, h))

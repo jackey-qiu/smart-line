@@ -112,6 +112,7 @@ class setRef(QtWidgets.QAction, BaseConfigurableClass):
 
     def _onTriggered(self):
         self._parent.mv_img_to_ref()
+        self._parent.pos_calibration_done = True
 
     def attachToPlotItem(self, plot_item):
         """Use this method to add this tool to a plot
