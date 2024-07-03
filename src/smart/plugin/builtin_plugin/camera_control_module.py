@@ -146,17 +146,25 @@ class camera_control_panel(object):
         autoscaleoff = QAction(QIcon(str(icon_path / 'smart' / 'unscale_rgb.png')),'turn off auto scaling the rgb color',self)
         autoscaleoff.setStatusTip('Turn off the autoscaling of RGB channels.')
         autoscaleoff.triggered.connect(lambda: self.camara_widget.update_autolevel(False))               
+        roi_rect = QAction(QIcon(str(icon_path / 'smart' / 'rectangle_roi.png')),'select rectangle roi',self)
+        roi_rect.setStatusTip('click an drag to get a rectangle roi.')
+        roi_rect.triggered.connect(lambda: self.camara_widget.set_roi_type('rectangle'))               
+        roi_polyline = QAction(QIcon(str(icon_path / 'smart' / 'polyline_roi.png')),'select polygone roi',self)
+        roi_polyline.setStatusTip('click an drag to get a polygone roi selection.')
+        roi_polyline.triggered.connect(lambda: self.camara_widget.set_roi_type('polyline'))               
         self.camToolBar.addAction(action_switch_on_camera)
         self.camToolBar.addAction(action_switch_off_camera)
-        self.camToolBar.addAction(flip_up_down)
-        self.camToolBar.addAction(flip_left_right)
-        self.camToolBar.addAction(lock)
-        self.camToolBar.addAction(unlock)
-        self.camToolBar.addAction(poscalibration)
-        self.camToolBar.addAction(savecrosshair)
-        self.camToolBar.addAction(resumecrosshair)
         self.camToolBar.addAction(autoscale)
         self.camToolBar.addAction(autoscaleoff)
+        self.camToolBar.addAction(flip_up_down)
+        self.camToolBar.addAction(flip_left_right)
+        self.camToolBar.addAction(savecrosshair)
+        self.camToolBar.addAction(resumecrosshair)
+        self.camToolBar.addAction(poscalibration)
+        self.camToolBar.addAction(lock)
+        self.camToolBar.addAction(unlock)
+        self.camToolBar.addAction(roi_rect)
+        self.camToolBar.addAction(roi_polyline)
         self.addToolBar(Qt.LeftToolBarArea, self.camToolBar)
 
 class CumForcedReadTool(ForcedReadTool):
@@ -199,9 +207,14 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self.autolevel = True
         self.roi_scan = None
         self.roi_scan_xy_stage = [None, None]
+        self.roi_type = 'rectangle'
         self.pos_calibration_done = False
         self.sigScanRoiAdded.connect(self.set_reference_zone)
         # self.setModel('sys/tg_test/1/long64_image_ro')
+
+    def set_roi_type(self, roi_type):
+        if roi_type in ['rectangle','polyline']:
+            self.roi_type = roi_type
 
     def save_current_roi_xy(self):
         main_gui = findMainWindow()
@@ -331,46 +344,79 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         """
         if self.roi_scan != None:
             self.img_viewer.vb.removeItem(self.roi_scan)
-        pen = pg.mkPen((0, 200, 200), width=1)
-        self.roi_scan = pg.ROI([x0, y0], [w, h], pen=pen)
-        self.roi_scan.sigRegionChanged.connect(self._cal_scan_coordinates)
-        self.roi_scan.setZValue(10000)
-        self.roi_scan.handleSize = 10
-        self.roi_scan.handlePen = pg.mkPen("#FFFFFF")
-        self.roi_scan.addScaleHandle([0, 0], [0.5, 0.5])
-        self.roi_scan.addScaleHandle([1, 1], [0.5, 0.5])
+        if self.roi_type == 'rectangle':
+            pen = pg.mkPen((0, 200, 200), width=1)
+            self.roi_scan = pg.ROI([x0, y0], [w, h], pen=pen)
+            self.roi_scan.setZValue(10000)
+            self.roi_scan.handleSize = 10
+            self.roi_scan.handlePen = pg.mkPen("#FFFFFF")
+            self.roi_scan.addScaleHandle([0, 0], [0.5, 0.5])
+            self.roi_scan.addScaleHandle([1, 1], [0.5, 0.5])
+            self.roi_scan.addScaleHandle([0, 1], [0.5, 0.5])
+            self.roi_scan.addScaleHandle([1, 0], [0.5, 0.5])
+        elif self.roi_type == 'polyline':
+            pen = pg.mkPen((0, 200, 200), width=1)
+            self.roi_scan = pg.PolyLineROI([],closed=True)
+            self.roi_scan.handleSize = 10
+            self.roi_scan.setPoints([[x0,y0],[x0+w,y0],[x0+w, y0+h],[x0,y0+h]])
+            self.roi_scan.setZValue(10000)
+            self.roi_scan.handlePen = pg.mkPen("#FFFFFF")
         self.img_viewer.vb.addItem(self.roi_scan)
+        self.roi_scan.sigRegionChanged.connect(self._cal_scan_coordinates)
         self._cal_scan_coordinates()
 
     def _cal_scan_coordinates(self):
+        main_gui = findMainWindow()
+        if self.roi_type=='rectangle':
+            samx = Attribute(main_gui.settings_object.value("SampleStages/label_x_stage_value")).read().value
+            samy = Attribute(main_gui.settings_object.value("SampleStages/label_y_stage_value")).read().value
+            current_stage_pos = np.array([samx, samy])
+            crosshair_pos_offset = (current_stage_pos - main_gui.stage_pos_at_prim_beam)/main_gui.camara_pixel_size
+            crosshair_pos_corrected_by_offset = main_gui.crosshair_pos_at_prim_beam + crosshair_pos_offset
+            scan_cmd = main_gui.lineEdit_scan_cmd.text()
+            stage_x = main_gui.lineEdit_sample_stage_name_x.text()
+            stage_y = main_gui.lineEdit_sample_stage_name_y.text()
+            step_size = eval(main_gui.lineEdit_step_size.text())
+            steps_x = main_gui.spinBox_steps_hor.value()
+            steps_y = main_gui.spinBox_steps_ver.value()
+            topleft = np.array(self.roi_scan.pos())
+            # dist_from_prim_beam_pos = (topleft - main_gui.crosshair_pos_at_prim_beam)*main_gui.camara_pixel_size
+            dist_from_prim_beam_pos = (topleft - crosshair_pos_corrected_by_offset)*main_gui.camara_pixel_size
+            sample_x_stage_start_pos, sample_y_stage_start_pos = main_gui.stage_pos_at_prim_beam + dist_from_prim_beam_pos
+            width, height = abs(np.array(self.roi_scan.size()))*main_gui.camara_pixel_size
+            if main_gui.checkBox_use_step_size.isChecked():
+                steps_x = int(width/step_size[0]*1000)
+                steps_y = int(height/step_size[1]*1000)
+            exposure_time = float(main_gui.lineEdit_exposure_time.text())
+            scan_cmd_str = f'{scan_cmd} {stage_x}' + \
+                        f' {round(sample_x_stage_start_pos,4)} {round(sample_x_stage_start_pos+width,4)} {steps_x}' + \
+                        f' {stage_y} {round(sample_y_stage_start_pos,4)} {round(sample_y_stage_start_pos-height,4)} {steps_y}'+\
+                        f' {exposure_time}'
+            main_gui.lineEdit_full_macro_name.setText(scan_cmd_str)
+            return scan_cmd_str
+        else:
+            main_gui.lineEdit_full_macro_name.setText(str(self._generate_handle_pos_list_polylineroi()))
+    
+    def _from_viewport_coords_to_stage_coords(self, x_vp, y_vp):
         main_gui = findMainWindow()
         samx = Attribute(main_gui.settings_object.value("SampleStages/label_x_stage_value")).read().value
         samy = Attribute(main_gui.settings_object.value("SampleStages/label_y_stage_value")).read().value
         current_stage_pos = np.array([samx, samy])
         crosshair_pos_offset = (current_stage_pos - main_gui.stage_pos_at_prim_beam)/main_gui.camara_pixel_size
         crosshair_pos_corrected_by_offset = main_gui.crosshair_pos_at_prim_beam + crosshair_pos_offset
-        scan_cmd = main_gui.lineEdit_scan_cmd.text()
-        stage_x = main_gui.lineEdit_sample_stage_name_x.text()
-        stage_y = main_gui.lineEdit_sample_stage_name_y.text()
-        step_size = eval(main_gui.lineEdit_step_size.text())
-        steps_x = main_gui.spinBox_steps_hor.value()
-        steps_y = main_gui.spinBox_steps_ver.value()
-        topleft = np.array(self.roi_scan.pos())
+        vp_coords = np.array([x_vp, y_vp])
         # dist_from_prim_beam_pos = (topleft - main_gui.crosshair_pos_at_prim_beam)*main_gui.camara_pixel_size
-        dist_from_prim_beam_pos = (topleft - crosshair_pos_corrected_by_offset)*main_gui.camara_pixel_size
-        sample_x_stage_start_pos, sample_y_stage_start_pos = main_gui.stage_pos_at_prim_beam + dist_from_prim_beam_pos
-        width, height = abs(np.array(self.roi_scan.size()))*main_gui.camara_pixel_size
-        if main_gui.checkBox_use_step_size.isChecked():
-            steps_x = int(width/step_size[0]*1000)
-            steps_y = int(height/step_size[1]*1000)
-        exposure_time = float(main_gui.lineEdit_exposure_time.text())
-        scan_cmd_str = f'{scan_cmd} {stage_x}' + \
-                       f' {round(sample_x_stage_start_pos,4)} {round(sample_x_stage_start_pos+width,4)} {steps_x}' + \
-                       f' {stage_y} {round(sample_y_stage_start_pos,4)} {round(sample_y_stage_start_pos-height,4)} {steps_y}'+\
-                       f' {exposure_time}'
-        main_gui.lineEdit_full_macro_name.setText(scan_cmd_str)
-        return scan_cmd_str
-    
+        dist_from_prim_beam_pos = (vp_coords - crosshair_pos_corrected_by_offset)*main_gui.camara_pixel_size
+        stage_coords = main_gui.stage_pos_at_prim_beam + dist_from_prim_beam_pos
+        return list(stage_coords.round(3))
+
+    def _generate_handle_pos_list_polylineroi(self):
+        pos_list = []
+        for handle in self.roi_scan.handles:
+            handle_ls = [handle['pos'].x(), handle['pos'].y()]
+            pos_list.append(self._from_viewport_coords_to_stage_coords(*handle_ls))
+        return pos_list
+
     def _cal_scan_coordinates_from_pos(self, pos):
         #pos is in mm unit
         main_gui = findMainWindow()
@@ -548,7 +594,7 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         point = self.img_viewer.vb.mapSceneToView(evt).toPoint()
         px_size = main_gui.camara_pixel_size
         main_gui.last_cursor_pos_on_camera_viewer = self._cal_scan_coordinates_from_pos([round(point.x()*px_size,4), round(point.y()*px_size,4)])
-        main_gui.statusbar.showMessage(f'viewport coords: {main_gui.last_cursor_pos_on_camera_viewer}')
+        main_gui.statusbar.showMessage(f'viewport coords (stage in mm): {main_gui.last_cursor_pos_on_camera_viewer};viewport coords (native in pix):{point.x(),point.y()}')
         #findMainWindow().statusbar.showMessage(f'viewport coords: {round(point.x()*px_size,4), round(point.y()*px_size,4)}')
 
     def _forceRead(self, cache=False):
