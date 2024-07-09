@@ -562,7 +562,7 @@ class MdiFieldImreg_Wrapper(object):
         self.target_zoom_frame = self.target_zoom_frame[0:min_y_dim,0:min_x_dim]
         self.reference_sub_frame = self.reference_sub_frame[0:min_y_dim,0:min_x_dim]
 
-        cv2.imwrite(os.path.join(self.settings_object.value("FileManager/currentimagedbDir"),"target_sub_frame_downscaled.jpg"), self.target_zoom_frame)
+        cv2.imwrite(os.path.join(self.settings_object["FileManager"]["currentimagedbDir"],"target_sub_frame_downscaled.jpg"), self.target_zoom_frame)
         #print("shapes:{}{}".format(self.target_zoom_frame.shape,self.reference_sub_frame.shape))
         output_text.append("shapes:{}{}".format(self.target_zoom_frame.shape,self.reference_sub_frame.shape))
         # // match the shape of reference (template) frame and current frame (image to be transformed
@@ -582,10 +582,10 @@ class MdiFieldImreg_Wrapper(object):
         #     output_text.append("no padding required")
         output_text.append("shapes:{}{}".format(self.target_zoom_frame.shape, self.reference_sub_frame.shape))
 
-        cv2.imwrite(os.path.join(self.settings_object.value("FileManager/currentimagedbDir"),"reference_sub_frame.jpg"), self.reference_sub_frame)
+        cv2.imwrite(os.path.join(self.settings_object["FileManager"]["currentimagedbDir"],"reference_sub_frame.jpg"), self.reference_sub_frame)
 
         # import cv2
-        cv2.imwrite(os.path.join(self.settings_object.value("FileManager/currentimagedbDir"),"target_zoom_frame_padded.jpg"), self.target_zoom_frame)
+        cv2.imwrite(os.path.join(self.settings_object["FileManager"]["currentimagedbDir"],"target_zoom_frame_padded.jpg"), self.target_zoom_frame)
         self.dft_reg_instance.prepare_dft(self.reference_sub_frame, self.target_zoom_frame)
         try:
             self.dft_reg_thread.terminate()
@@ -609,7 +609,7 @@ class MdiFieldImreg_Wrapper(object):
 
             arr = ird.imreg.transform_img_dict(self.target_zoom_frame, tdict=vector_dict, bgval=None, order=1,
                                                invert=False)
-            cv2.imwrite(os.path.join(self.settings_object.value("FileManager/currentimagedbDir"),"target_sub_frame_transformed.jpg"), arr)
+            cv2.imwrite(os.path.join(self.settings_object["FileManager"]["currentimagedbDir"],"target_sub_frame_transformed.jpg"), arr)
 
             output_text.append("tvec: {}".format(vector_dict["tvec"]))
             output_text.append("angle: {}, {}".format(vector_dict["angle"], self.target_attrs["Rotation"]))

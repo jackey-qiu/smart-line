@@ -251,7 +251,7 @@ class ImageBufferInfo(QtCore.QObject):
         # // save the image buffer to a specified location
         #settings = QtCore.QSettings(self._parent._parent.__appStore__, QtCore.QSettings.IniFormat)
         settings = self._parent.settings_object
-        if settings.value('Hardware/CPUthreading') == '1':
+        if settings['Hardware"]["CPUthreading'] == '1':
             def onDataReady(obj_result):
                 self._parent.thread_func.quit()
 

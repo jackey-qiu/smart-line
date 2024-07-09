@@ -12,7 +12,7 @@ from smart.plugin.user_plugin.queue_control import REQUIRED_KEYS
 class beamlineControl(object):
 
     def __init__(self, parent=None):
-        self.group_names = self.settings_object.value("widgetMaps/beamlineControlGpNames").rsplit(',')
+        self.group_names = self.settings_object["widgetMaps"]["beamlineControlGpNames"].rsplit(',')
         self.camara_pixel_size = 1
         self.stage_pos_at_prim_beam = [0, 0]
         self.crosshair_pos_at_prim_beam = [0, 0]
@@ -32,7 +32,7 @@ class beamlineControl(object):
     def update_pixel_size(self):
         from taurus import Attribute
         try:
-            self.camara_pixel_size = Attribute(self.settings_object.value("Camaras/pixel_size")).read().value
+            self.camara_pixel_size = Attribute(self.settings_object["Camaras"]["pixel_size"]).read().value
         except:
             pass
         self.camara_widget.img_viewer.axes['left']['item'].setScale(self.camara_pixel_size)
@@ -41,20 +41,21 @@ class beamlineControl(object):
         self.camara_widget.img_viewer.axes['bottom']['item'].setLabel('hor (mm)')
 
     def set_models(self):
-        allkeys = self.settings_object.allKeys()
-        selected_keys = [key for key in allkeys if key.rsplit('/')[0] in self.group_names]
+        allkeys = self.settings_object.keys()
+        selected_keys = [key for key in allkeys if key in self.group_names]
         for each in selected_keys:
-            model = self.settings_object.value(each)
-            if not model.endswith('{}'):#model name ends with {} is a dynamically changed model
-                getattr(self, each.rsplit('/')[1]).model = model
+            widget_model_dict = self.settings_object[each]
+            for (key, value) in widget_model_dict.items():
+                if not value.endswith('{}'):#model name ends with {} is a dynamically changed model
+                    getattr(self, key).model = value
         #get the num of illum devices
-        num_illum_devices = len(Attribute(self.settings_object.value('Mscope/comboBox_illum_types')).read().value)
+        num_illum_devices = len(Attribute(self.settings_object["Mscope"]["comboBox_illum_types"]).read().value)
         self.populate_illum_widgets(num_illum_devices, 3)
 
     def mv_stages_to_cursor_pos(self):
         self.statusUpdate(f'moving sample stages to {self.last_cursor_pos_on_camera_viewer}')
-        Attribute(self.settings_object.value('SampleStages/label_x_stage_value')).write(self.last_cursor_pos_on_camera_viewer[0])
-        Attribute(self.settings_object.value('SampleStages/label_y_stage_value')).write(self.last_cursor_pos_on_camera_viewer[1])
+        Attribute(self.settings_object['SampleStages"]["label_x_stage_value']).write(self.last_cursor_pos_on_camera_viewer[0])
+        Attribute(self.settings_object['SampleStages"]["label_y_stage_value']).write(self.last_cursor_pos_on_camera_viewer[1])
 
     def populate_illum_widgets(self, rows = 0, first_row = 4):
         cols = ['label_illum','horizontalSlider_illum', 'label_illum_pos', 'pushButton_lighton','pushButton_lightoff']
@@ -70,7 +71,7 @@ class beamlineControl(object):
                     widget_obj.setMaximum(100)
                 if type(widget_obj)==TaurusLabel:
                     #set the model
-                    model_str = self.settings_object.value("Mscope/label_illum_pos").format(i)
+                    model_str = self.settings_object["Mscope"]["label_illum_pos"].format(i)
                     widget_obj.model = model_str
                     #slider slot connection setup
                     current_value = Attribute(model_str).read().rvalue.m
@@ -150,7 +151,7 @@ class beamlineControl(object):
                 jobs.append({
                     'queue': self.lineEdit_scan_queue_name.text(),
                     'session': self.lineEdit_queue_section_name.text(),
-                    'scan_command': self.lineEdit_full_macro_name.text()
+                    'scan_command': self.lineEdit_full_macro_name.text().rsplit(' ')
                 })
             return jobs
         try:

@@ -26,8 +26,8 @@ class motorMeter(GraphicsLayoutWidget, TaurusBaseComponent):
         self.parent = findMainWindow()
 
     def update_motor_viewer(self):
-        motor_keys = [each for each in self.parent.settings_object.allKeys() if each.startswith('Motors')]
-        models = [self.parent.settings_object.value(key)+'/Position' for key in motor_keys]
+        motor_keys = [each for each in self.parent.settings_object.keys() if each.startswith('Motors')]
+        models = [self.parent.settings_object[key]+'/Position' for key in motor_keys]
         self._setModel_list([each.rsplit('/')[1] for each in motor_keys], models)
 
     def _setModel_list(self, motor_name_list, motor_model_list):

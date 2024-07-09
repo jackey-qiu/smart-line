@@ -1,0 +1,51 @@
+General:
+  ScaleSize: 1000
+  ScaleHeight: 90
+  ScalePosition: Bottom Right
+  ScaleColor: #e0dd2d
+  ScaleFontSize: 10
+widgetMaps:
+  beamlineControlGpNames: SampleStages
+FileManager:
+  currentImageDatabaseDir: C:\\Users\\_admin\\Downloads\\monitor_test
+  restoreimagedb: C:\\Users\\qiucanro\\apps\\imgReg\\imgReg\\ImageBackup.imagedb
+  currentimagedbDir: C:/Users/qiucanro/Downloads
+Visuals:
+  boxColor: #00ff00
+  boxLinewidth: 2
+  showBox: 1
+  showScalebar: 0
+Camaras:
+  presetZoom: [60,80,100]
+  gridLayoutWidgetName: gridLayout_cam
+  viewerWidgetName: camara_widget
+  pixel_size: tango://hasp029rack.desy.de:10000/p06/mscope/lab.01/pixelsize
+  camaraDevice: tango://hasp029rack.desy.de:10000/p06/tangovimba/test.01
+  camaraStreamModel: tango://hasp029rack.desy.de:10000/p06/tangovimba/test.01/imageraw
+  camaraDataFormatCallbacks: 
+    - lambda data:data[0]
+    - lambda data:data.reshape((2048, 2048, 3))
+Mscope:
+  label_illum_pos: tango://hasp029rack.desy.de:10000/p06/beamlinemicroscopeillumination/test.01/intensity{}
+  comboBox_illum_types: tango://hasp029rack.desy.de:10000/p06/beamlinemicroscopeillumination/test.01/AvailableIlluminationTypes
+SampleStages:
+  label_zoom_pos: tango://hasp029rack.desy.de:10000/p06/mscope/lab.01/zoom
+  label_x_stage_value: tango://hasp029rack.desy.de:10000/motor/dummy_mot_ctrl/1/position
+  label_y_stage_value: tango://hasp029rack.desy.de:10000/motor/dummy_mot_ctrl/2/position
+  label_z_stage_value: tango://hasp029rack.desy.de:10000/motor/dummy_mot_ctrl/3/position
+Motors:
+  mot01: motor/motctrl01/1
+  mot02: motor/motctrl02/1
+  mot03: motor/motctrl02/2
+  mot04: motor/motctrl02/3
+  mot05: motor/motctrl02/4
+QueueControl:
+  ntp_host: haspp06deb10
+  ntp_port: 13345
+PrimBeamGeo:
+  img_x: -1879.132
+  img_y: -1581.22
+  iso_h: 0
+  iso_v: 0
+  stage_x: 0
+  stage_y: 0

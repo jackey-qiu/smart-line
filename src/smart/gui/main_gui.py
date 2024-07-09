@@ -4,6 +4,7 @@
 # // module to manage the field view
 # from ui.workspace_widget import Ui_workspace_widget
 import sys
+import yaml
 from pathlib import Path
 import numpy as np
 import pyqtgraph as pg
@@ -30,7 +31,7 @@ from sardana.taurus.qt.qtgui.extra_macroexecutor.macroexecutor import MacroExecu
 from taurus import Device
 from taurus.core.util.containers import ArrayBuffer
 
-setting_file = str(Path(__file__).parent.parent / 'resource' / 'config' / 'appsettings.ini')
+setting_file = str(Path(__file__).parent.parent / 'resource' / 'config' / 'appsettings.yaml')
 ui_file_folder = Path(__file__).parent / 'ui'
 
 class smartGui(MacroExecutionWindow, MdiFieldImreg_Wrapper, geometry_widget_wrapper, FiducialMarkerWidget_wrapper, particle_widget_wrapper, camera_control_panel, beamlineControl, synopticViewerControl, queueControl):
@@ -46,19 +47,29 @@ class smartGui(MacroExecutionWindow, MdiFieldImreg_Wrapper, geometry_widget_wrap
     removeTool_sig = Signal(object)
     saveimagedb_sig = Signal()
 
-    def __init__(self, parent = None, designMode = False):
+    def __init__(self, parent = None, designMode = False, config = 'default'):
         """
         Initialize the class
         :param parent: parent widget
         :param settings_object: settings object
         """
         MacroExecutionWindow.__init__(self, parent, designMode)
-        self.__init_gui()
+        self.__init_gui(config = config)
         self.init_taurus()
 
-    def __init_gui(self):
+    def __init_gui(self, config):
         uic.loadUi(str(ui_file_folder / 'img_reg_main_window.ui'), self)
-        self.settings_object = QtCore.QSettings(setting_file, QtCore.QSettings.IniFormat)
+        if config=='default':
+            # self.settings_object = QtCore.QSettings(setting_file, QtCore.QSettings.IniFormat)
+            self.setting_file_yaml = str(setting_file)
+            with open(str(setting_file), 'r', encoding='utf8') as f:
+                self.settings_object = yaml.safe_load(f.read())
+        else:
+            self.setting_file_yaml = str(config)
+            with open(str(config), 'r', encoding='utf8') as f:
+                self.settings_object = yaml.safe_load(f.read())
+            # self.settings_object = QtCore.QSettings(config, QtCore.QSettings.IniFormat)
+
 
         MdiFieldImreg_Wrapper.__init__(self)
         geometry_widget_wrapper.__init__(self)
@@ -129,30 +140,31 @@ class smartGui(MacroExecutionWindow, MdiFieldImreg_Wrapper, geometry_widget_wrap
         self.field.resizeEvent = resizeEventWrapper
         self.drawMode = 'auto'
 
-        self.update_environment_color(self.settings_object.value("Visuals/environmentBackgroundColor"))
+        # self.update_environment_color(self.settings_object.value("Visuals/environmentBackgroundColor"))
+        # self.update_environment_color(self.settings_object["Visuals"]['environmentBackgroundColor'])
 
         # // check for the ablation cell:
 
         self.X_controller_travel, self.Y_controller_travel = 100000, 100000
-        if self.settings_object.contains("Stages"):
-            if "(100 mm X 100mm)" in self.settings_object.value('Stages'):
+        if 'Stages' in self.settings_object:
+            if "(100 mm X 100mm)" in self.settings_object['Stages']:
                 self.X_controller_travel, self.Y_controller_travel = 100000, 100000
-            elif "(150 mm X 150 mm)" in self.settings_object.value('Stages'):
+            elif "(150 mm X 150 mm)" in self.settings_object['Stages']:
                 self.X_controller_travel, self.Y_controller_travel = 150000, 150000
-            elif "(50 mm X 50 mm)" in self.settings_object.value('Stages'):
+            elif "(50 mm X 50 mm)" in self.settings_object['Stages']:
                 self.X_controller_travel, self.Y_controller_travel = 50000, 50000
 
         # self.add_workspace()
         # self.autoRange(padding=0.02)
-        if self.settings_object.contains("FileManager/restoreimagedb"):
-            self.img_backup_path = self.settings_object.value("FileManager/restoreimagedb")
+        if 'FileManager' in self.settings_object and 'restoreimagedb' in self.settings_object['FileManager']:
+            self.img_backup_path = self.settings_object['FileManager']['restoreimagedb']
 
         self.imageBuffer = ImageBufferInfo(self,
                                            self.img_backup_path)
         self.tbl_render_order.imageBuffer = self.imageBuffer
 
         # // draw scalebar
-        self.draw_scalebar()
+        # self.draw_scalebar()
         self.connect_slots()
         self.init_attribute_values()
         self.imageBuffer.recallImgBackup()
@@ -491,9 +503,9 @@ class smartGui(MacroExecutionWindow, MdiFieldImreg_Wrapper, geometry_widget_wrap
                 print(type(k))
 
     def _show_border(self):
-        if check_true(self.settings_object.value("Visuals/showBox")):
-            border_pen = fn.mkPen(color=self.settings_object.value("Visuals/boxColor"),
-                                  width=int(self.settings_object.value("Visuals/boxLinewidth")))
+        if check_true(self.settings_object["Visuals"]['showBox']):
+            border_pen = fn.mkPen(color=self.settings_object["Visuals"]["boxColor"],
+                                  width=int(self.settings_object["Visuals"]["boxLinewidth"]))
             self.update_field_current.setBorder(border_pen)
         else:
             self.update_field_current.setBorder(None)
@@ -512,7 +524,7 @@ class smartGui(MacroExecutionWindow, MdiFieldImreg_Wrapper, geometry_widget_wrap
         import os
         if len(source_path_list) < 1:
             dialog = QtWidgets.QFileDialog()
-            path = QtCore.QDir.toNativeSeparators(self.settings_object.value("FileManager/currentimagedbDir"))
+            path = QtCore.QDir.toNativeSeparators(self.settings_object["FileManager"]["currentimagedbDir"])
             if os.path.exists(path):
                 try:
                     os.chdir(path)
@@ -544,14 +556,15 @@ class smartGui(MacroExecutionWindow, MdiFieldImreg_Wrapper, geometry_widget_wrap
 
                 self.imageBuffer.load_qi(d)
 
-            self.settings_object.setValue("FileManager/currentimagedbDir", os.path.dirname(source_path_list[0]))
+            self.settings_object['FileManager']["currentimagedbDir"] = os.path.dirname(source_path_list[0])
             self.tbl_render_order.resizeRowsToContents()
             self.tbl_render_order.setColumnWidth(0, 55)
         
     def loadImgBufferFromDisk(self):
         import os
         dialog = QtWidgets.QFileDialog()
-        path = QtCore.QDir.toNativeSeparators(self.settings_object.value("FileManager/currentimagedbDir"))
+        # path = QtCore.QDir.toNativeSeparators(self.settings_object.value("FileManager/currentimagedbDir"))
+        path = QtCore.QDir.toNativeSeparators(self.settings_object["FileManager"]["currentimagedbDir"])
         if os.path.exists(path):
             try:
                 os.chdir(path)
@@ -565,7 +578,8 @@ class smartGui(MacroExecutionWindow, MdiFieldImreg_Wrapper, geometry_widget_wrap
 
         if os.path.exists(source_path_list):
             dict_list = self.imageBuffer.load_imagedb(xml_path=source_path_list, exclude_file_list=exclude_file_list)
-            self.settings_object.setValue("FileManager/currentimagedbDir", os.path.dirname(source_path_list))
+            # self.settings_object.setValue("FileManager/currentimagedbDir", os.path.dirname(source_path_list))
+            self.settings_object["FileManager"]["currentimagedbDir"] = os.path.dirname(source_path_list)
         else:
             self.statusMessage_sig.emit("Invalid path for the .imagedb file")
             return None
@@ -577,7 +591,7 @@ class smartGui(MacroExecutionWindow, MdiFieldImreg_Wrapper, geometry_widget_wrap
     def saveImageBuffer(self):
         import os
         dialog = QtWidgets.QFileDialog()
-        path = QtCore.QDir.toNativeSeparators(self.settings_object.value("FileManager/currentimagedbDir"))
+        path = QtCore.QDir.toNativeSeparators(self.settings_object["FileManager"]["currentimagedbDir"])
         if os.path.exists(path):
             os.chdir(path)
         source_path_list, _ = dialog.getSaveFileName(self, "Open .imagedb file to be imported", os.getcwd(), \
@@ -603,24 +617,24 @@ class smartGui(MacroExecutionWindow, MdiFieldImreg_Wrapper, geometry_widget_wrap
                 self.field.removeItem(self.sb)
                 self.field.scene().update()
 
-        if self.settings_object.value("Visuals/showScalebar"):
+        if self.settings_object["Visuals"]['showScalebar']:
             zoom = 1.0
 
         
         # // save this settings to the settings file
-        self.sb = ScaleBar(size=float(self.settings_object.value("ScaleSize")),
-                           height=int(self.settings_object.value("ScaleHeight")),
-                           position=self.settings_object.value("ScalePosition"),
-                           brush=self.settings_object.value("ScaleColor"),
-                           pen=self.settings_object.value("ScaleColor"),
-                           fs=int(self.settings_object.value("ScaleFontSize")),
+        self.sb = ScaleBar(size=float(self.settings_object["ScaleSize"]),
+                           height=int(self.settings_object["ScaleHeight"]),
+                           position=self.settings_object["ScalePosition"],
+                           brush=self.settings_object["ScaleColor"],
+                           pen=self.settings_object["ScaleColor"],
+                           fs=int(self.settings_object["ScaleFontSize"]),
                            suffix='um')
         self.field.addItem(self.sb)
         self.sb.setParentItem(self.field)
         self.sb._scaleAnchor__parent = self.field
         # self.sb.anchor((1, 1), (1, 1), offset=(-30, -30))
         self.sb.updateBar()
-        self.show_scale_bar(self.settings_object.value("Visuals/showScalebar"))
+        self.show_scale_bar(self.settings_object["Visuals"]["showScalebar"])
         # print(type(self.settings_object.value("Visuals/showScalebar")))
         #self.show_scale_bar(False)
 
@@ -764,6 +778,11 @@ class smartGui(MacroExecutionWindow, MdiFieldImreg_Wrapper, geometry_widget_wrap
         # slot for showing a message in the statusbar.
         self.statusbar.showMessage(m)
 
+    def update_setting_file(self):
+        self.camara_widget.update_img_settings()
+        with open(self.setting_file_yaml, 'w') as f:
+            yaml.dump(self.settings_object, f, default_flow_style=False)
+
     def closeEvent(self, event):
         quit_msg = "About to Exit the program, are you sure? "
         reply = QMessageBox.question(self, 'Message', 
@@ -773,6 +792,7 @@ class smartGui(MacroExecutionWindow, MdiFieldImreg_Wrapper, geometry_widget_wrap
                         "Do you want to save the image setting to db before exit?", QMessageBox.Yes, QMessageBox.No)
             if reply2 == QMessageBox.Yes:
                 self.saveimagedb_sig.emit()
+                self.update_setting_file()
                 event.accept()
             else:
                 event.accept()

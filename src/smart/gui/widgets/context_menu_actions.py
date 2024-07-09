@@ -70,6 +70,44 @@ class mvMotors(QtWidgets.QAction, BaseConfigurableClass):
         menu.addAction(self)
         self.plot_item = plot_item
 
+class resumePrim(QtWidgets.QAction, BaseConfigurableClass):
+
+    def __init__(
+        self,
+        parent=None,
+        text="Resume pars for prim beam position",
+    ):
+        BaseConfigurableClass.__init__(self)
+        QtWidgets.QAction.__init__(self, text, parent)
+        tt = "Resume the crosshair and img according to saved values in the config file"
+        self.setToolTip(tt)
+        self._parent = parent
+
+        # register config properties
+        # self.registerConfigProperty(self.buffersize, self.setBufferSize, "buffersize")
+
+        # internal conections
+        self.triggered.connect(self._onTriggered)
+
+    def _onTriggered(self):
+        msgBox = QtWidgets.QMessageBox()
+        msgBox.setIcon(QtWidgets.QMessageBox.Question)
+        msgBox.setText(f"Are you sure to resume the crosshair position?")
+        msgBox.setWindowTitle("Resume crosshair pos")
+        msgBox.setStandardButtons(QtWidgets.QMessageBox.Ok | QtWidgets.QMessageBox.Cancel)
+        #msgBox.buttonClicked.connect(self._parent.mv_sample_stage_to_cursor_point)
+        returnValue = msgBox.exec()
+        if returnValue == QtWidgets.QMessageBox.Ok:
+            self._parent.resume_prim_beam_to_saved_values()
+
+    def attachToPlotItem(self, plot_item):
+        """Use this method to add this tool to a plot
+        :param plot_item: (PlotItem)
+        """
+        menu = plot_item.getViewBox().menu
+        menu.addAction(self)
+        self.plot_item = plot_item
+
 class setRef(QtWidgets.QAction, BaseConfigurableClass):
     """
     This tool provides a menu option to control the "Forced Read" period of

@@ -61,8 +61,8 @@ class queueControl(object):
         self.brcast_listener_thread = QtCore.QThread()
         self.brcast_listener.moveToThread(self.brcast_listener_thread)
         self.brcast_listener_thread.started.connect(self.brcast_listener.start_listen_server)
-        self.ntp_host = self.settings_object.value("QueueControl/ntp_host")
-        self.ntp_port = int(self.settings_object.value("QueueControl/ntp_port"))
+        self.ntp_host = self.settings_object["QueueControl"]["ntp_host"]
+        self.ntp_port = int(self.settings_object["QueueControl"]["ntp_port"])
         self.brcast_listener.update_host_and_port(self.ntp_host, self.ntp_port)
         self.queue_comm = None
         self.queue_info = None
