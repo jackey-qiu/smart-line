@@ -17,7 +17,7 @@ class geometry_widget_wrapper(object):
         self.shape_geo = None
         self.axis_geo = (0,1,2)
         # // disable registration mark tab
-        self.tabWidget_2.setTabEnabled(1, False)
+        self.tabWidget_4.setTabEnabled(1, False)
         # // enable field view
         self.setEnabled(True)
 

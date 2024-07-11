@@ -3,7 +3,7 @@
 
 # // module to manage the field view
 # from ui.workspace_widget import Ui_workspace_widget
-import sys
+import sys, socket
 import yaml
 from pathlib import Path
 import numpy as np
@@ -33,6 +33,7 @@ from taurus.core.util.containers import ArrayBuffer
 
 setting_file = str(Path(__file__).parent.parent / 'resource' / 'config' / 'appsettings.yaml')
 ui_file_folder = Path(__file__).parent / 'ui'
+hostname = socket.gethostname()
 
 class smartGui(MacroExecutionWindow, MdiFieldImreg_Wrapper, geometry_widget_wrapper, FiducialMarkerWidget_wrapper, particle_widget_wrapper, camera_control_panel, beamlineControl, synopticViewerControl, queueControl):
     """
@@ -54,11 +55,12 @@ class smartGui(MacroExecutionWindow, MdiFieldImreg_Wrapper, geometry_widget_wrap
         :param settings_object: settings object
         """
         MacroExecutionWindow.__init__(self, parent, designMode)
+        self.user_right = 'normal'
         self.__init_gui(config = config)
         self.init_taurus()
 
     def __init_gui(self, config):
-        uic.loadUi(str(ui_file_folder / 'img_reg_main_window.ui'), self)
+        uic.loadUi(str(ui_file_folder / 'smart_main_window.ui'), self)
         if config=='default':
             # self.settings_object = QtCore.QSettings(setting_file, QtCore.QSettings.IniFormat)
             self.setting_file_yaml = str(setting_file)
@@ -70,7 +72,8 @@ class smartGui(MacroExecutionWindow, MdiFieldImreg_Wrapper, geometry_widget_wrap
                 self.settings_object = yaml.safe_load(f.read())
             # self.settings_object = QtCore.QSettings(config, QtCore.QSettings.IniFormat)
 
-
+        if self.settings_object['General']['beamlinePCHostName'] == hostname:
+            self.user_right = 'super'
         MdiFieldImreg_Wrapper.__init__(self)
         geometry_widget_wrapper.__init__(self)
         FiducialMarkerWidget_wrapper.__init__(self)
@@ -330,7 +333,7 @@ class smartGui(MacroExecutionWindow, MdiFieldImreg_Wrapper, geometry_widget_wrap
 
     @Slot(int)    
     def switch_mode(self, tabIndex):
-        tabText = self.tabWidget.tabText(tabIndex).lower()
+        tabText = self.tabWidget_2.tabText(tabIndex).lower()
         if 'fiducial' in tabText:
             self.field.measure_tool.hide()
             self.field.set_mode('fiducial_marker')
@@ -396,7 +399,7 @@ class smartGui(MacroExecutionWindow, MdiFieldImreg_Wrapper, geometry_widget_wrap
         #save image buffer sig
         self.saveimagedb_sig.connect(self.imageBuffer.writeImgBackup)
         #tabwidget signal
-        self.tabWidget.tabBarClicked.connect(self.switch_mode)
+        self.tabWidget_2.tabBarClicked.connect(self.switch_mode)
         #viewer tabwidget signal
         self.tabWidget_viewer.tabBarClicked.connect(self.switch_mode_viewer_tab)
         #dft slots

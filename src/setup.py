@@ -21,8 +21,8 @@ setup(
     python_requires='>=3.7, <=3.12',
     install_requires = install_requires,
     packages=find_packages(),
-    package_data={'':['*.ui','*.ini','*.qrc'],'smart.bin':['*.png'], 'smart.gui.ui':['icons/*/*.png'],\
-                  'smart.resource':['config/appsettings.ini']},
+    package_data={'':['*.ui','*.ini','*.qrc','*.yaml'],'smart.bin':['*.png'], 'smart.gui.ui':['icons/*/*.png'],\
+                  'smart.resource':['config/*']},
     entry_points = {
         'console_scripts' : [
             'smart = smart.bin.launch_app:main'

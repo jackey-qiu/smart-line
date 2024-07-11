@@ -235,6 +235,7 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self._setup_context_action()
 
     def _setup_context_action(self):
+        main_gui = findMainWindow()
         if not self.rgb_viewer:
             self.vt = VisuaTool(self, properties = ['prof_hoz','prof_ver'])
             self.vt.attachToPlotItem(self.img_viewer)
@@ -254,8 +255,9 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         # self.resumecrosshair.attachToPlotItem(self.img_viewer) 
         # self.setPosRef = setRef(self)
         # self.setPosRef.attachToPlotItem(self.img_viewer) 
-        self.mvMotors = mvMotors(self._parent)
-        self.mvMotors.attachToPlotItem(self.img_viewer) 
+        if main_gui.user_right == 'super':
+            self.mvMotors = mvMotors(self._parent)
+            self.mvMotors.attachToPlotItem(self.img_viewer) 
 
     def _setup_one_channel_viewer(self):
         #for horizontal profile
@@ -292,8 +294,8 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
 
     def _setup_rgb_viewer(self):
 
-        self.isoLine_v = pg.InfiniteLine(angle=90, movable=True, pen='g')
-        self.isoLine_h = pg.InfiniteLine(angle=0, movable=True, pen='g')
+        self.isoLine_v = pg.InfiniteLine(angle=90, movable=True, pen=pg.mkPen('green', width=4))
+        self.isoLine_h = pg.InfiniteLine(angle=0, movable=True, pen=pg.mkPen('green', width=4))
         self.isoLine_v.setValue(0)
         self.isoLine_v.setZValue(100000) # bring iso line above contrast controls
         self.isoLine_h.setValue(0)
@@ -373,21 +375,22 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
     def _cal_scan_coordinates(self):
         main_gui = findMainWindow()
         if self.roi_type=='rectangle':
-            samx = Attribute(main_gui.settings_object["SampleStages"]["label_x_stage_value"]).read().value
-            samy = Attribute(main_gui.settings_object["SampleStages"]["label_y_stage_value"]).read().value
-            current_stage_pos = np.array([samx, samy])
-            crosshair_pos_offset = (current_stage_pos - main_gui.stage_pos_at_prim_beam)/main_gui.camara_pixel_size
-            crosshair_pos_corrected_by_offset = main_gui.crosshair_pos_at_prim_beam + crosshair_pos_offset
+            #samx = Attribute(main_gui.settings_object["SampleStages"]["label_x_stage_value"]).read().value
+            #samy = Attribute(main_gui.settings_object["SampleStages"]["label_y_stage_value"]).read().value
+            #current_stage_pos = np.array([samx, samy])
+            #crosshair_pos_offset = (current_stage_pos - main_gui.stage_pos_at_prim_beam)/main_gui.camara_pixel_size
+            #crosshair_pos_corrected_by_offset = main_gui.crosshair_pos_at_prim_beam + crosshair_pos_offset
             scan_cmd = main_gui.lineEdit_scan_cmd.text()
             stage_x = main_gui.lineEdit_sample_stage_name_x.text()
             stage_y = main_gui.lineEdit_sample_stage_name_y.text()
             step_size = eval(main_gui.lineEdit_step_size.text())
             steps_x = main_gui.spinBox_steps_hor.value()
             steps_y = main_gui.spinBox_steps_ver.value()
-            topleft = np.array(self.roi_scan.pos())
+            #topleft = np.array(self.roi_scan.pos())
             # dist_from_prim_beam_pos = (topleft - main_gui.crosshair_pos_at_prim_beam)*main_gui.camara_pixel_size
-            dist_from_prim_beam_pos = (topleft - crosshair_pos_corrected_by_offset)*main_gui.camara_pixel_size
-            sample_x_stage_start_pos, sample_y_stage_start_pos = main_gui.stage_pos_at_prim_beam + dist_from_prim_beam_pos
+            #dist_from_prim_beam_pos = (topleft - crosshair_pos_corrected_by_offset)*main_gui.camara_pixel_size
+            #sample_x_stage_start_pos, sample_y_stage_start_pos = main_gui.stage_pos_at_prim_beam + dist_from_prim_beam_pos
+            sample_x_stage_start_pos, sample_y_stage_start_pos = self._cal_scan_coordinates_from_pos(np.array(self.roi_scan.pos())*main_gui.camara_pixel_size)
             width, height = abs(np.array(self.roi_scan.size()))*main_gui.camara_pixel_size
             if main_gui.checkBox_use_step_size.isChecked():
                 steps_x = int(width/step_size[0]*1000)
@@ -416,13 +419,15 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         return list(stage_coords.round(3))
 
     def _generate_handle_pos_list_polylineroi(self):
+        main_gui = findMainWindow()
         pos_list = []
         for handle in self.roi_scan.handles:
             handle_ls = [handle['pos'].x(), handle['pos'].y()]
-            pos_list.append(self._from_viewport_coords_to_stage_coords(*handle_ls))
+            # pos_list.append(self._from_viewport_coords_to_stage_coords(*handle_ls))
+            pos_list.append(list(np.array(self._cal_scan_coordinates_from_pos(np.array(handle_ls)*main_gui.camara_pixel_size)).round(3)))
         return pos_list
 
-    def _cal_scan_coordinates_from_pos(self, pos):
+    def _cal_scan_coordinates_from_pos_old(self, pos):
         #pos is in mm unit
         main_gui = findMainWindow()
         samx = Attribute(main_gui.settings_object["SampleStages"]["label_x_stage_value"]).read().value
@@ -433,7 +438,17 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         topleft = np.array(pos)/main_gui.camara_pixel_size
         # dist_from_prim_beam_pos = (topleft - main_gui.crosshair_pos_at_prim_beam)*main_gui.camara_pixel_size
         dist_from_prim_beam_pos = (topleft - crosshair_pos_corrected_by_offset)*main_gui.camara_pixel_size
-        sample_x_stage_start_pos, sample_y_stage_start_pos = main_gui.stage_pos_at_prim_beam + dist_from_prim_beam_pos
+        sample_x_stage_start_pos, sample_y_stage_start_pos = main_gui.stage_pos_at_prim_beam - dist_from_prim_beam_pos
+        return sample_x_stage_start_pos, sample_y_stage_start_pos
+
+    def _cal_scan_coordinates_from_pos(self, pos):
+        #pos is in mm unit
+        main_gui = findMainWindow()
+        samx = Attribute(main_gui.settings_object["SampleStages"]["label_x_stage_value"]).read().value
+        samy = Attribute(main_gui.settings_object["SampleStages"]["label_y_stage_value"]).read().value
+        current_stage_pos = np.array([samx, samy])
+        crosshair_pos_offset_mm = np.array(pos) - np.array(main_gui.crosshair_pos_at_prim_beam)*main_gui.camara_pixel_size
+        sample_x_stage_start_pos, sample_y_stage_start_pos = current_stage_pos + crosshair_pos_offset_mm*[1,-1]
         return sample_x_stage_start_pos, sample_y_stage_start_pos
 
     def _convert_stage_coord_to_pix_unit(self, original_samx, original_samy):

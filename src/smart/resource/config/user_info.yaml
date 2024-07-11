@@ -1,0 +1,24 @@
+user_type:
+  - admin_user
+  - beamline_user
+  - remote_user
+action_type:
+  - mv_motor
+  - submit_job
+  - update_job
+user_right:
+  admin_user:
+    actions_allowed: ['*']
+    widgets_hidden: []
+    widgets_read: ['*']
+    widgets_write: ['*']
+  beamline_user:
+    actions_allowed: ['*']
+    widgets_hidden: []
+    widgets_read: ['*']
+    widgets_write: ['*']
+  remote_user:
+    actions_not_allowed: ['mv_motor', 'submit_job','update_job']
+    widgets_hidden: ['tabWidget_viewer[2,4,5]','tabWidget[6,7]']
+    widgets_read: ['*']
+    widgets_write: ['*']

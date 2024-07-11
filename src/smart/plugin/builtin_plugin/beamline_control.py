@@ -54,8 +54,8 @@ class beamlineControl(object):
 
     def mv_stages_to_cursor_pos(self):
         self.statusUpdate(f'moving sample stages to {self.last_cursor_pos_on_camera_viewer}')
-        Attribute(self.settings_object['SampleStages"]["label_x_stage_value']).write(self.last_cursor_pos_on_camera_viewer[0])
-        Attribute(self.settings_object['SampleStages"]["label_y_stage_value']).write(self.last_cursor_pos_on_camera_viewer[1])
+        Attribute(self.settings_object['SampleStages']['label_x_stage_value']).write(self.last_cursor_pos_on_camera_viewer[0])
+        Attribute(self.settings_object['SampleStages']['label_y_stage_value']).write(self.last_cursor_pos_on_camera_viewer[1])
 
     def populate_illum_widgets(self, rows = 0, first_row = 4):
         cols = ['label_illum','horizontalSlider_illum', 'label_illum_pos', 'pushButton_lighton','pushButton_lightoff']
