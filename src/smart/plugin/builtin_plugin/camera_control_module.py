@@ -218,11 +218,14 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
 
     def save_current_roi_xy(self):
         main_gui = findMainWindow()
-        cmd = main_gui.lineEdit_full_macro_name.text()
-        if cmd != '':
-            scan_cmd_list = cmd.rsplit(' ')
-            x, y = float(scan_cmd_list[2]), float(scan_cmd_list[6])
-        self.roi_scan_xy_stage = [x, y]
+        if self.roi_type=='rectangle':
+            cmd = main_gui.lineEdit_full_macro_name.text()
+            if cmd != '':
+                scan_cmd_list = cmd.rsplit(' ')
+                x, y = float(scan_cmd_list[2]), float(scan_cmd_list[6])
+            self.roi_scan_xy_stage = [x, y]
+        else:
+            pass
 
     def update_autolevel(self, autolevel):
         self.autolevel = autolevel
@@ -380,6 +383,7 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
             #current_stage_pos = np.array([samx, samy])
             #crosshair_pos_offset = (current_stage_pos - main_gui.stage_pos_at_prim_beam)/main_gui.camara_pixel_size
             #crosshair_pos_corrected_by_offset = main_gui.crosshair_pos_at_prim_beam + crosshair_pos_offset
+            self.roi_scan_xy_stage = [None, None]
             scan_cmd = main_gui.lineEdit_scan_cmd.text()
             stage_x = main_gui.lineEdit_sample_stage_name_x.text()
             stage_y = main_gui.lineEdit_sample_stage_name_y.text()
@@ -401,8 +405,10 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
                         f' {stage_y} {round(sample_y_stage_start_pos,4)} {round(sample_y_stage_start_pos-height,4)} {steps_y}'+\
                         f' {exposure_time}'
             main_gui.lineEdit_full_macro_name.setText(scan_cmd_str)
+            self.save_current_roi_xy()
             return scan_cmd_str
         else:
+            self.roi_scan_xy_stage = [None, None]
             main_gui.lineEdit_full_macro_name.setText(str(self._generate_handle_pos_list_polylineroi()))
     
     def _from_viewport_coords_to_stage_coords(self, x_vp, y_vp):
@@ -421,10 +427,14 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
     def _generate_handle_pos_list_polylineroi(self):
         main_gui = findMainWindow()
         pos_list = []
+        #the pos always start with [0,0] upon creating the polyroi no matter where you make this roi object
+        #once the roi is moved, the pos attribute values will change wrt [0,0] at the beginning
+        #therefore the pos always hold the relative movement compared to its beginning state
+        offset = np.array(self.roi_scan.pos())*[1,-1]
         for handle in self.roi_scan.handles:
             handle_ls = [handle['pos'].x(), handle['pos'].y()]
             # pos_list.append(self._from_viewport_coords_to_stage_coords(*handle_ls))
-            pos_list.append(list(np.array(self._cal_scan_coordinates_from_pos(np.array(handle_ls)*main_gui.camara_pixel_size)).round(3)))
+            pos_list.append(list(np.array(self._cal_scan_coordinates_from_pos(np.array(handle_ls+offset)*main_gui.camara_pixel_size)).round(3)))
         return pos_list
 
     def _cal_scan_coordinates_from_pos_old(self, pos):
@@ -451,7 +461,7 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         sample_x_stage_start_pos, sample_y_stage_start_pos = current_stage_pos + crosshair_pos_offset_mm*[1,-1]
         return sample_x_stage_start_pos, sample_y_stage_start_pos
 
-    def _convert_stage_coord_to_pix_unit(self, original_samx, original_samy):
+    def _convert_stage_coord_to_pix_unit_old(self, original_samx, original_samy):
         main_gui = findMainWindow()
         samx = Attribute(main_gui.settings_object["SampleStages"]["label_x_stage_value"]).read().value
         samy = Attribute(main_gui.settings_object["SampleStages"]["label_y_stage_value"]).read().value
@@ -460,6 +470,13 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         #if the stage already move away from the prim beam position, then another translation is needed
         diff_pos = (np.array([samx, samy]) - main_gui.stage_pos_at_prim_beam)/main_gui.camara_pixel_size
         return pos-diff_pos
+
+    def _convert_stage_coord_to_pix_unit(self, original_samx, original_samy):
+        main_gui = findMainWindow()
+        samx = Attribute(main_gui.settings_object["SampleStages"]["label_x_stage_value"]).read().value
+        samy = Attribute(main_gui.settings_object["SampleStages"]["label_y_stage_value"]).read().value
+        pos = (np.array([original_samx, original_samy]) - [samx, samy])/main_gui.camara_pixel_size*[1,-1] + [main_gui.camara_widget.isoLine_v.value(),main_gui.camara_widget.isoLine_h.value()]
+        return pos
 
     def update_stage_pos_at_prim_beam(self, infline_obj = None, dir='x'):
         main_gui = findMainWindow()

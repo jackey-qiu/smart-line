@@ -51,6 +51,23 @@ class beamlineControl(object):
         #get the num of illum devices
         num_illum_devices = len(Attribute(self.settings_object["Mscope"]["comboBox_illum_types"]).read().value)
         self.populate_illum_widgets(num_illum_devices, 3)
+        self._start_spock()
+
+    def _start_spock(self):
+        if 'spockLogin' not in self.settings_object:
+            print('No spock login field, please add the fields to start spock.')
+            return
+        self.widget_spock._door_name = self.settings_object['spockLogin']['doorName']
+        self.widget_spock._door_alias = self.settings_object['spockLogin']['doorAlias']
+        self.widget_spock._macro_server_name = self.settings_object['spockLogin']['msName']
+        self.widget_spock._macro_server_alias = self.settings_object['spockLogin']['msAlias']
+        if self.widget_spock.kernel_manager.has_kernel:
+            # RichJupyterWidget.restart_kernel does not support extra arguments
+            self.widget_spock.kernel_manager.restart_kernel(
+                extra_arguments=self.widget_spock._extra_arguments())
+            self.widget_spock._kernel_restarted_message(died=False)
+        else:
+            self.widget_spock.start_kernel()        
 
     def mv_stages_to_cursor_pos(self):
         self.statusUpdate(f'moving sample stages to {self.last_cursor_pos_on_camera_viewer}')
