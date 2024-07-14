@@ -68,6 +68,8 @@ class beamlineControl(object):
             self.widget_spock._kernel_restarted_message(died=False)
         else:
             self.widget_spock.start_kernel()        
+        self.setModel(self.settings_object['spockLogin']['msName'])
+        self.onDoorChanged(self.settings_object['spockLogin']['doorName'])
 
     def mv_stages_to_cursor_pos(self):
         self.statusUpdate(f'moving sample stages to {self.last_cursor_pos_on_camera_viewer}')
