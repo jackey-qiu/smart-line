@@ -100,8 +100,11 @@ class queueControl(object):
         else:
             try:
                 msg = self.queue_comm.send_receive_message("get_available_queues", timeout=3)
+                current_txt = self.comboBox_queue_name_list.currentText()
                 self.comboBox_queue_name_list.clear()
                 self.comboBox_queue_name_list.addItems(eval(str(msg)))
+                if current_txt in eval(str(msg)):
+                    self.comboBox_queue_name_list.setCurrentText(current_txt)
                 self.textEdit_queue_info_output.setPlainText(str(msg))
                 return eval(str(msg))
             except Exception as err:
@@ -186,6 +189,8 @@ class queueControl(object):
             self._clear_all_field()
             self.get_available_queues()
             self.display_info_for_a_queue()
+            self.init_pandas_model_queue()
+            self.widget_queue_synoptic_viewer.set_data(self.pandas_model_queue._data)
         except Exception as err:
             error(f"Fail to delete the queue. Error:\n {str(err)}")
             self.statusUpdate(f'Failure to delete queue!')
@@ -203,9 +208,22 @@ class queueControl(object):
                           'scan_command': self.lineEdit_cmd.text().rsplit(' '),
                           'session': self.lineEdit_session.text(), 
                           'scan_info': self.lineEdit_scan_info.text()}
-        
+
+        """
+        scan_cmd = task_from_widget['scan_command']
+        for i, each in enumerate(scan_cmd):
+            try:
+                if '.' in each:
+                    scan_cmd[i] = float(each)
+                else:
+                    scan_cmd[i] = int(each)
+            except:
+                pass
+        task_from_widget['scan_command'] = scan_cmd
+        """
         # return
         self._append_task(task_from_widget)
+        self.display_info_for_a_queue()
 
     @Slot(str)
     def update_queue_viewer_type(self, viewer_type):
@@ -280,11 +298,11 @@ class queueControl(object):
         self.statusUpdate('The changed queue names are:'+' '.join(queue_list))
         self.init_pandas_model_queue()
         self.widget_queue_synoptic_viewer.set_data(self.pandas_model_queue._data)
-        if self.comboBox_queue_name_list.currentText() in queue_list:
-            current_job_id = self.comboBox_queue_task.currentText()
+        # if self.comboBox_queue_name_list.currentText() in queue_list:
+            # current_job_id = self.comboBox_queue_task.currentText()
             #self.display_info_for_a_queue()
-            self.comboBox_queue_task.setCurrentText(current_job_id)
-            self.display_info_for_a_queue()
+            # self.comboBox_queue_task.setCurrentText(current_job_id)
+            # self.display_info_for_a_queue()
 
     def _update_queue_status(self):
         pass    
@@ -345,13 +363,18 @@ class queueControl(object):
         except Exception as err:
             error_pop_up(str(err))
 
+    def update_synoptic_viewer(self):
+        self.widget_queue_synoptic_viewer.set_data(self.pandas_model_queue._data)
+
     def connect_slots_queue_control(self):
         self.pushButton_get_all_queues.clicked.connect(self.get_available_queues)
         self.pushButton_connect_queue_server.clicked.connect(self.connect_queue_server)
         self.pushButton_get_queue_info.clicked.connect(self.display_info_for_a_queue)
         self.pushButton_add_task.clicked.connect(self.add_task_from_ui)
         self.comboBox_queue_task.textActivated.connect(self.update_task_from_server)
+        self.comboBox_queue_task.currentTextChanged.connect(self.update_task_from_server)
         self.comboBox_queue_viewer.textActivated.connect(self.update_queue_viewer_type)
+        self.comboBox_queue_name_list.textActivated.connect(self.update_synoptic_viewer)
         self.pushButton_delete_task.clicked.connect(self.remove_task)
         self.pushButton_remove_queue.clicked.connect(self.remove_queue)
         self.pushButton_update_task.clicked.connect(self.update_task)

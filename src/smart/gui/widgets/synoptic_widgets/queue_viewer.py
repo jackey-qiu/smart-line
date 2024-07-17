@@ -6,7 +6,8 @@ from ....util.util import findMainWindow
 
 class queueSynopticView(QWidget):
     FILL_QUEUED = {'brush': {'color': (0, 0, 255)}}
-    FILL_RUN = {'brush': {'color': (50, 255, 0)}}
+    FILL_RUN = {'brush': {'color': (250, 255, 0)}}
+    FILL_FINISHED = {'brush': {'color': (0, 255, 0)}}
     FILL_DISABLED = {'brush': {'color': (50, 50, 50)}}
     FILL_FAILED = {'brush': {'color': (255, 50, 0)}}
     FILL_PAUSED = {'brush': {'color': (255, 0, 255)}}
@@ -29,7 +30,18 @@ class queueSynopticView(QWidget):
         self.triangle_ends = []
 
     def set_data(self, data):
-        self._data = data
+        if len(data[data['state']=='running'])==0:
+            queue_name = self.parent.comboBox_queue_name_list.currentText()
+            if queue_name!=None:
+                self._data = data[data['queue']==queue_name]
+            else:
+                self._data = data
+        else:
+            queue = data[data['state']=='running']['queue'].to_list()[0]
+            id = str(data[data['state']=='running']['unique_id'].to_list()[0])
+            self.parent.comboBox_queue_name_list.setCurrentText(queue)
+            self._data = data[data['queue']==queue]
+            self.parent.comboBox_queue_task.setCurrentText(id)
         self.build_shapes()
         self.build_legend_shapes()
 
@@ -58,7 +70,13 @@ class queueSynopticView(QWidget):
         shape_run = rectangle(dim=[x, (self.padding_vertical+ self.block_height)*4+self.padding_vertical, width, height])
         shape_run.decoration = self.FILL_RUN
         shape_run.labels = {'text':['run'],'anchor':['center'],'orientation': ['horizontal']}
-        self.legend_shapes = [shape_queued, shape_disabled, shape_failed, shape_pause, shape_run]
+        shape_run.text_decoration = {'text_color': (0,0,0)}
+        shape_finished = rectangle(dim=[x, (self.padding_vertical+ self.block_height)*5+self.padding_vertical, width, height])
+        shape_finished.decoration = self.FILL_FINISHED
+        shape_finished.labels = {'text':['done'],'anchor':['center'],'orientation': ['horizontal']}
+        shape_finished.text_decoration = {'text_color': (0,0,0)}
+
+        self.legend_shapes = [shape_queued, shape_disabled, shape_failed, shape_pause, shape_run, shape_finished]
         
     def build_shapes(self):
         self.composite_shape_container = {}
@@ -73,6 +91,8 @@ class queueSynopticView(QWidget):
             state = self._data.iloc[i,:]['state']
             unique_id = self._data.iloc[i,:]['unique_id']
             cmd = self._data.iloc[i,:]['scan_command']
+            if len(cmd)>20:
+                cmd = cmd[0:20] + '...'
             if state == 'queued':
                 shape.decoration = self.FILL_QUEUED
                 shape.decoration_cursor_off = self.FILL_QUEUED
@@ -81,6 +101,7 @@ class queueSynopticView(QWidget):
                 shape.decoration = self.FILL_RUN
                 shape.decoration_cursor_off = self.FILL_RUN
                 shape.decoration_cursor_on = self.FILL_RUN
+                shape.text_decoration = {'text_color': (0,0,0)}
             elif state == 'failed':
                 shape.decoration = self.FILL_FAILED
                 shape.decoration_cursor_off = self.FILL_FAILED
@@ -93,6 +114,11 @@ class queueSynopticView(QWidget):
                 shape.decoration = self.FILL_DISABLED
                 shape.decoration_cursor_off = self.FILL_DISABLED
                 shape.decoration_cursor_on = self.FILL_DISABLED
+            elif state == 'finished':
+                shape.decoration = self.FILL_FINISHED
+                shape.decoration_cursor_off = self.FILL_FINISHED
+                shape.decoration_cursor_on = self.FILL_FINISHED
+                shape.text_decoration = {'text_color': (0,0,0)}
             shape.labels = {'text':[f'{cmd}'],'anchor':['center'],'orientation': ['horizontal']}
             setattr(shape, 'unique_id', unique_id)
             if which_col not in self.composite_shape_container:

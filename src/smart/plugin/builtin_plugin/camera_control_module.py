@@ -5,6 +5,7 @@ from pyqtgraph.Qt import QtCore, QtGui
 from pyqtgraph.Point import Point
 from pyqtgraph import GraphicsLayoutWidget, ImageItem
 from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal
+from PyQt5 import QtWidgets
 import pyqtgraph as pg
 from taurus import Device, Attribute
 from taurus.core import TaurusEventType, TaurusTimeVal
@@ -104,6 +105,17 @@ class camera_control_panel(object):
         self.camara_widget.isoLine_v.setValue(x)
         self.camara_widget.isoLine_h.setValue(y)
 
+    def _resume_prim_beam_pos(self):
+        msgBox = QtWidgets.QMessageBox()
+        msgBox.setIcon(QtWidgets.QMessageBox.Question)
+        msgBox.setText(f"Are you sure to resume the crosshair position?")
+        msgBox.setWindowTitle("Resume crosshair pos")
+        msgBox.setStandardButtons(QtWidgets.QMessageBox.Ok | QtWidgets.QMessageBox.Cancel)
+        #msgBox.buttonClicked.connect(self._parent.mv_sample_stage_to_cursor_point)
+        returnValue = msgBox.exec()
+        if returnValue == QtWidgets.QMessageBox.Ok:
+            self.camara_widget.resume_prim_beam_to_saved_values()
+
     def _calibrate_pos(self):
         self.camara_widget.mv_img_to_ref()
         self.camara_widget.pos_calibration_done = True
@@ -119,24 +131,24 @@ class camera_control_panel(object):
         action_switch_off_camera = QAction(QIcon(str(icon_path / 'smart' / 'cam_off.png')),'switch off camera',self)
         action_switch_off_camera.setStatusTip('You can switch off the camera here.')
         action_switch_off_camera.triggered.connect(self.stop_cam_stream)
-        flip_left_right = QAction(QIcon(str(icon_path / 'smart' / 'left_and_right.png')),'flip left and right',self)
-        flip_left_right.setStatusTip('You can flip the image left and right.')
-        flip_left_right.triggered.connect(lambda:self._append_img_processing_cbs('lambda data:np.flipud(data)'))  
-        flip_up_down = QAction(QIcon(str(icon_path / 'smart' / 'up_and_down.png')),'flip up and down',self)
-        flip_up_down.setStatusTip('You can flip the image up and down.')
-        flip_up_down.triggered.connect(lambda:self._append_img_processing_cbs('lambda data:np.fliplr(data)'))               
+        # flip_left_right = QAction(QIcon(str(icon_path / 'smart' / 'left_and_right.png')),'flip left and right',self)
+        # flip_left_right.setStatusTip('You can flip the image left and right.')
+        # flip_left_right.triggered.connect(lambda:self._append_img_processing_cbs('lambda data:np.flipud(data)'))  
+        # flip_up_down = QAction(QIcon(str(icon_path / 'smart' / 'up_and_down.png')),'flip up and down',self)
+        # flip_up_down.setStatusTip('You can flip the image up and down.')
+        # flip_up_down.triggered.connect(lambda:self._append_img_processing_cbs('lambda data:np.fliplr(data)'))               
         lock = QAction(QIcon(str(icon_path / 'smart' / 'lock.png')),'lock crosshair',self)
         lock.setStatusTip('You can freeze the crosshair lines.')
         lock.triggered.connect(self._lock_crosshair_lines)            
         unlock = QAction(QIcon(str(icon_path / 'smart' / 'unlock.png')),'unlock crosshair',self)
         unlock.setStatusTip('You can unfreeze the crosshair lines.')
         unlock.triggered.connect(self._unlock_crosshair_lines)               
-        savecrosshair = QAction(QIcon(str(icon_path / 'smart' / 'save_crosshair.png')),'save crosshair pos',self)
-        savecrosshair.setStatusTip('Save the crosshair line positions to be resumed in future.')
-        savecrosshair.triggered.connect(self._save_crosshair)     
+        # savecrosshair = QAction(QIcon(str(icon_path / 'smart' / 'save_crosshair.png')),'save crosshair pos',self)
+        # savecrosshair.setStatusTip('Save the crosshair line positions to be resumed in future.')
+        # savecrosshair.triggered.connect(self._save_crosshair)     
         resumecrosshair = QAction(QIcon(str(icon_path / 'smart' / 'resume_crosshair.png')),'resume crosshair pos',self)
-        resumecrosshair.setStatusTip('Resume the crosshair line positions to previous saved pos.')
-        resumecrosshair.triggered.connect(self._resume_crosshair)     
+        resumecrosshair.setStatusTip('Resume the crosshair line positions to previous saved pars for prim beam.')
+        resumecrosshair.triggered.connect(self._resume_prim_beam_pos)
         poscalibration = QAction(QIcon(str(icon_path / 'icons_n' / 'lasing_navigate.png')),'stage calibration',self)
         poscalibration.setStatusTip('You can calibrate the crosshair pos to reflect sample stage position at the prim beam.')
         poscalibration.triggered.connect(self._calibrate_pos)               
@@ -156,9 +168,9 @@ class camera_control_panel(object):
         self.camToolBar.addAction(action_switch_off_camera)
         self.camToolBar.addAction(autoscale)
         self.camToolBar.addAction(autoscaleoff)
-        self.camToolBar.addAction(flip_up_down)
-        self.camToolBar.addAction(flip_left_right)
-        self.camToolBar.addAction(savecrosshair)
+        # self.camToolBar.addAction(flip_up_down)
+        # self.camToolBar.addAction(flip_left_right)
+        # self.camToolBar.addAction(savecrosshair)
         self.camToolBar.addAction(resumecrosshair)
         self.camToolBar.addAction(poscalibration)
         self.camToolBar.addAction(lock)
@@ -242,10 +254,10 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         if not self.rgb_viewer:
             self.vt = VisuaTool(self, properties = ['prof_hoz','prof_ver'])
             self.vt.attachToPlotItem(self.img_viewer)
-        self.fr = CumForcedReadTool(self, period=100)
+        self.fr = CumForcedReadTool(self, period=0)
         self.fr.attachToPlotItem(self.img_viewer)
-        self.resume_prim_action = resumePrim(self)
-        self.resume_prim_action.attachToPlotItem(self.img_viewer)
+        # self.resume_prim_action = resumePrim(self)
+        # self.resume_prim_action.attachToPlotItem(self.img_viewer)
         # self.cam_switch = camSwitch(self._parent)
         # self.cam_switch.attachToPlotItem(self.img_viewer)
         # self.autolevel = AutoLevelTool(self)

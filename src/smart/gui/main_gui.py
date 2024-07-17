@@ -14,11 +14,15 @@ from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtCore import pyqtSignal as Signal
 from PyQt5.QtCore import pyqtSlot as Slot, QTimer
 from ..gui.widgets.scale_bar_tool import ScaleBar
+from PyQt5.QtWidgets import QAction, QToolBar
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QIcon
 from ..plugin.builtin_plugin.geometry_unit import geometry_widget_wrapper
 from ..plugin.builtin_plugin.field_dft_registration import MdiFieldImreg_Wrapper
 from ..plugin.builtin_plugin.field_fiducial_markers_unit import (
     FiducialMarkerWidget_wrapper,
 )
+from smart import icon_path
 from ..plugin.builtin_plugin.camera_control_module import camera_control_panel
 from ..plugin.builtin_plugin.particle_tool import particle_widget_wrapper
 from ..plugin.builtin_plugin.beamline_control import beamlineControl
@@ -82,6 +86,7 @@ class smartGui(
         self.user_right = "normal"
         self.__init_gui(config=config)
         self.init_taurus()
+        self.add_smart_toolbar()
 
     def __init_gui(self, config):
         uic.loadUi(str(ui_file_folder / "smart_main_window.ui"), self)
@@ -202,6 +207,18 @@ class smartGui(
         self.init_attribute_values()
         self.imageBuffer.recallImgBackup()
         self.highlightFirstImg()
+
+    def add_smart_toolbar(self):
+        tb = QToolBar("SMART Toolbar")
+        tb.setObjectName("SMART Toolbar")
+        #        tb.addAction(self.changeTangoHostAction)
+        #        tb.addWidget(self.taurusLogo)
+        connect = QAction(QIcon(str(icon_path / 'others' / 'connect.png')),'connect tango device',self)
+        connect.setStatusTip('Connect tango device servers and setup spock section.')
+        connect.triggered.connect(self.set_models)
+        tb.addAction(connect)
+        self.smart_toolbar = tb
+        self.addToolBar(self.smart_toolbar)
 
     def init_attribute_values(self):
         self.first_client = True

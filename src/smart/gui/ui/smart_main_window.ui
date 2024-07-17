@@ -1196,29 +1196,6 @@
                  </property>
                  <layout class="QVBoxLayout" name="verticalLayout_27">
                   <item>
-                   <widget class="QPushButton" name="pushButton_connect_model">
-                    <property name="maximumSize">
-                     <size>
-                      <width>16777215</width>
-                      <height>30</height>
-                     </size>
-                    </property>
-                    <property name="text">
-                     <string>connect tango models</string>
-                    </property>
-                    <property name="icon">
-                     <iconset>
-                      <normaloff>icons/others/connect.png</normaloff>icons/others/connect.png</iconset>
-                    </property>
-                    <property name="iconSize">
-                     <size>
-                      <width>36</width>
-                      <height>36</height>
-                     </size>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
                    <widget class="QGroupBox" name="groupBox_2">
                     <property name="title">
                      <string>Camera stage control</string>
@@ -1517,7 +1494,7 @@
                        <item row="0" column="1">
                         <widget class="QLineEdit" name="lineEdit_scan_cmd">
                          <property name="text">
-                          <string>cmesh</string>
+                          <string>mesh</string>
                          </property>
                          <property name="placeholderText">
                           <string>meshc</string>
@@ -1677,7 +1654,7 @@
                <item>
                 <widget class="QTabWidget" name="tabWidget_2">
                  <property name="currentIndex">
-                  <number>1</number>
+                  <number>3</number>
                  </property>
                  <widget class="QWidget" name="tab_18">
                   <attribute name="title">

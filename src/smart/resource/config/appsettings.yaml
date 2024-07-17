@@ -1,8 +1,6 @@
 Camaras:
   camaraDataFormatCallbacks:
-  - lambda data:data[0]
-  - lambda data:data.reshape((2048, 2048, 3))
-  - lambda data:np.rot90(data, 3)
+  - lambda data:np.rot90(data[0].reshape((2048,2048,3)),3)
   camaraDevice: tango://hasp029rack.desy.de:10000/p06/tangovimba/test.01
   camaraStreamModel: tango://hasp029rack.desy.de:10000/p06/tangovimba/test.01/imageraw
   gridLayoutWidgetName: gridLayout_cam
@@ -14,7 +12,7 @@ Camaras:
   viewerWidgetName: camara_widget
 FileManager:
   currentImageDatabaseDir: C:\\Users\\_admin\\Downloads\\monitor_test
-  currentimagedbDir: C:/Users/qiucanro/Downloads
+  currentimagedbDir: C:/Users/qiucanro/Desktop/img_reg/trackpy
   restoreimagedb: C:\\Users\\qiucanro\\apps\\imgReg\\imgReg\\ImageBackup.imagedb
 General:
   ScaleColor: null
