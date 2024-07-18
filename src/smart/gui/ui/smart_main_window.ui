@@ -51,7 +51,7 @@
            <item>
             <widget class="QTabWidget" name="tabWidget_viewer">
              <property name="currentIndex">
-              <number>0</number>
+              <number>2</number>
              </property>
              <widget class="QWidget" name="tab_10">
               <attribute name="title">
@@ -1179,7 +1179,7 @@
               </font>
              </property>
              <property name="currentIndex">
-              <number>0</number>
+              <number>2</number>
              </property>
              <widget class="QWidget" name="tab_7">
               <attribute name="title">
@@ -2502,9 +2502,29 @@
                      <item>
                       <widget class="QPushButton" name="pushButton_submit_jobs">
                        <property name="text">
-                        <string>push scans to sequence</string>
+                        <string>submit scans</string>
                        </property>
                       </widget>
+                     </item>
+                     <item>
+                      <widget class="QLabel" name="label">
+                       <property name="text">
+                        <string>session</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QLineEdit" name="lineEdit_session_name"/>
+                     </item>
+                     <item>
+                      <widget class="QLabel" name="label_3">
+                       <property name="text">
+                        <string>queue</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QLineEdit" name="lineEdit_queue_name_imgreg"/>
                      </item>
                     </layout>
                    </item>

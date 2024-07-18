@@ -12,7 +12,7 @@ Camaras:
   viewerWidgetName: camara_widget
 FileManager:
   currentImageDatabaseDir: C:\\Users\\_admin\\Downloads\\monitor_test
-  currentimagedbDir: C:/Users/qiucanro/Desktop/img_reg/trackpy
+  currentimagedbDir: C:/Users/qiucanro/Desktop/img_reg/poster
   restoreimagedb: C:\\Users\\qiucanro\\apps\\imgReg\\imgReg\\ImageBackup.imagedb
 General:
   ScaleColor: null
@@ -28,15 +28,19 @@ Mscope:
   comboBox_illum_types: tango://hasp029rack.desy.de:10000/p06/beamlinemicroscopeillumination/test.01/AvailableIlluminationTypes
   label_illum_pos: tango://hasp029rack.desy.de:10000/p06/beamlinemicroscopeillumination/test.01/intensity{}
 PrimBeamGeo:
-  img_x: 0.0
-  img_y: 0.0
-  iso_h: 0
-  iso_v: 0
-  stage_x: 0
-  stage_y: 0
+  img_x: -819.4399708750509
+  img_y: -2115.327382444797
+  iso_h: -1038.181818181817
+  iso_v: 239.795809659091
+  stage_x: 5.275507812500003
+  stage_y: -22.839999999999975
 QueueControl:
   ntp_host: haspp06deb10
   ntp_port: 13345
+SampleStageMotorNames:
+  x: samly
+  y: samlz
+  z: samlx
 SampleStages:
   label_x_stage_value: tango://hasp029rack.desy.de:10000/p06/motor/exp.02/position
   label_y_stage_value: tango://hasp029rack.desy.de:10000/p06/motor/exp.01/position

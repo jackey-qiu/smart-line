@@ -298,11 +298,24 @@ class queueControl(object):
         self.statusUpdate('The changed queue names are:'+' '.join(queue_list))
         self.init_pandas_model_queue()
         self.widget_queue_synoptic_viewer.set_data(self.pandas_model_queue._data)
+        self.update_scan_roi_upon_state_change()
         # if self.comboBox_queue_name_list.currentText() in queue_list:
             # current_job_id = self.comboBox_queue_task.currentText()
             #self.display_info_for_a_queue()
             # self.comboBox_queue_task.setCurrentText(current_job_id)
             # self.display_info_for_a_queue()
+
+    def update_scan_roi_upon_state_change(self):
+        queue = self.comboBox_queue_name_list.currentText()
+        cmd = self.lineEdit_cmd.text()
+        data = self.pandas_model_queue_camara_viewer._data
+        #the active row ix
+        try:
+            which_row = (data['scan_command'] == cmd & data['queue'] == queue).to_list().index(True)
+        except:
+            which_row = None
+        if which_row != None:
+            self.update_roi_at_row(which_row)
 
     def _update_queue_status(self):
         pass    

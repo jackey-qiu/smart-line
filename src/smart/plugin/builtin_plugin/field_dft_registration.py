@@ -18,7 +18,7 @@ from pathlib import Path
 import qimage2ndarray
 import cv2
 import imreg_dft as ird
-from smart.util.util import PandasModel, submit_jobs
+from smart.util.util import PandasModel, submit_jobs, findMainWindow
 
 
 ui_file_folder = Path(__file__).parent.parent / 'ui'
@@ -229,7 +229,9 @@ class MdiFieldImreg_Wrapper(object):
 
         #return scaling_ft_along_width, scaling_ft_along_height
 
-    def generate_scan_macro(self,mot_name_along_width = 'samy', mot_name_along_height = 'samz'):
+    def generate_scan_macro(self):
+        mot_name_along_width = self.settings_object['SampleStageMotorNames']['x']
+        mot_name_along_height = self.settings_object['SampleStageMotorNames']['y']
         macro_name = self.lineEdit_macro_name.text()
         roi_width, roi_height = self.roi_dft.size()
         roi_x, roi_y = self.roi_dft.pos()
@@ -238,8 +240,8 @@ class MdiFieldImreg_Wrapper(object):
         dwell_time = float(self.lineEdit_dwell_time.text())
         pix_size = eval(self.lineEdit_beamsize.text()) # [hor, ver] in um
 
-        mot_start_pos_along_width = round((beam_pos_vp[0] - roi_x)*self.scaling_ft_along_width + beam_pos_stage[0],4)
-        mot_start_pos_along_height = round((beam_pos_vp[1] - roi_y)*self.scaling_ft_along_width + beam_pos_stage[1],4)
+        mot_start_pos_along_width = round((roi_x - beam_pos_vp[0])*self.scaling_ft_along_width + beam_pos_stage[0],4)
+        mot_start_pos_along_height = round((roi_y - beam_pos_vp[1])*self.scaling_ft_along_width + beam_pos_stage[1],4)
         mot_end_pos_along_width = round(mot_start_pos_along_width + roi_width * self.scaling_ft_along_width,4)
         mot_end_pos_along_height = round(mot_start_pos_along_height + roi_height * self.scaling_ft_along_height, 4)
         steps_along_width = int(abs(mot_end_pos_along_width - mot_start_pos_along_width)/(pix_size[0]/1000))
@@ -319,10 +321,11 @@ class MdiFieldImreg_Wrapper(object):
         self.comboBox_ref_frame_pos.currentIndexChanged.connect(self.update_beam_pos_vp)
         self.pushButton_cal_sf.clicked.connect(self.cal_scaling_factors)
         self.pushButton_fill_stage_info.clicked.connect(self.fill_stage_info)
-        self.pushButton_add_row.clicked.connect(lambda:self.generate_scan_macro(mot_name_along_width='samy', mot_name_along_height='samz'))
+        self.pushButton_add_row.clicked.connect(self.generate_scan_macro)
         self.pushButton_remove_row.clicked.connect(self.drop_selected_row)
         self.tableView_scan_list.clicked.connect(self.update_dft_roi_on_click_table_row)
-        self.pushButton_submit_jobs.clicked.connect(self.submit_jobs_to_run)
+        # self.pushButton_submit_jobs.clicked.connect(self.submit_jobs_to_run)
+        self.pushButton_submit_jobs.clicked.connect(lambda: self.submit_jobs_to_queue_server(viewer = 'img_reg'))
 
     def cal_union_region_target_and_reference(self):
         x_min, x_max, y_min, y_max = 0, 0, 0, 0

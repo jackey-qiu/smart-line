@@ -27,7 +27,7 @@ class beamlineControl(object):
         self.pushButton_append_job.clicked.connect(self.add_one_task_to_scan_viewer)
         self.tableView_scan_list_camera_viewer.clicked.connect(self.update_roi_upon_click_tableview_camera_widget)
         self.pushButton_remove_one_task.clicked.connect(self.remove_currently_selected_row)
-        self.pushButton_submit_all.clicked.connect(self.submit_jobs_to_queue_server)
+        self.pushButton_submit_all.clicked.connect(lambda: self.submit_jobs_to_queue_server(viwer='camera'))
 
     def update_pixel_size(self):
         from taurus import Attribute
@@ -153,13 +153,27 @@ class beamlineControl(object):
         roi = eval(self.pandas_model_queue_camara_viewer._data.iloc[row,:]['geo_roi'])
         x, y, w, h = roi
         scan_cmd_list = self.pandas_model_queue_camara_viewer._data.iloc[row,:]['scan_command'].rsplit(' ')
-        x, y = float(scan_cmd_list[2]), float(scan_cmd_list[6])
-        x, y = self.camara_widget._convert_stage_coord_to_pix_unit(x, y)
+        x_, y_ = float(scan_cmd_list[2]), float(scan_cmd_list[6])
+        self.camara_widget.roi_scan_xy_stage = [x_, y_]
+        x, y = self.camara_widget._convert_stage_coord_to_pix_unit(x_, y_)
+
         self.camara_widget.roi_scan.setX(x)
         self.camara_widget.roi_scan.setY(y)
         self.camara_widget.roi_scan.setSize((w, h))
-     
-    def submit_jobs_to_queue_server(self):
+
+    def update_roi_at_row(self, row):
+        roi = eval(self.pandas_model_queue_camara_viewer._data.iloc[row,:]['geo_roi'])
+        x, y, w, h = roi
+        scan_cmd_list = self.pandas_model_queue_camara_viewer._data.iloc[row,:]['scan_command'].rsplit(' ')
+        x_, y_ = float(scan_cmd_list[2]), float(scan_cmd_list[6])
+        self.camara_widget.roi_scan_xy_stage = [x_, y_]
+        x, y = self.camara_widget._convert_stage_coord_to_pix_unit(x_, y_)
+
+        self.camara_widget.roi_scan.setX(x)
+        self.camara_widget.roi_scan.setY(y)
+        self.camara_widget.roi_scan.setSize((w, h))
+
+    def submit_jobs_to_queue_server(self, viewer = 'camrera'):
         if self.queue_comm==None:
             self.statusUpdate('queue server is not created. Create the connection first.')
             return
@@ -170,11 +184,24 @@ class beamlineControl(object):
                 jobs.append({
                     'queue': self.lineEdit_scan_queue_name.text(),
                     'session': self.lineEdit_queue_section_name.text(),
-                    'scan_command': self.lineEdit_full_macro_name.text().rsplit(' ')
+                    'scan_command': self.pandas_model_queue_camara_viewer._data['scan_command'].to_list()[i].rsplit(' ')
                 })
             return jobs
+        def _make_job_list_img_reg():
+            jobs = []
+            rows = self.pandas_model_scan_list._data.shape[0]
+            for i in range(rows):
+                jobs.append({
+                    'queue': self.lineEdit_queue_name_imgreg.text(),
+                    'session': self.lineEdit_session_name.text(),
+                    'scan_command': self.pandas_model_scan_list._data['scan macro'].to_list()[i].rsplit(' ')
+                })
+            return jobs            
         try:
-            self.queue_comm.send_receive_message(['add', _make_job_list()])
+            if viewer == 'camera':
+                self.queue_comm.send_receive_message(['add', _make_job_list()])
+            elif viewer == 'img_reg':
+                self.queue_comm.send_receive_message(['add', _make_job_list_img_reg()])
             self.statusUpdate('Jobs are submitted to queue server.')
         except Exception as e:
             self.statusUpdate('Fail to submit the jobs.'+str(e))
