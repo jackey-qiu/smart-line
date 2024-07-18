@@ -2191,14 +2191,70 @@
                    </item>
                    <item>
                     <layout class="QGridLayout" name="gridLayout_6">
-                     <item row="0" column="1">
+                     <item row="2" column="1">
+                      <widget class="QLineEdit" name="lineEdit_pcorr">
+                       <property name="text">
+                        <string>0</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item row="2" column="3">
+                      <widget class="QLineEdit" name="lineEdit_exponent">
+                       <property name="text">
+                        <string>inf</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item row="2" column="0">
+                      <widget class="QLabel" name="label_5">
+                       <property name="text">
+                        <string>filter_pcorr</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item row="2" column="2">
+                      <widget class="QLabel" name="label_6">
+                       <property name="text">
+                        <string>exponent</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item row="1" column="8">
                       <widget class="QPushButton" name="bt_registration">
                        <property name="text">
                         <string>register</string>
                        </property>
                       </widget>
                      </item>
-                     <item row="0" column="2">
+                     <item row="1" column="0">
+                      <widget class="QLabel" name="label_87">
+                       <property name="text">
+                        <string>numiter</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item row="1" column="2">
+                      <widget class="QLabel" name="label_4">
+                       <property name="text">
+                        <string>order</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item row="1" column="1">
+                      <widget class="QLineEdit" name="lineEdit_numiter">
+                       <property name="text">
+                        <string>5</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item row="1" column="3">
+                      <widget class="QLineEdit" name="lineEdit_order">
+                       <property name="text">
+                        <string>3</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item row="2" column="8">
                       <widget class="QPushButton" name="pushButton_move">
                        <property name="text">
                         <string>move</string>
@@ -2206,17 +2262,11 @@
                       </widget>
                      </item>
                      <item row="0" column="0">
-                      <spacer name="horizontalSpacer_2">
-                       <property name="orientation">
-                        <enum>Qt::Horizontal</enum>
+                      <widget class="QLabel" name="label_88">
+                       <property name="text">
+                        <string>DFT pars</string>
                        </property>
-                       <property name="sizeHint" stdset="0">
-                        <size>
-                         <width>40</width>
-                         <height>20</height>
-                        </size>
-                       </property>
-                      </spacer>
+                      </widget>
                      </item>
                     </layout>
                    </item>

@@ -143,7 +143,7 @@ def transform_img_dict(dset, tdict, invertx=False, inverty=False):
 
 
 def registration_dft_slice(im0, im1, scale=[1,0], angle=[0,0], tx=[0,0], ty=[0,0], \
-	iterations=100, display=True, progressbar='', display_window=''):
+	iterations=100, display=True, progressbar='', display_window='', order = 3, filter_pcorr = 0, exponent = 'inf'):
 	'''
 	Self-contained worker algorithm for image registration of 2 multi-channel slices. Imreg_dft is based on the code by Christoph Gohlke.
 
@@ -193,7 +193,7 @@ def registration_dft_slice(im0, im1, scale=[1,0], angle=[0,0], tx=[0,0], ty=[0,0
 
 	# // get transformation
 	# vector_dict = ird.similarity(im0_r, im1_r, numiter=int(iterations), constraints={'scale':scale,'angle':angle, 'tx':tx, 'ty':ty})
-	vector_dict = ird.similarity(im0_r, im1_r, numiter=int(iterations))
+	vector_dict = ird.similarity(im0_r, im1_r, numiter=int(iterations), order = order, filter_pcorr=filter_pcorr, exponent = exponent)
 	# // apply transformation to each channel
 	if display:
 		im2_r = ird.imreg.transform_img_dict(im1_r, tdict=vector_dict, bgval=None, order=1, invert=False)
