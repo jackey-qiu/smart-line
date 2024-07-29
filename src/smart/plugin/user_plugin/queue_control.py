@@ -1,5 +1,5 @@
 from . import p06io
-from taurus import info, error, warning, critical
+from taurus import info, error, warning, critical, Device
 from PyQt5.QtCore import pyqtSlot as Slot
 from PyQt5.QtWidgets import  QAbstractItemView
 from PyQt5 import QtCore
@@ -93,7 +93,7 @@ class queueControl(object):
             error(f"Fail to connect to queue server with the following error:/n {str(er)}") 
             self.statusUpdate(f'Failure to connect to queue server!')
 
-    def get_available_queues(self):
+    def get_available_queues(self, set_text_field = True):
         if self.queue_comm==None:
             self.textEdit_queue_info_output.setPlainText('The queue comm is not yet created! Connect the queue server first.')
             return
@@ -105,7 +105,8 @@ class queueControl(object):
                 self.comboBox_queue_name_list.addItems(eval(str(msg)))
                 if current_txt in eval(str(msg)):
                     self.comboBox_queue_name_list.setCurrentText(current_txt)
-                self.textEdit_queue_info_output.setPlainText(str(msg))
+                if set_text_field:
+                    self.textEdit_queue_info_output.setPlainText(str(msg))
                 return eval(str(msg))
             except Exception as err:
                 error(f"Fail to run the command: get_available_queues. Error:/n {str(err)}")
@@ -123,7 +124,7 @@ class queueControl(object):
             each('')
 
     def _format_queue(self):
-        available_queues = self.get_available_queues()
+        available_queues = self.get_available_queues(set_text_field=False)
         queue_info_dict = {'session':[], 'queue':[],'scan_command':[], 'scan_id':[], 'unique_id':[],'state':[]}
         if available_queues==None:
             return pd.DataFrame(queue_info_dict)
@@ -149,7 +150,7 @@ class queueControl(object):
         getattr(self, table_view_widget_name).setSelectionBehavior(QAbstractItemView.SelectRows)
         getattr(self, table_view_widget_name).horizontalHeader().setStretchLastSection(True)
 
-    def display_info_for_a_queue(self):
+    def display_info_for_a_queue(self, show_last_item = False):
         queue_name = str(self.comboBox_queue_name_list.currentText())
         msg = self.queue_comm.send_receive_message(['get', queue_name],timeout=3)
         tasks = []
@@ -160,6 +161,9 @@ class queueControl(object):
         self.comboBox_queue_task.clear()
         self.comboBox_queue_task.addItems(tasks)
         self.textEdit_queue_info_output.setPlainText('\n\n'.join([str(each) for each in msg]))
+        if show_last_item:
+            last = self.comboBox_queue_task.itemText(self.comboBox_queue_task.count()-1)
+            self.comboBox_queue_task.setCurrentText(last)
 
     def remove_task(self, task_id):
         task_id = self.lineEdit_job_id.text()
@@ -223,7 +227,10 @@ class queueControl(object):
         """
         # return
         self._append_task(task_from_widget)
-        self.display_info_for_a_queue()
+        self.display_info_for_a_queue(show_last_item=True)
+        # show the added item (last) after adding task
+        #last = self.comboBox_queue_task.itemText(self.comboBox_queue_task.count()-1)
+        #self.comboBox_queue_task.setCurrentText(last)
 
     @Slot(str)
     def update_queue_viewer_type(self, viewer_type):
@@ -238,6 +245,9 @@ class queueControl(object):
 
     @Slot(str)
     def update_task_from_server(self, unique_id):
+
+        if not unique_id:
+            return
         msg = None
         if self.queue_info == None:
             return
@@ -379,7 +389,17 @@ class queueControl(object):
     def update_synoptic_viewer(self):
         self.widget_queue_synoptic_viewer.set_data(self.pandas_model_queue._data)
 
+    def run_queue(self):
+        door = Device(self.settings_object['spockLogin']['doorName'])
+        queue = self.comboBox_queue_name_list.currentText()
+        try:
+            door.runmacro(['scan_sequence', queue])
+            self.statusUpdate(f'start running queue of {queue}')
+        except Exception as err:
+            self.statusUpdate(f'Fail to run the queue due to {err}')
+
     def connect_slots_queue_control(self):
+        self.pushButton_run_queue.clicked.connect(self.run_queue)
         self.pushButton_get_all_queues.clicked.connect(self.get_available_queues)
         self.pushButton_connect_queue_server.clicked.connect(self.connect_queue_server)
         self.pushButton_get_queue_info.clicked.connect(self.display_info_for_a_queue)

@@ -466,8 +466,11 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
     def _cal_scan_coordinates_from_pos(self, pos):
         #pos is in mm unit
         main_gui = findMainWindow()
-        samx = Attribute(main_gui.settings_object["SampleStages"]["label_x_stage_value"]).read().value
-        samy = Attribute(main_gui.settings_object["SampleStages"]["label_y_stage_value"]).read().value
+        try:
+            samx = Attribute(main_gui.settings_object["SampleStages"]["label_x_stage_value"]).read().value
+            samy = Attribute(main_gui.settings_object["SampleStages"]["label_y_stage_value"]).read().value
+        except:
+            return 0, 0
         current_stage_pos = np.array([samx, samy])
         crosshair_pos_offset_mm = np.array(pos) - np.array(main_gui.crosshair_pos_at_prim_beam)*main_gui.camara_pixel_size
         sample_x_stage_start_pos, sample_y_stage_start_pos = current_stage_pos + crosshair_pos_offset_mm*[1,-1]
@@ -548,7 +551,6 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self.isoLine_v.setValue(iso_v)
 
     def reposition_scan_roi(self):
-        #after this movement, the pos of crosshair pos reflect the current sample stage position
         if self.roi_scan_xy_stage[0]!=None:
             pos = self._convert_stage_coord_to_pix_unit(*self.roi_scan_xy_stage)
             if self.roi_scan != None:

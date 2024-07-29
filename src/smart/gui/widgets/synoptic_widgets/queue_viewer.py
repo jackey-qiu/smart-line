@@ -31,6 +31,7 @@ class queueSynopticView(QWidget):
 
     def set_data(self, data):
         if len(data[data['state']=='running'])==0:
+            self.parent.display_info_for_a_queue(show_last_item=True)
             queue_name = self.parent.comboBox_queue_name_list.currentText()
             if queue_name!=None:
                 self._data = data[data['queue']==queue_name]
@@ -39,6 +40,7 @@ class queueSynopticView(QWidget):
         else:
             queue = data[data['state']=='running']['queue'].to_list()[0]
             id = str(data[data['state']=='running']['unique_id'].to_list()[0])
+            self.parent.display_info_for_a_queue()
             self.parent.comboBox_queue_name_list.setCurrentText(queue)
             self._data = data[data['queue']==queue]
             self.parent.comboBox_queue_task.setCurrentText(id)

@@ -210,57 +210,57 @@
                        </widget>
                       </item>
                       <item>
-                       <layout class="QHBoxLayout" name="horizontalLayout_13">
-                        <item>
+                       <layout class="QGridLayout" name="gridLayout_3">
+                        <item row="0" column="0">
                          <widget class="QPushButton" name="pushButton_connect_queue_server">
                           <property name="text">
-                           <string>connect queue server</string>
+                           <string>connect queue</string>
                           </property>
                          </widget>
                         </item>
-                        <item>
-                         <widget class="QPushButton" name="pushButton_get_all_queues">
-                          <property name="text">
-                           <string>get all queues</string>
-                          </property>
-                         </widget>
-                        </item>
-                        <item>
-                         <widget class="QPushButton" name="pushButton_add_task">
-                          <property name="text">
-                           <string>create task</string>
-                          </property>
-                         </widget>
-                        </item>
-                        <item>
+                        <item row="0" column="3">
                          <widget class="QPushButton" name="pushButton_update_task">
                           <property name="text">
                            <string>update task</string>
                           </property>
                          </widget>
                         </item>
-                        <item>
+                        <item row="0" column="1">
+                         <widget class="QPushButton" name="pushButton_get_all_queues">
+                          <property name="text">
+                           <string>get queues</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="0" column="2">
+                         <widget class="QPushButton" name="pushButton_add_task">
+                          <property name="text">
+                           <string>create task</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="1" column="0">
                          <widget class="QPushButton" name="pushButton_enable_task">
                           <property name="text">
                            <string>enable task</string>
                           </property>
                          </widget>
                         </item>
-                        <item>
+                        <item row="1" column="1">
                          <widget class="QPushButton" name="pushButton_disable_task">
                           <property name="text">
                            <string>disable task</string>
                           </property>
                          </widget>
                         </item>
-                        <item>
+                        <item row="1" column="2">
                          <widget class="QPushButton" name="pushButton_pause_task">
                           <property name="text">
                            <string>pause task</string>
                           </property>
                          </widget>
                         </item>
-                        <item>
+                        <item row="1" column="3">
                          <widget class="QPushButton" name="pushButton_delete_task">
                           <property name="text">
                            <string>delete task</string>
@@ -686,6 +686,12 @@
                         </item>
                         <item>
                          <widget class="QLabel" name="label_73">
+                          <property name="sizePolicy">
+                           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                            <horstretch>0</horstretch>
+                            <verstretch>0</verstretch>
+                           </sizepolicy>
+                          </property>
                           <property name="text">
                            <string>tasks</string>
                           </property>
@@ -698,6 +704,13 @@
                          <widget class="QPushButton" name="pushButton_get_queue_info">
                           <property name="text">
                            <string>get queue info</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item>
+                         <widget class="QPushButton" name="pushButton_run_queue">
+                          <property name="text">
+                           <string>run queue</string>
                           </property>
                          </widget>
                         </item>

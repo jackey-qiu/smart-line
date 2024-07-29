@@ -27,7 +27,7 @@ class beamlineControl(object):
         self.pushButton_append_job.clicked.connect(self.add_one_task_to_scan_viewer)
         self.tableView_scan_list_camera_viewer.clicked.connect(self.update_roi_upon_click_tableview_camera_widget)
         self.pushButton_remove_one_task.clicked.connect(self.remove_currently_selected_row)
-        self.pushButton_submit_all.clicked.connect(lambda: self.submit_jobs_to_queue_server(viwer='camera'))
+        self.pushButton_submit_all.clicked.connect(lambda: self.submit_jobs_to_queue_server(viewer='camera'))
 
     def update_pixel_size(self):
         from taurus import Attribute

@@ -1,6 +1,6 @@
 from taurus.qt.qtgui.base import TaurusBaseComponent
 from taurus.external.qt import Qt
-from taurus import Device
+from taurus import Device, Attribute
 from pyqtgraph import GraphicsLayoutWidget
 import pyqtgraph as pg
 from PyQt5 import QtCore
@@ -43,11 +43,11 @@ class motorMeter(GraphicsLayoutWidget, TaurusBaseComponent):
         if len(colors) < len(self.motor_name_list):
             colors = colors + ["g"] * (len(self.motor_name_list) - len(colors))
 
-        for i, motor in enumerate(motor_name_list):
+        for i, (motor, model) in enumerate(zip(motor_name_list, motor_model_list)):
             self.plot_objs.append(self.addPlot())
             self.text_label_list.append(
                 pg.TextItem(
-                    motor + f"={round(Device(motor).position,3)}", anchor=(0.0, 7)
+                    motor + f"={round(Attribute(model).read().value,3)}", anchor=(0.0, 7)
                 )
             )
             self.plot_objs[-1].hideAxis("left")
@@ -61,7 +61,7 @@ class motorMeter(GraphicsLayoutWidget, TaurusBaseComponent):
             )
             self.plot_objs[-1].addItem(self.motor_pos_marker_list[-1])
             self.text_label_list[-1].setParentItem(self.motor_pos_marker_list[-1])
-            self.motor_pos_marker_list[-1].setValue(Device(motor).position)
+            self.motor_pos_marker_list[-1].setValue(Attribute(model).read().value)
             self.motor_pos_marker_list[-1].sigPositionChangeFinished.connect(
                 lambda state, motor=motor, line=self.motor_pos_marker_list[
                     -1
