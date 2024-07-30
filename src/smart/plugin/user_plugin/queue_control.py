@@ -7,6 +7,7 @@ from smart.gui.widgets.event_dialogue import confirmation_dialogue, error_pop_up
 from smart.util.util import PandasModel
 import logging
 import pandas as pd
+from smart import icon_path
 
 REQUIRED_KEYS = ['queue', 'scan_command', 'session']
 
@@ -66,7 +67,61 @@ class queueControl(object):
         self.brcast_listener.update_host_and_port(self.ntp_host, self.ntp_port)
         self.queue_comm = None
         self.queue_info = None
+        self._create_toolbar_queue_widget()
         # self.set_models()
+
+    def _create_toolbar_queue_widget(self):
+        from PyQt5.QtWidgets import QToolBar, QAction
+        from PyQt5.QtCore import Qt
+        from PyQt5.QtGui import QIcon
+        self.queueToolBar = QToolBar('camera', self)
+        #connect queue action
+        action_connect_queue = QAction(QIcon(str(icon_path / 'smart' / 'connect_queue.png')),'connect to queue server',self)
+        action_connect_queue.setStatusTip('Connect to queue server.')
+        action_connect_queue.triggered.connect(self.connect_queue_server)
+        self.queueToolBar.addAction(action_connect_queue)
+        #get queue list
+        action_get_queue = QAction(QIcon(str(icon_path / 'smart' / 'get_queues.png')),'get queue list from server',self)
+        action_get_queue.setStatusTip('Extract queue list from the queue server.')
+        action_get_queue.triggered.connect(self.get_available_queues)
+        self.queueToolBar.addAction(action_get_queue)
+        #create task
+        action_create_task = QAction(QIcon(str(icon_path / 'smart' / 'create_task.png')),'create new task',self)
+        action_create_task.setStatusTip('Create a new task and push it to the queue server.')
+        action_create_task.triggered.connect(self.add_task_from_ui)
+        self.queueToolBar.addAction(action_create_task)
+        #update task
+        action_update_task = QAction(QIcon(str(icon_path / 'smart' / 'update_task.png')),'update current task',self)
+        action_update_task.setStatusTip('Update a task and push it to the queue server.')
+        action_update_task.triggered.connect(self.update_task)
+        self.queueToolBar.addAction(action_update_task)
+        #enable task
+        action_enable_task = QAction(QIcon(str(icon_path / 'smart' / 'enable_task.png')),'enable current task',self)
+        action_enable_task.setStatusTip('Enable a paused task to set it to queued state and push it to the queue server.')
+        action_enable_task.triggered.connect(lambda: self.change_state_of_a_task('enabled'))
+        self.queueToolBar.addAction(action_enable_task)
+        #disable task
+        action_disable_task = QAction(QIcon(str(icon_path / 'smart' / 'disable_task.png')),'disable current task',self)
+        action_disable_task.setStatusTip('Disable a queued task to set it to disabled state and push it to the queue server.')
+        action_disable_task.triggered.connect(lambda: self.change_state_of_a_task('disabled'))
+        self.queueToolBar.addAction(action_disable_task)
+        #pause a task
+        action_pause_task = QAction(QIcon(str(icon_path / 'smart' / 'pause_task.png')),'pause current task',self)
+        action_pause_task.setStatusTip('Pause a queued task to set it to paused state and push it to the queue server.')
+        action_pause_task.triggered.connect(lambda: self.change_state_of_a_task('paused'))
+        self.queueToolBar.addAction(action_pause_task)
+        #delete a task
+        action_delete_task = QAction(QIcon(str(icon_path / 'smart' / 'delete_task.png')),'delete current task',self)
+        action_delete_task.setStatusTip('Delete a task from the queue server.')
+        action_delete_task.triggered.connect(self.remove_task)
+        self.queueToolBar.addAction(action_delete_task)
+        #run a queue
+        action_run_queue = QAction(QIcon(str(icon_path / 'smart' / 'run_queue.png')),'run the current queue',self)
+        action_run_queue.setStatusTip('Start running the queue of the selected queue name')
+        action_run_queue.triggered.connect(self.run_queue)
+        self.queueToolBar.addAction(action_run_queue)
+        #finally add the toolbar
+        self.addToolBar(Qt.LeftToolBarArea, self.queueToolBar)
 
     def connect_queue_server(self, which_instance = 0):
         try:
@@ -75,7 +130,7 @@ class queueControl(object):
 
             # In this case you will just have 1 instance running so you take instance zero
             instance_info = queue_info[list(queue_info.keys())[which_instance]]
-            self.textEdit_queue_info_output.setPlainText(str(queue_info))
+            # self.textEdit_queue_info_output.setPlainText(str(queue_info))
 
             # All available connections are under the connections key
             self.queue_host = instance_info["connections"]["communication"]["host"]
@@ -95,7 +150,7 @@ class queueControl(object):
 
     def get_available_queues(self, set_text_field = True):
         if self.queue_comm==None:
-            self.textEdit_queue_info_output.setPlainText('The queue comm is not yet created! Connect the queue server first.')
+            # self.textEdit_queue_info_output.setPlainText('The queue comm is not yet created! Connect the queue server first.')
             return
         else:
             try:
@@ -105,8 +160,8 @@ class queueControl(object):
                 self.comboBox_queue_name_list.addItems(eval(str(msg)))
                 if current_txt in eval(str(msg)):
                     self.comboBox_queue_name_list.setCurrentText(current_txt)
-                if set_text_field:
-                    self.textEdit_queue_info_output.setPlainText(str(msg))
+                # if set_text_field:
+                    # self.textEdit_queue_info_output.setPlainText(str(msg))
                 return eval(str(msg))
             except Exception as err:
                 error(f"Fail to run the command: get_available_queues. Error:/n {str(err)}")
@@ -160,7 +215,7 @@ class queueControl(object):
         self.queue_info = msg
         self.comboBox_queue_task.clear()
         self.comboBox_queue_task.addItems(tasks)
-        self.textEdit_queue_info_output.setPlainText('\n\n'.join([str(each) for each in msg]))
+        # self.textEdit_queue_info_output.setPlainText('\n\n'.join([str(each) for each in msg]))
         if show_last_item:
             last = self.comboBox_queue_task.itemText(self.comboBox_queue_task.count()-1)
             self.comboBox_queue_task.setCurrentText(last)
@@ -316,12 +371,15 @@ class queueControl(object):
             # self.display_info_for_a_queue()
 
     def update_scan_roi_upon_state_change(self):
-        queue = self.comboBox_queue_name_list.currentText()
-        cmd = self.lineEdit_cmd.text()
+        running_row = self.pandas_model_queue._data[self.pandas_model_queue._data['state']=='running']
+        if len(running_row)==0:
+            return
+        queue = running_row['queue'].to_list()[0]
+        cmd = running_row['scan_command'].to_list()[0]
         data = self.pandas_model_queue_camara_viewer._data
         #the active row ix
         try:
-            which_row = (data['scan_command'] == cmd & data['queue'] == queue).to_list().index(True)
+            which_row = ((data['scan_command'] == cmd) & (data['queue'] == queue)).to_list().index(True)
         except:
             which_row = None
         if which_row != None:
@@ -393,26 +451,28 @@ class queueControl(object):
         door = Device(self.settings_object['spockLogin']['doorName'])
         queue = self.comboBox_queue_name_list.currentText()
         try:
+            #this is a workaround to update the stage xy for scan roi upon starting the queue 
+            self.update_roi_at_row(0)
             door.runmacro(['scan_sequence', queue])
             self.statusUpdate(f'start running queue of {queue}')
         except Exception as err:
             self.statusUpdate(f'Fail to run the queue due to {err}')
 
     def connect_slots_queue_control(self):
-        self.pushButton_run_queue.clicked.connect(self.run_queue)
-        self.pushButton_get_all_queues.clicked.connect(self.get_available_queues)
-        self.pushButton_connect_queue_server.clicked.connect(self.connect_queue_server)
-        self.pushButton_get_queue_info.clicked.connect(self.display_info_for_a_queue)
-        self.pushButton_add_task.clicked.connect(self.add_task_from_ui)
+        # self.pushButton_run_queue.clicked.connect(self.run_queue)
+        # self.pushButton_get_all_queues.clicked.connect(self.get_available_queues)
+        # self.pushButton_connect_queue_server.clicked.connect(self.connect_queue_server)
+        # self.pushButton_get_queue_info.clicked.connect(self.display_info_for_a_queue)
+        # self.pushButton_add_task.clicked.connect(self.add_task_from_ui)
         self.comboBox_queue_task.textActivated.connect(self.update_task_from_server)
         self.comboBox_queue_task.currentTextChanged.connect(self.update_task_from_server)
         self.comboBox_queue_viewer.textActivated.connect(self.update_queue_viewer_type)
         self.comboBox_queue_name_list.textActivated.connect(self.update_synoptic_viewer)
-        self.pushButton_delete_task.clicked.connect(self.remove_task)
+        # self.pushButton_delete_task.clicked.connect(self.remove_task)
         self.pushButton_remove_queue.clicked.connect(self.remove_queue)
-        self.pushButton_update_task.clicked.connect(self.update_task)
-        self.pushButton_enable_task.clicked.connect(lambda: self.change_state_of_a_task('enabled'))
-        self.pushButton_disable_task.clicked.connect(lambda: self.change_state_of_a_task('disabled'))
-        self.pushButton_pause_task.clicked.connect(lambda: self.change_state_of_a_task('paused'))
+        # self.pushButton_update_task.clicked.connect(self.update_task)
+        # self.pushButton_enable_task.clicked.connect(lambda: self.change_state_of_a_task('enabled'))
+        # self.pushButton_disable_task.clicked.connect(lambda: self.change_state_of_a_task('disabled'))
+        # self.pushButton_pause_task.clicked.connect(lambda: self.change_state_of_a_task('paused'))
         self.brcast_listener.queue_entry_event.connect(self.update_queued_task_from_brcast_event)
         self.tableView_queue.clicked.connect(self.update_task_upon_click_tableview)

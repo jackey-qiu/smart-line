@@ -437,6 +437,10 @@ class smartGui(
             self.camToolBar.show()
         else:
             self.camToolBar.hide()
+        if "scan queue" in tabText:
+            self.queueToolBar.show()
+        else:
+            self.queueToolBar.hide()
 
     def set_cursor_icon(self, cursor_type="cross"):
         """

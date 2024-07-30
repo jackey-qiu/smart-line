@@ -184,7 +184,8 @@ class beamlineControl(object):
                 jobs.append({
                     'queue': self.lineEdit_scan_queue_name.text(),
                     'session': self.lineEdit_queue_section_name.text(),
-                    'scan_command': self.pandas_model_queue_camara_viewer._data['scan_command'].to_list()[i].rsplit(' ')
+                    'scan_command': self.pandas_model_queue_camara_viewer._data['scan_command'].to_list()[i].rsplit(' '),
+                    'scan_info': self.pandas_model_queue_camara_viewer._data['scan_info'].to_list()[i]
                 })
             return jobs
         def _make_job_list_img_reg():
