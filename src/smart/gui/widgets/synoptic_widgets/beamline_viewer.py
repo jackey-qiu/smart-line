@@ -61,7 +61,7 @@ class beamlineSynopticViewer(QWidget):
         pen_lines_draw_after = []
         syringe_lines_container = {}
         if len(self.viewer_connection) == 0:
-            return lines_draw_before, lines_draw_after
+            return [],[],[],[],{}
         
         def _unpack_str(str_):
             
@@ -147,20 +147,17 @@ class beamlineSynopticViewer(QWidget):
                         else:
                             qp.setPen(line_pen)
                             qp.drawLine(*pts)
-        '''            
         #lines to be draw before
         for k, lines in enumerate(self.parent.lines_draw_before):
             qp.setPen(self.parent.pen_lines_draw_before[k])
             for i in range(len(lines)-1):
                 pts = list(lines[i]) + list(lines[i+1])
                 qp.drawLine(*pts)
-        '''
         #draw shapes
         for composite_shape in self.viewer_shape.values():
             for each_shape in composite_shape.shapes:
                 qp.resetTransform()
                 each_shape.paint(qp)
-        '''
         #lines to be draw after
         for k, lines in enumerate(self.parent.lines_draw_after):
             qp.resetTransform()
@@ -168,7 +165,6 @@ class beamlineSynopticViewer(QWidget):
             for i in range(len(lines)-1):
                 pts = list(lines[i]) + list(lines[i+1])
                 qp.drawLine(*pts)    
-        '''            
         qp.end()
 
     @Slot()

@@ -18,7 +18,8 @@ __all__ = ['callback_model_change_with_decoration',
            'callback_model_change_with_decoration_on_off', 
            'callback_model_change_with_text_label_on_off',
            'callback_model_change_with_decoration_valve_position',
-           "callback_model_change_with_text_label_main_gui"]
+           "callback_model_change_with_text_label_main_gui",
+           'callback_model_change_with_decoration_on_off_idx']
 
 def _apply_translation_steps(shape, value_model, mv_dir = 'x', sign = '+', model_limits = None, max_translation_range = None, val_ix = None, translate = 'True'):
     if type(translate)==str:
@@ -87,6 +88,16 @@ def _get_model_value_limits(value_model, lm_type = None):
 
 def callback_model_change_with_decoration_on_off(parent, shape, value_model):
     _value = bool(value_model.rvalue)
+    if _value:
+        new_decoration = {'brush': {'color': (0, 255, 0)}}
+    else:
+        new_decoration = {'brush': {'color': (255, 255, 255)}}
+    shape.decoration = new_decoration
+    shape.decoration_cursor_on = new_decoration
+    shape.decoration_cursor_off = new_decoration
+
+def callback_model_change_with_decoration_on_off_idx(parent, shape, value_model, idx):
+    _value = bool(value_model.rvalue[int(idx)])
     if _value:
         new_decoration = {'brush': {'color': (0, 255, 0)}}
     else:

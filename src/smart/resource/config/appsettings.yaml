@@ -28,12 +28,12 @@ Mscope:
   comboBox_illum_types: tango://hasp029rack.desy.de:10000/p06/beamlinemicroscopeillumination/test.01/AvailableIlluminationTypes
   label_illum_pos: tango://hasp029rack.desy.de:10000/p06/beamlinemicroscopeillumination/test.01/intensity{}
 PrimBeamGeo:
-  img_x: -2256.1551724578167
-  img_y: -2347.9068789755406
-  iso_h: -1378.955965909091
-  iso_v: -1235.9499289772725
-  stage_x: -27.190898437499996
-  stage_y: -30.337031249999995
+  img_x: 0.0
+  img_y: 0.0
+  iso_h: 0
+  iso_v: 0
+  stage_x: 0
+  stage_y: 0
 QueueControl:
   ntp_host: haspp06deb10
   ntp_port: 13345
@@ -53,8 +53,8 @@ Visuals:
   showScalebar: 0
 spockLogin:
   doorAlias: Door-hasp029rack
-  doorName: tango://hasp029rack.desy.de:10000/p06/door/hasp029rack.02
+  doorName: tango://hasp029rack.desy.de:10000/p06/door/hasp029rack.01
   msAlias: MS-hasp029rack
-  msName: tango://hasp029rack.desy.de:10000/p06/macroserver/hasp029rack.02
+  msName: tango://hasp029rack.desy.de:10000/p06/macroserver/hasp029rack.01
 widgetMaps:
   beamlineControlGpNames: SampleStages
