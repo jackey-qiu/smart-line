@@ -54,6 +54,11 @@ class beamlineSynopticViewer(QWidget):
             return sigma
         return method_temp
 
+    def update_connection(self):
+        self.parent.lines_draw_before, self.parent.lines_draw_after, \
+        self.parent.pen_lines_draw_before, self.parent.pen_lines_draw_after, \
+        self.parent.syringe_lines_container = self._generate_connection()
+
     def _generate_connection(self):
         lines_draw_before = []
         lines_draw_after = []
@@ -124,6 +129,7 @@ class beamlineSynopticViewer(QWidget):
         # for each in self.shapes:                       
         if self.viewer_shape == None:
             return
+        self.update_connection()
         #make line connections
         #if len(self.viewer_connection)!=0:
         #    self.parent.lines_draw_before, self.parent.lines_draw_after, self.parent.pen_lines_draw_before, self.parent.pen_lines_draw_after, self.parent.syringe_lines_container = self._generate_connection()

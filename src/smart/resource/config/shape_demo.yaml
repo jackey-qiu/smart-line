@@ -67,7 +67,7 @@ basic_shapes:
       anchor_pars: null
       labels:
         text: ['mirror']
-        anchor: ['top']
+        anchor: ['bottom']
         orientation: ['horizontal']   
         decoration: null   
     tube:
@@ -79,8 +79,8 @@ basic_shapes:
         orientation: ['horizontal']   
         decoration: null         
     sintilator:
-      dim: [0, 0, 8, 60]
-      anchor_pars: null
+      dim: [0, 0, 8, 70]
+      anchor_pars: [8]
       labels:
         text: ['sintillator']
         anchor: ['right']
@@ -95,6 +95,30 @@ basic_shapes:
         anchor: ['top']
         orientation: ['horizontal']         
         decoration: null      
+    CRL:
+      dim: [0, 0, 80, 30, 3, 3]
+      anchor_pars: null
+      labels:
+        text: ['CRL']
+        anchor: ['top']
+        orientation: ['horizontal']         
+        decoration: null  
+    beampipe:
+      dim: [0, 0, 120, 30, 10, 10]
+      anchor_pars: null
+      labels:
+        text: ['beampipe inplace']
+        anchor: ['top']
+        orientation: ['horizontal']         
+        decoration: null  
+    shutter:
+      dim: [0, 0, 30, 80, 3, 3]
+      anchor_pars: null
+      labels:
+        text: ['shutter']
+        anchor: ['top']
+        orientation: ['horizontal']         
+        decoration: null  
     x_ray_eye_frame:
       dim: [0, 0, 150, 90, 5, 5]
       anchor_pars: [[6,3], true, true]      
@@ -107,10 +131,10 @@ basic_shapes:
   circle:
     big:
       dim: [0, 0, 120]
-      anchor_pars: null
+      anchor_pars: [8]
       labels:
-        text: ['top','bottom','left','right']
-        anchor: ['top','bottom','left','right']
+        text: ['0','1','2','3']
+        anchor: ['anchor_0','anchor_1','anchor_2','anchor_3']
         orientation: ['vertical','vertical','horizontal', 'horizontal']
         decoration: None
     small:
@@ -131,10 +155,18 @@ basic_shapes:
       dim: [0, 0, 40, 60]
       anchor_pars: null
       labels:
-        text: ['valve']
+        text: ['']
         anchor: ['bottom']
         orientation: ['horizontal']
         decoration: None
+    sintillator_tweak:
+      dim: [0, 0, 15, 45]
+      anchor_pars: null
+      labels:
+        text: ['']
+        anchor: ['center']
+        orientation: ['horizontal']
+        decoration: null         
     absorber_switch_up:
       dim: [0, 0, 40, 60]
       anchor_pars: null
@@ -142,7 +174,7 @@ basic_shapes:
         text: ['up']
         anchor: ['center']
         orientation: ['horizontal']
-        decoration: None    
+        decoration: null    
     absorber_switch_down:
       dim: [0, 0, 40, 60]
       anchor_pars: null
@@ -150,7 +182,7 @@ basic_shapes:
         text: ['dw']
         anchor: ['center']
         orientation: ['horizontal']
-        decoration: None              
+        decoration: null              
 composite_shapes:
   BPM:
     shapes: ['circle.tiny*1', 'rectangle.BPM_frame*1','circle.BPM_unit*4']
@@ -168,48 +200,130 @@ composite_shapes:
       ref_anchors: [[null, null], ['right','left'],['right','left'],['right','left'],['right','left']]
     transformation: 
       translate: [0,0]
-    models: []
+    models: 
+      2: tango://localhost:10000/sys/tg_test/1/long64_scalar
+      3: tango://localhost:10000/sys/tg_test/1/long_scalar
+      4: tango://localhost:10000/sys/tg_test/1/short_scalar
+      5: tango://localhost:10000/sys/tg_test/1/short_scalar_ro
       # index: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
       # model: tango://localhost:10000/sys/tg_test/1/boolean_spectrum_ro
     callbacks_upon_model_change:
-      index: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
-      callback: ['callback_model_change_with_decoration_on_off_idx', 'idx']
-      args: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+      index: [2,3,4,5]
+      callback: ['callback_model_change_with_text_label', 'anchor','center','label', null]
+      #args: [null, null, null, null]
     callbacks_upon_leftmouse_click:
-      index: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+      index: [2,3,4,5]
       callback: null
     callbacks_upon_rightmouse_click:
-      index: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+      index: [2,3,4,5]
       callback: null
-  x-ray-eye:
-    shapes: ['circle.tiny*1', 'roundedRectangle.x_ray_eye_frame*1','circle.tiny*1','rectangle.mirror*1','rectangle.sintilator*1','trapezoid.xray-eye*1','rectangle.tube*1']
+  CRL:
+    shapes: ['circle.tiny*1', 'roundedRectangle.CRL*1']
     ref_shape: null
-    hide: [0,2]
+    hide: [0]
     alignment:
-      shapes: [[0,1],[1,2],[2,3],[1,4],[1,5],[5,6]]
+      shapes: [[0,1]]
       anchors:
         - ['right','left']
-        - ['anchor_grid_1_1', 'cen']
-        - ['anchor_5','bottom']
-        - ['anchor_grid_1_4', 'cen']
-        - ['anchor_grid_0_1', 'top']
-        - ['bottom', 'bottom']
-      gaps: [0,0,0,0,1.6,0.2]
-      ref_anchors: [[null, null], ['right','left'],[null,null],['right','left'],['top', null],[null, null]]
+      gaps: [0]
+      ref_anchors: [[null, null]]
     transformation: 
       translate: [0,0]
     models: []
       # index: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
       # model: tango://localhost:10000/sys/tg_test/1/boolean_spectrum_ro
     callbacks_upon_model_change:
-      index: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
-      callback: ['callback_model_change_with_decoration_on_off_idx', 'idx']
-      args: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+      index: [2,3,4,5]
+      callback: ['callback_model_change_with_text_label', 'anchor','center','label', null]
+      #args: [null, null, null, null]
     callbacks_upon_leftmouse_click:
-      index: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+      index: [2,3,4,5]
       callback: null
     callbacks_upon_rightmouse_click:
-      index: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+      index: [2,3,4,5]
+      callback: null
+  shutter:
+    shapes: ['circle.tiny*1', 'roundedRectangle.shutter*1']
+    ref_shape: null
+    hide: [0]
+    alignment:
+      shapes: [[0,1]]
+      anchors:
+        - ['right','left']
+      gaps: [0]
+      ref_anchors: [[null, null]]
+    transformation: 
+      translate: [0,0]
+    models: 
+      1: tango://localhost:10000/sys/tg_test/1/boolean_scalar
+      # index: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+      # model: tango://localhost:10000/sys/tg_test/1/boolean_spectrum_ro
+    callbacks_upon_model_change:
+      index: [1]
+      callback: ['callback_model_change_with_transformation', 'mv_dir', 'y', 'sign', '+', 'max_translation_range', '[-60,0]']
+      #callback: ['callback_model_change_with_text_label', 'anchor','center','label', null]
+      #args: [null, null, null, null]
+    callbacks_upon_leftmouse_click:
+      1: ['callback_leftmouse_click_change_attribute_bool']
+    callbacks_upon_rightmouse_click:
+      index: [1]
+      callback: null  
+  pipe:
+    shapes: ['circle.tiny*1', 'roundedRectangle.beampipe*1']
+    ref_shape: null
+    hide: [0]
+    alignment:
+      shapes: [[0,1]]
+      anchors:
+        - ['right','left']
+      gaps: [0]
+      ref_anchors: [[null, null]]
+    transformation: 
+      translate: [0,0]
+    models: 
+      1: tango://localhost:10000/sys/tg_test/1/boolean_scalar
+      #1: tango://localhost:10000/sys/tg_test/1/boolean_scalar
+      # index: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+      # model: tango://localhost:10000/sys/tg_test/1/boolean_spectrum_ro
+    callbacks_upon_model_change:
+      1: null
+    callbacks_upon_leftmouse_click:
+      1: ['callback_leftmouse_click_change_txt_label','label_options',"['beampipe out of place','beampipe in place']",'color_options',"[[0,255,0],[255,60,10]]"]
+    callbacks_upon_rightmouse_click:
+      index: [1]
+      callback: null      
+  x-ray-eye:
+    shapes: ['circle.tiny*1', 'roundedRectangle.x_ray_eye_frame*1','circle.tiny*1','rectangle.mirror*1','rectangle.sintilator*1','trapezoid.xray-eye*1','rectangle.tube*1','isocelesTriangle.sintillator_tweak*2']
+    ref_shape: null
+    hide: [0,2]
+    alignment:
+      shapes: [[0,1],[1,2],[2,3],[1,4],[1,5],[5,6],[4,7],[4,8]]
+      anchors:
+        - ['right','left']
+        - ['anchor_grid_1_1', 'cen']
+        - ['anchor_1','bottom']
+        - ['anchor_grid_1_4', 'cen']
+        - ['anchor_grid_0_1', 'top']
+        - ['bottom', 'bottom']
+        - ['anchor_left_7', 'bottom']
+        - ['anchor_right_0', 'bottom']
+      gaps: [0,0,0,0,1.6,0.2,0.1,0.1]
+      ref_anchors: [[null, null], ['right','left'],[null,null],['right','left'],['top', null],[null, null],['left', null],['right',null]]
+    transformation: 
+      translate: [0,0]
+    models: 
+      index: [4,7,8]
+      model: tango://hasp029rack.desy.de:10000/p06/motor/exp.02/position
+    callbacks_upon_model_change:
+      4: ['callback_model_change_with_transformation', 'mv_dir', 'x', 'sign', '+', 'max_translation_range', '[-60,0]']
+      7: ['callback_model_change_with_transformation', 'mv_dir', 'x', 'sign', '+', 'max_translation_range', '[-60,0]']
+      8: ['callback_model_change_with_transformation', 'mv_dir', 'x', 'sign', '+', 'max_translation_range', '[-60,0]']
+    callbacks_upon_leftmouse_click:
+      4: null
+      7: ['callback_leftmouse_click_change_attribute_value','change_value','-1']
+      8: ['callback_leftmouse_click_change_attribute_value','change_value','1']
+    callbacks_upon_rightmouse_click:
+      index: [4,7,8]
       callback: null
   slit:
     shapes: ['circle.tiny*2', 'rectangle.type3*2', 'rectangle.type4*2']
@@ -229,17 +343,17 @@ composite_shapes:
       4: tango://hasp029rack.desy.de:10000/p06/motor/exp.02/position
     callbacks_upon_model_change:
       2: 
-        - ['callback_model_change_with_transformation', 'mv_dir', 'y', 'sign', '-']
-        - ['callback_model_change_with_text_label', 'anchor', 'top', 'orientation','horizontal']
+        - ['callback_model_change_with_transformation', 'mv_dir', 'y', 'sign', '+', 'max_translation_range', '[-10,10]']
+        - ['callback_model_change_with_text_label', 'anchor', 'bottom', 'orientation','horizontal']
       3:
-        - ['callback_model_change_with_transformation', 'mv_dir', 'y', 'sign', '+']
-        - ['callback_model_change_with_text_label', 'anchor', 'bottom','orientation','horizontal']
+        - ['callback_model_change_with_transformation', 'mv_dir', 'y', 'sign', '-', 'max_translation_range', '[-10,10]']
+        - ['callback_model_change_with_text_label', 'anchor', 'top','orientation','horizontal']
       4: 
-        - ['callback_model_change_with_transformation', 'mv_dir', 'x', 'sign', '-']
-        - ['callback_model_change_with_text_label', 'anchor', 'left','orientation','vertical']
+        - ['callback_model_change_with_transformation', 'mv_dir', 'x', 'sign', '+', 'max_translation_range', '[-10,10]']
+        - ['callback_model_change_with_text_label', 'anchor', 'right','orientation','vertical']
       5: 
-        - ['callback_model_change_with_transformation', 'mv_dir', 'x', 'sign', '+']
-        - ['callback_model_change_with_text_label', 'anchor', 'right', 'orientation', 'vertical']
+        - ['callback_model_change_with_transformation', 'mv_dir', 'x', 'sign', '-', 'max_translation_range', '[-10,10]']
+        - ['callback_model_change_with_text_label', 'anchor', 'left', 'orientation', 'vertical']
     callbacks_upon_leftmouse_click:
       3: null
       2: null
@@ -273,19 +387,50 @@ composite_shapes:
       ref_anchors: [[null, null],[null, null],[null, null],[null, null],[null, null],[null, null],[null, null],[null, null],[null, null],[null, null],[null, null],[null, null],[null, null],[null, null],[null, null]]
     transformation: 
       translate: [0,0]
-    models: [] 
-      # index: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
-      # model: tango://localhost:10000/sys/tg_test/1/boolean_spectrum_ro
+    models: 
+      index: [1,2,3,4,5,6,7,8,9,10,11,12]
+      model: tango://localhost:10000/sys/tg_test/1/long_scalar_w
     callbacks_upon_model_change:
-      index: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
-      callback: ['callback_model_change_with_decoration_on_off_idx', 'idx']
-      args: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+      # index: [1,5,9]
+      # callback: ['callback_model_change_with_text_label', 'anchor','center','label', null]
+      1: ['callback_model_change_with_text_label', 'anchor','center','label', null]
+      2: ['callback_model_change_with_text_label', 'anchor','center','label', null]
+      3: ['callback_model_change_with_text_label', 'anchor','center','label', null]
+      4: ['callback_model_change_with_text_label', 'anchor','center','label', null]
+      5: null
+      6: null
+      7: null
+      8: null
+      9: null
+      10: null
+      11: null
+      12: null
     callbacks_upon_leftmouse_click:
-      index: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
-      callback: null
+      1: null
+      2: null
+      3: null
+      4: null
+      5: ['callback_leftmouse_click_change_attribute_value','change_value','1']
+      6: ['callback_leftmouse_click_change_attribute_value','change_value','1']
+      7: ['callback_leftmouse_click_change_attribute_value','change_value','1']
+      8: ['callback_leftmouse_click_change_attribute_value','change_value','1']
+      9: ['callback_leftmouse_click_change_attribute_value','change_value','-1']
+      10: ['callback_leftmouse_click_change_attribute_value','change_value','-1']
+      11: ['callback_leftmouse_click_change_attribute_value','change_value','-1']
+      12: ['callback_leftmouse_click_change_attribute_value','change_value','-1']
     callbacks_upon_rightmouse_click:
-      index: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
-      callback: null
+      1: null
+      2: null
+      3: null
+      4: null
+      5: null
+      6: null
+      7: null
+      8: null
+      9: null
+      10: null
+      11: null
+      12: null
   absorber:
     shapes: ['rectangle.absorber_unit*16']
     ref_shape: null
@@ -347,12 +492,12 @@ composite_shapes:
       3: ['callback_model_change_with_decoration_on_off']
     callbacks_upon_leftmouse_click:
       3: null
-      1: null
-      2: null
+      1: ['callback_leftmouse_click_change_attribute_bool']
+      2: ['callback_leftmouse_click_change_attribute_bool']
     callbacks_upon_rightmouse_click:
       3: null
-      1: null
-      2: null
+      1: ['callback_leftmouse_click_change_attribute_bool']
+      2: ['callback_leftmouse_click_change_attribute_bool']
   pinhole:
     shapes: ['circle.tiny*1','roundedRectangle.type2*1', 'circle.small*8']
     # shapes: ['rectangle.type1*1']
@@ -435,16 +580,16 @@ composite_shapes:
       1: null
       2: null
   anchor2:
-    shapes: ['circle.tiny*2']
+    shapes: ['circle.big*2']
     ref_shape: null
-    hide: [0, 1]
+    hide: []
     alignment:
       shapes: [[0,1]]
       anchors: [['right','left']]
       gaps: [0.]
       ref_anchors: [[null, null]]
     transformation: 
-      translate: [220,220]
+      translate: [0,0]
     models: []
     callbacks_upon_model_change:
       1: []
@@ -456,7 +601,7 @@ composite_shapes:
       1: null
       2: null
   label_eg:
-    shapes: ['circle.tiny*1','rectangle.type2b*1']
+    shapes: ['circle.big*1','rectangle.type2b*1']
     ref_shape: null
     hide: [0]
     alignment:
@@ -478,13 +623,13 @@ composite_shapes:
       2: null      
 viewers:
   shared_optics_table:
-    composites: ['anchor','valve', 'slit', 'BPM','absorber2', 'valve','slit','x-ray-eye','pinhole','anchor2']
+    composites: ['anchor','valve', 'slit','shutter', 'BPM','absorber2', 'valve','CRL','slit','pinhole','x-ray-eye','pinhole','valve','pipe','anchor']
     transformation:
       translate:
         type: relative #or absolute
-        first_composite: [20, 220] #always in absolute value
+        first_composite: [10, 220] #always in absolute value
         values: 
-          - [50, 0] #either relative offsets in dx and dy directions or a list of absolute values for the other composite shapes.
+          - [35, 0] #either relative offsets in dx and dy directions or a list of absolute values for the other composite shapes.
         # - [10, 220]
         # - [40,220]
         # - [200, 220]
@@ -518,7 +663,7 @@ viewers:
         direct_connect: True
         draw_after: true                    
   viewer2:
-    composites: ['valve','anchor']
+    composites: ['valve','anchor2']
     transformation:
       translate:
         type: absolute #or absolute
@@ -526,13 +671,13 @@ viewers:
         values:   
           - [220, 220]
   viewer3:
-    composites: ['pinhole','anchor']
+    composites: ['anchor2']
     transformation:
       translate:
-        type: absolute #or absolute
+        type: relative #or absolute
         first_composite: [100, 220] #always in absolute value
         values:   
-          - [220, 220]
+          - [80, 0]
   absorber:
     composites: ['absorber','anchor']
     transformation:

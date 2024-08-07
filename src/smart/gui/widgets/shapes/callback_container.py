@@ -13,13 +13,15 @@ __all__ = ['callback_model_change_with_decoration',
            'callback_model_change_with_transformation',
            'callback_model_change_with_decoration',
            'callback_model_change_with_text_label',
-           'callback_leftmouse_click_with_decoration',
+           'callback_leftmouse_click_change_txt_label',
            'callback_leftmouse_click_with_transformation',
            'callback_model_change_with_decoration_on_off', 
            'callback_model_change_with_text_label_on_off',
            'callback_model_change_with_decoration_valve_position',
            "callback_model_change_with_text_label_main_gui",
-           'callback_model_change_with_decoration_on_off_idx']
+           'callback_model_change_with_decoration_on_off_idx',
+           'callback_leftmouse_click_change_attribute_value',
+           'callback_leftmouse_click_change_attribute_bool']
 
 def _apply_translation_steps(shape, value_model, mv_dir = 'x', sign = '+', model_limits = None, max_translation_range = None, val_ix = None, translate = 'True'):
     if type(translate)==str:
@@ -30,7 +32,7 @@ def _apply_translation_steps(shape, value_model, mv_dir = 'x', sign = '+', model
     x, y = shape.ref_geometry
     x_current, y_current = shape.compute_center_from_dim(apply_translate = True)
     if model_limits == None:
-        lms_model = [each.m for each in _get_model_value_limits(value_model, lm_type=None)]
+        lms_model = _get_model_value_limits(value_model, lm_type=None)
     else:
         lms_model = eval(model_limits)
     if lms_model[0]==float('-inf') or lms_model[1]==float('inf'):
@@ -69,6 +71,8 @@ def _apply_translation_steps(shape, value_model, mv_dir = 'x', sign = '+', model
 
 def _get_model_value(value_model):
     rvalue = value_model.rvalue
+    if type(rvalue) == bool:
+        return int(rvalue)
     return rvalue.m
 
 def _get_model_value_quality_color(value_model):
@@ -79,12 +83,14 @@ def _get_model_value_parent_object(value_model):
     return value_model.getParentObj()
 
 def _get_model_value_limits(value_model, lm_type = None):
+    if type(value_model.rvalue)==bool:
+        return [0,1]
     if lm_type == None:
-        return value_model.getLimits()
+        return [each.m for each in value_model.getLimits()]
     elif lm_type == 'warning':
-        return value_model.getWarnings()
+        return [each.m for each in value_model.getWarnings()]
     elif lm_type == 'alarm':
-        return value_model.getWarnings()
+        return [each.m for each in value_model.getWarnings()]
 
 def callback_model_change_with_decoration_on_off(parent, shape, value_model):
     _value = bool(value_model.rvalue)
@@ -138,12 +144,16 @@ def callback_model_change_with_transformation(parent, shape, value_model, mv_dir
     callback_model_change_with_decoration(shape, value_model)
 
 def callback_model_change_with_text_label(parent, shape, value_model, anchor='left', orientation='horizontal', val_ix = None, sf = 1, label="", end_txt=""):
-    if len(label)==0:
-        label = value_model.label
-    if val_ix == None or val_ix=='None':
-        shape.labels = {'text':[f'{label}:{round(_get_model_value(value_model)*float(sf),2)} {end_txt}'],'anchor':[anchor], 'orientation': [orientation]}
+    if label==None:
+        label = ''
     else:
-        shape.labels = {'text':[f'{label}:{round(_get_model_value(value_model)[int(val_ix)]*float(sf),2)} {end_txt}'],'anchor':[anchor], 'orientation': [orientation]}
+        if len(label)==0:
+            label = value_model.label+':'
+    if val_ix == None or val_ix=='None':
+        shape.labels = {'text':[f'{label}{round(_get_model_value(value_model)*float(sf),2)} {end_txt}'],'anchor':[anchor], 'orientation': [orientation]}
+    else:
+        shape.labels = {'text':[f'{label}{round(_get_model_value(value_model)[int(val_ix)]*float(sf),2)} {end_txt}'],'anchor':[anchor], 'orientation': [orientation]}
+    callback_model_change_with_decoration(shape, value_model)
 
 #state updated from main gui attribute
 def callback_model_change_with_text_label_main_gui(parent, shape, value_model, anchor='left', orientation='horizontal', attr= "attr", label="", end_txt=""):
@@ -152,11 +162,31 @@ def callback_model_change_with_text_label_main_gui(parent, shape, value_model, a
 def callback_model_change_with_text_label_on_off(parent, shape, value_model, anchor='left', text = ""):
     checked = bool(value_model.rvalue)
     if checked:
-        shape.labels = {'text':[f'{text} on'],'anchor':[anchor],'orientation': ['horizontal']}
+        shape.labels = {'text':[f'{text} open'],'anchor':[anchor],'orientation': ['horizontal']}
     else:
-        shape.labels = {'text':[f'{text} off'],'anchor':[anchor], 'orientation': ['horizontal']}
+        shape.labels = {'text':[f'{text} close'],'anchor':[anchor], 'orientation': ['horizontal']}
 
-def callback_leftmouse_click_with_decoration(parent, shape, value_model): ...
+def callback_leftmouse_click_change_txt_label(parent, shape, value_model, label_options, color_options): 
+   
+    label_options = eval(label_options)
+    color_options = eval(color_options)
+    if shape.labels['text'][0] not in label_options:
+        shape.labels = {'text':[f'{label_options[0]}']}
+        i = 0
+    else:
+        i = label_options.index(shape.labels['text'][0])+1
+        if i==len(label_options):
+            i = 0
+        shape.labels = {'text':[f'{label_options[i]}']}
+    new_decoration = {'brush': {'color': color_options[i]+[255]}}
+    shape.decoration = new_decoration
+    shape.decoration_cursor_on = new_decoration
+    shape.decoration_cursor_off = new_decoration 
 
-def callback_leftmouse_click_with_transformation(parent, shape, value_model): ...
+def callback_leftmouse_click_with_transformation(parent, value_model): ...
 
+def callback_leftmouse_click_change_attribute_value(parent, shape, value_model, change_value = 0):
+    value_model.write(value_model.rvalue.m + float(change_value))
+
+def callback_leftmouse_click_change_attribute_bool(parent, shape, value_model):
+    value_model.write(not bool(value_model.rvalue))

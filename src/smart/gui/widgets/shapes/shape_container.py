@@ -315,7 +315,15 @@ class baseShape(object):
                     text,
                 )
             else:
-                raise KeyError("Invalid anchor key for text labeling!")
+                qp.drawText(
+                    int(x),
+                    int(y),
+                    int(width_txt),
+                    int(height_txt),
+                    getattr(Qt, alignment),
+                    text,
+                )
+                #raise KeyError("Invalid anchor key for text labeling!")
         elif txt_orientation == "vertical":
             if "right" in anchor:
                 qp.translate(
@@ -340,6 +348,15 @@ class baseShape(object):
                     int(x + width_txt / 2 - height_txt / 2),
                     int(y + width_txt / 2 + height_txt / 2),
                 )
+            else:
+                qp.drawText(
+                    int(x),
+                    int(y),
+                    int(width_txt),
+                    int(height_txt),
+                    getattr(Qt, alignment),
+                    text,
+                )                
             qp.rotate(270)
             qp.drawText(
                 int(0),
@@ -544,6 +561,9 @@ class rectangle(baseShape):
         labels = self.labels
         decoration = self.text_decoration
         qp.save()
+        # qp.translate(*self.rot_center)
+        # qp.rotate(-self.transformation['rotate'])
+        # qp.translate(*[-each for each in self.rot_center])
         for i, text in enumerate(labels["text"]):
             # x, y = cen
             x, y, w, h = self.dim_pars
@@ -818,6 +838,9 @@ class circle(baseShape):
         cen = self.compute_center_from_dim(False)
         r = self.dim_pars[-1] / 2
         qp.save()
+        # qp.translate(*self.rot_center)
+        # qp.rotate(-self.transformation['rotate'])
+        # qp.translate(*[-each for each in self.rot_center])
         for i, text in enumerate(labels["text"]):
             x, y = cen
             x, y = x - r, y - r
@@ -963,6 +986,10 @@ class isocelesTriangle(baseShape):
         if self.anchor_kwargs != None:
             self.update_anchors()
 
+    def _cal_width_height(self):
+        p1,p2,p3 = self._cal_corner_point_coordinates(False)
+        return abs(p2[0]-p3[0]), abs(p1[1]-p2[1])
+
     def _cal_corner_point_coordinates(self, return_type_is_qpointF=True):
         ang = math.radians(self.dim_pars[-1]) / 2
         edge_lenth = self.dim_pars[-2]
@@ -987,14 +1014,16 @@ class isocelesTriangle(baseShape):
             polygon.append(point2)
             polygon.append(point3)
             qp.drawPolygon(polygon)
-        else:
-            self.text_label(qp)
+        self.text_label(qp)
 
     def text_label(self, qp):
         labels = self.labels
         decoration = self.text_decoration
         point1, point2, point3 = self._cal_corner_point_coordinates(False)
         qp.save()
+        qp.translate(*self.rot_center)
+        qp.rotate(-self.transformation['rotate'])
+        qp.translate(*[-each for each in self.rot_center])
         for i, text in enumerate(labels["text"]):
             anchor = labels["anchor"][i]
             if labels["decoration"] == None:
@@ -1031,7 +1060,7 @@ class isocelesTriangle(baseShape):
             else:
                 if anchor in self.anchors:
                     x, y = self.anchors[anchor]
-
+            # print(x, y, w, h)
             self._draw_text(
                 qp,
                 alignment,
@@ -1248,6 +1277,9 @@ class trapezoid(baseShape):
         decoration = self.text_decoration
         point1, point2, point3, point4 = self._cal_corner_point_coordinates(False)
         qp.save()
+        # qp.translate(*self.rot_center)
+        # qp.rotate(-self.transformation['rotate'])
+        # qp.translate(*[-each for each in self.rot_center])
         for i, text in enumerate(labels["text"]):
             anchor = labels["anchor"][i]
             if labels["decoration"] == None:
@@ -1576,7 +1608,7 @@ class shapeComposite(TaurusBaseComponent, QObject):
                 for cb in cbs:
                     cb(parent, shape, model_value)
 
-            def call_back_chain_mouseclick(parent):
+            def call_back_chain_mouseclick(parent, shape, model_value):
                 cbs = []
                 for callback_info in callback_info_list:
                     cb_str = callback_info[0]
@@ -1591,7 +1623,7 @@ class shapeComposite(TaurusBaseComponent, QObject):
                         )
                     )
                 for cb in cbs:
-                    cb(parent)
+                    cb(parent, shape, model_value)
 
             if mouseclick_callback:
                 return call_back_chain_mouseclick
@@ -1731,10 +1763,12 @@ class shapeComposite(TaurusBaseComponent, QObject):
         self.build_composite()
 
     def uponLeftMouseClicked(self, shape_index):
-        self.callbacks_upon_left_mouseclick[shape_index](self.parent)
+        key = (TaurusBaseComponent.MLIST, self.model_shape_index_list.index(shape_index) + self.model_ix_start)
+        self.callbacks_upon_left_mouseclick[shape_index](self.parent, self.shapes[shape_index],self.getModelObj(key=key))
 
     def uponRightMouseClicked(self, shape_index):
-        return self.callbacks_upon_right_mouseclick[shape_index](self.parent)
+        key = (TaurusBaseComponent.MLIST, self.model_shape_index_list.index(shape_index) + self.model_ix_start)
+        return self.callbacks_upon_right_mouseclick[shape_index](self.parent, self.shapes[shape_index],self.getModelObj(key=key))
 
     def handleEvent(self, evt_src, evt_type, evt_value):
         """reimplemented from TaurusBaseComponent"""

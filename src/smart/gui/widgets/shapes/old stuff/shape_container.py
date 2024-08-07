@@ -604,6 +604,10 @@ class isocelesTriangle(baseShape):
         else:
             return point1, point2, point3
 
+    def _cal_width_height(self):
+        p1,p2,p3 = self._cal_corner_point_coordinates(False)
+        return abs(p2[0]-p3[0]), abs(p1[1]-p2[1])
+
     def draw_shape(self, qp):
         if self.anchor_kwargs!=None:
             self.update_anchors()
@@ -641,6 +645,7 @@ class isocelesTriangle(baseShape):
             qp.setFont(QFont('Decorative', font_size))
             text_bound_rect = qp.fontMetrics().boundingRect(QRect(), Qt.AlignCenter, text)
             w_txt, h_txt = text_bound_rect.width(), text_bound_rect.height()
+            w, h = self._cal_width_height()
             if anchor == 'left':
                 x, y = point2
             elif anchor == 'right':
@@ -656,7 +661,7 @@ class isocelesTriangle(baseShape):
                 if anchor in self.anchors:
                     x, y = self.anchors[anchor]
             
-            self._draw_text(qp, alignment, text, anchor, x, y, 0, 0, w_txt, h_txt, padding, labels['orientation'][i])
+            self._draw_text(qp, alignment, text, anchor, x, y, w, h, w_txt, h_txt, padding, labels['orientation'][i])
             qp.restore()
             qp.save()
             # x, y = self._cal_text_anchor_point(anchor, x, y, 0, 0, w_txt, h_txt, padding)
