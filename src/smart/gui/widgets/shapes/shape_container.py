@@ -1867,6 +1867,12 @@ class buildTools(object):
                 num_shape = int(num_shape)
                 for i in range(num_shape):
                     shapes.append(copy.deepcopy(shape_container[shape_key]))
+            if 'dynamic_shape_attributes' in composite_info:
+                for shape_ix_tuple in composite_info['dynamic_shape_attributes']:
+                    attr_dict = composite_info['dynamic_shape_attributes'][shape_ix_tuple]
+                    for shape_ix_ in eval(shape_ix_tuple):
+                        for attr_, value_ in attr_dict.items():
+                            setattr(shapes[shape_ix_], f'_dynamic_attribute_{attr_}', value_)
             ref_shape = composite_info["ref_shape"]
             alignment_pattern = composite_info["alignment"]
             if "connection" in composite_info:

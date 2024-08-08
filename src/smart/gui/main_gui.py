@@ -221,6 +221,7 @@ class smartGui(
         self.addToolBar(self.smart_toolbar)
 
     def init_attribute_values(self):
+        #TODO: this func should be get rid of, since these attributes are synoptic specific for psd pump, should not be set as global ones
         self.first_client = True
         self.mvp_pos = 1
         self.auto_exchange = True

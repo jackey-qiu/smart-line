@@ -4,6 +4,8 @@ from taurus.qt.qtgui.util.tauruscolor import QtColorPalette
 from taurus.core.taurusbasetypes import AttrQuality 
 from taurus.core.tango import DevState
 import numpy as np
+from magicgui import magicgui
+
 QT_DEVICE_STATE_PALETTE = QtColorPalette(DEVICE_STATE_DATA, DevState) 
 QT_ATTRIBUTE_QUALITY_PALETTE = QtColorPalette(ATTRIBUTE_QUALITY_DATA, AttrQuality) 
 
@@ -21,7 +23,9 @@ __all__ = ['callback_model_change_with_decoration',
            "callback_model_change_with_text_label_main_gui",
            'callback_model_change_with_decoration_on_off_idx',
            'callback_leftmouse_click_change_attribute_value',
-           'callback_leftmouse_click_change_attribute_bool']
+           'callback_leftmouse_click_change_attribute_bool',
+           'callback_rightmouse_click_set_step_size',
+           'callback_rightmouse_click_show_device_panel']
 
 def _apply_translation_steps(shape, value_model, mv_dir = 'x', sign = '+', model_limits = None, max_translation_range = None, val_ix = None, translate = 'True'):
     if type(translate)==str:
@@ -185,8 +189,37 @@ def callback_leftmouse_click_change_txt_label(parent, shape, value_model, label_
 
 def callback_leftmouse_click_with_transformation(parent, value_model): ...
 
-def callback_leftmouse_click_change_attribute_value(parent, shape, value_model, change_value = 0):
+def callback_leftmouse_click_change_attribute_value(parent, shape, value_model, change_value=0):
+    if hasattr(shape, '_dynamic_attribute_change_value'):
+        change_value = shape._dynamic_attribute_change_value
+    else:
+        change_value = 0
     value_model.write(value_model.rvalue.m + float(change_value))
 
 def callback_leftmouse_click_change_attribute_bool(parent, shape, value_model):
     value_model.write(not bool(value_model.rvalue))
+
+def callback_rightmouse_click_set_step_size(parent, shape, value_model, attr_name):
+    complete_name = f'_dynamic_attribute_{attr_name}'
+    if not hasattr(shape, complete_name):
+        print(f'Attribute {complete_name} is not defined in the shape!')
+        return
+    else:
+        attr_value = getattr(shape, complete_name)
+
+    @magicgui(call_button='apply',step_size={'min': -100, 'max': 100})
+    def setup_func(step_size=float(attr_value)):
+        setattr(shape, complete_name, step_size)
+    return setup_func        
+        
+def callback_rightmouse_click_show_device_panel(parent, shape, value_model):
+    from taurus.qt.qtgui.panel import TaurusDevicePanel
+    dev_proxy = _get_model_value_parent_object(value_model)
+    name = dev_proxy.name
+    host = dev_proxy.get_db_host()
+    port = dev_proxy.get_db_port()
+    full_name = f'tango://{host}:{port}/{name}'
+    widget = TaurusDevicePanel()
+    widget.setModel(full_name)
+    widget.show()
+
