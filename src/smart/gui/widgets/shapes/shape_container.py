@@ -24,7 +24,7 @@ from dataclasses import dataclass
 from .callback_container import *
 from .customized_callbacks import *
 from ....util.util import findMainWindow
-from smart.util.geometry_transformation import rotate_multiple_points, angle_between
+from smart.util.geometry_transformation import rotate_multiple_points, angle_between, line_intersection
 
 DECORATION_UPON_CURSOR_ON = {
     "pen": {"color": (255, 255, 0), "width": 1, "ls": "DotLine"},
@@ -67,7 +67,7 @@ class baseShape(object):
         decoration_cursor_off=DECORATION_UPON_CURSOR_OFF,
         decoration_cursor_on=DECORATION_UPON_CURSOR_ON,
         rotation_center=None,
-        transformation={"rotate": 0, "translate": (0, 0), "scale": 1},
+        transformation={"rotate": 0, "translate": (0, 0), 'translate_offset':[0,0], "scale": 1},
         text_decoration=DECORATION_TEXT_DEFAULT,
         lables={"text": [], "anchor": [], "orientation": [], "decoration": None},
     ):
@@ -83,11 +83,18 @@ class baseShape(object):
         self._decoration_cursor_on = copy.deepcopy(decoration_cursor_on)
         self._decoration_cursor_off = copy.deepcopy(decoration_cursor_off)
         self.anchors = {}
+        self.dynamic_anchor = {}
+        self.ang_of_incoming_line = 0
         self._transformation = transformation
         self._text_decoration = copy.deepcopy(text_decoration)
         self._labels = copy.deepcopy(lables)
         self.clickable = False
         self.show = True
+        self.parent = None
+
+    def set_parent(self, parent):
+        #set the parent of this shape, usually the composit object that contain this shape
+        self.parent = parent
 
     def set_clickable(self, clickable=True):
         self.clickable = clickable
@@ -193,10 +200,29 @@ class baseShape(object):
         self.anchor_kwargs = kwargs
         # raise NotImplementedError
 
+    def calculate_dynamic_anchor(self, ref_pt, angle, which_side):
+        ang = math.radians(angle)
+        dx = math.cos(ang)
+        dy = -math.sin(ang) #in viewport, y axis goes from low to heigher pointing downwards
+        ref_pt_2 = np.array(ref_pt) + [dx, dy]
+        res = self.calculate_crosspoint([ref_pt, ref_pt_2], which_side)
+        if res!=None:
+            self.dynamic_anchor.update({which_side: np.array(res).astype(int)})
+            return self.dynamic_anchor[which_side]
+
     def update_anchors(self):
         self.make_anchors(**self.anchor_kwargs)
 
+    def update_ang_incoming_line(self, ang):
+        self.ang_of_incoming_line = ang
+
     def calculate_shape(self):
+        raise NotImplementedError
+
+    def calculate_corners(self):
+        raise NotImplementedError
+    
+    def calculate_crosspoint(self, two_pts_on_line, which_side):
         raise NotImplementedError
 
     def calculate_anchor_orientation(self):
@@ -439,8 +465,7 @@ class baseShape(object):
         else:
             if orientation in self.anchors:
                 anchor = np.array(self.anchors[orientation]) + np.array(
-                    self.transformation["translate"]
-                )
+                    self.transformation["translate"]) + self.transformation['translate_offset']
                 if ref_anchor != None:
                     # ref_anchor = anchor - ref_anchor_offset[ref_anchor_dir]
                     ref_anchor = anchor - ref_anchor_dir
@@ -449,8 +474,7 @@ class baseShape(object):
             else:
                 raise KeyError("Not the right key for orientation")
         rot_center = np.array(self.rot_center) + np.array(
-            self.transformation["translate"]
-        )
+            self.transformation["translate"]) + self.transformation['translate_offset']
         cen_, anchor_, ref_anchor_ = rotate_multiple_points(
             [cen, anchor, ref_anchor], rot_center, rotate_angle
         )
@@ -473,15 +497,16 @@ class baseShape(object):
             return False
 
     def apply_transform(self, qp):
-        # translate_values = self.transformation['translate'] if 'translate' in self.transformation else (0,0)
+        #self.transformation['translate_offset'] = extra_offset
         rotate_angle = (
             self.transformation["rotate"] if "rotate" in self.transformation else 0
         )
         rot_center = self.rot_center
         qp.translate(*rot_center)
-        qp.translate(*self.transformation["translate"])
+        qp.translate(*(np.array(self.transformation["translate"])+self.transformation['translate_offset']))
         qp.rotate(rotate_angle)
         qp.translate(*[-each for each in rot_center])
+        #qp.translate(*extra_offset)
         return qp
 
     def paint(self, qp) -> None:
@@ -520,7 +545,7 @@ class rectangle(baseShape):
         rotation_center=None,
         decoration_cursor_off=DECORATION_UPON_CURSOR_OFF,
         decoration_cursor_on=DECORATION_UPON_CURSOR_ON,
-        transformation={"rotate": 0, "translate": (0, 0), "scale": 1},
+        transformation={"rotate": 0, "translate": (0, 0), 'translate_offset':[0,0], "scale": 1},
         text_decoration=DECORATION_TEXT_DEFAULT,
         labels={"text": [], "anchor": [], "orientation": [], "decoration": None},
     ):
@@ -556,6 +581,35 @@ class rectangle(baseShape):
         if self.show:
             qp.drawRect(*np.array(self.dim_pars).astype(int))
         self.text_label(qp)
+
+    def calculate_corners(self):
+        x, y, w, h = self.dim_pars 
+        p1 = [x, y]#top left
+        p2 = [x+w,y]#top right
+        p3 = [x, y+h]#bottom left
+        p4 = [x+w, y+h]#bottom right
+        pos_ = rotate_multiple_points(
+                [each + np.array(self.transformation["translate"])+self.transformation['translate_offset'] for each in [p1,p2,p3,p4]],
+                np.array(self.rot_center) + np.array(self.transformation["translate"])+self.transformation['translate_offset'],
+                self.transformation["rotate"],
+            )
+        return pos_
+    
+    def calculate_crosspoint(self, two_pts_on_line, which_side):
+        p_tl, p_tr, p_bl, p_br = self.calculate_corners()
+        if which_side == 'top':
+            target_line = [p_tl, p_tr]
+        elif which_side == 'bottom':
+            target_line = [p_bl, p_br]
+        elif which_side == 'left':
+            target_line = [p_tl, p_bl]
+        elif which_side == 'right':
+            target_line = [p_tl, p_br]
+        else:
+            print('which_side= {which_side} is not valid! Should be one of :top, bottom, left, right')
+            return None
+        crosspt = line_intersection(two_pts_on_line, target_line)
+        return crosspt
 
     def text_label(self, qp):
         labels = self.labels
@@ -629,8 +683,8 @@ class rectangle(baseShape):
         x, y, w, h = self.dim_pars
         if apply_translate:
             return (
-                x + w / 2 + self.transformation["translate"][0],
-                y + h / 2 + self.transformation["translate"][1],
+                x + w / 2 + self.transformation["translate"][0] + self.transformation['translate_offset'][0],
+                y + h / 2 + self.transformation["translate"][1] + self.transformation['translate_offset'][1],
             )
         else:
             return x + w / 2, y + h / 2
@@ -747,10 +801,10 @@ class rectangle(baseShape):
         ox, oy, w, h = np.array(self.dim_pars)
         pos_ = rotate_multiple_points(
             [(x, y)],
-            np.array(self.rot_center) + np.array(self.transformation["translate"]),
+            np.array(self.rot_center) + np.array(self.transformation["translate"] + self.transformation["translate_offset"]),
             -self.transformation["rotate"],
         )
-        pos_ = np.array(pos_) - np.array(self.transformation["translate"])
+        pos_ = np.array(pos_) - (np.array(self.transformation["translate"] + self.transformation["translate_offset"]))
         x_, y_ = pos_
         if (ox <= x_ <= ox + w) and (oy <= y_ <= oy + h):
             return True
@@ -765,7 +819,7 @@ class roundedRectangle(rectangle):
         rotation_center=None,
         decoration_cursor_off=DECORATION_UPON_CURSOR_OFF,
         decoration_cursor_on=DECORATION_UPON_CURSOR_ON,
-        transformation={"rotate": 0, "translate": (0, 0), "scale": 1},
+        transformation={"rotate": 0, "translate": (0, 0), 'translate_offset':[0,0], "scale": 1},
         text_decoration=DECORATION_TEXT_DEFAULT,
         labels={"text": [], "anchor": [], "orientation": [], "decoration": None},
     ):
@@ -798,7 +852,7 @@ class circle(baseShape):
         rotation_center=None,
         decoration_cursor_off=DECORATION_UPON_CURSOR_OFF,
         decoration_cursor_on=DECORATION_UPON_CURSOR_ON,
-        transformation={"rotate": 0, "translate": (0, 0), "scale": 1},
+        transformation={"rotate": 0, "translate": (0, 0), 'translate_offset':[0,0], "scale": 1},
         text_decoration=DECORATION_TEXT_DEFAULT,
         labels={"text": [], "anchor": [], "orientation": [], "decoration": None},
     ):
@@ -910,8 +964,8 @@ class circle(baseShape):
         x, y = x + R / 2, y + R / 2
         if apply_translate:
             return (
-                x + self.transformation["translate"][0],
-                y + self.transformation["translate"][1],
+                x + self.transformation["translate"][0] + self.transformation['translate_offset'][0],
+                y + self.transformation["translate"][1] + self.transformation['translate_offset'][1],
             )
         else:
             return x, y
@@ -945,10 +999,10 @@ class circle(baseShape):
         p1, p2, p3, p4 = [cen + each for each in [[r, 0], [-r, 0], [0, r], [0, -r]]]
         pos_ = rotate_multiple_points(
             [(x, y)],
-            np.array(self.rot_center) + np.array(self.transformation["translate"]),
+            np.array(self.rot_center) + np.array(self.transformation["translate"] + self.transformation["translate_offset"]),
             -self.transformation["rotate"],
         )
-        pos_ = np.array(pos_) - np.array(self.transformation["translate"])
+        pos_ = np.array(pos_) - (np.array(self.transformation["translate"] + self.transformation["translate_offset"]))
         x_, y_ = pos_
         if (p2[0] <= x_ <= p1[0]) and (p4[1] <= y_ <= p3[1]):
             return True
@@ -963,7 +1017,7 @@ class isocelesTriangle(baseShape):
         rotation_center=None,
         decoration_cursor_off=DECORATION_UPON_CURSOR_OFF,
         decoration_cursor_on=DECORATION_UPON_CURSOR_ON,
-        transformation={"rotate": 0, "translate": (0, 0), "scale": 1},
+        transformation={"rotate": 0, "translate": (0, 0), 'translate_offset':[0,0], "scale": 1},
         text_decoration=DECORATION_TEXT_DEFAULT,
         labels={"text": [], "anchor": [], "orientation": [], "decoration": None},
     ):
@@ -1110,8 +1164,8 @@ class isocelesTriangle(baseShape):
         x, y = np.array(p1) + [0, r]
         if apply_translate:
             return (
-                x + self.transformation["translate"][0],
-                y + self.transformation["translate"][1],
+                x + self.transformation["translate"][0] + self.transformation['translate_offset'][0],
+                y + self.transformation["translate"][1] + self.transformation['translate_offset'][1],
             )
         else:
             return x, y
@@ -1191,10 +1245,10 @@ class isocelesTriangle(baseShape):
         p1, p2, p3 = self._cal_corner_point_coordinates(False)
         pos_ = rotate_multiple_points(
             [(x, y)],
-            np.array(self.rot_center) + np.array(self.transformation["translate"]),
+            np.array(self.rot_center) + np.array(self.transformation["translate"] + self.transformation["translate_offset"]),
             -self.transformation["rotate"],
         )
-        pos_ = np.array(pos_) - np.array(self.transformation["translate"])
+        pos_ = np.array(pos_) - (np.array(self.transformation["translate"] + self.transformation["translate_offset"]))
         x_, y_ = pos_
         if (p2[0] <= x_ <= p3[0]) and (p1[1] <= y_ <= p2[1]):
             return True
@@ -1209,7 +1263,7 @@ class trapezoid(baseShape):
         rotation_center=None,
         decoration_cursor_off=DECORATION_UPON_CURSOR_OFF,
         decoration_cursor_on=DECORATION_UPON_CURSOR_ON,
-        transformation={"rotate": 0, "translate": (0, 0), "scale": 1},
+        transformation={"rotate": 0, "translate": (0, 0), 'translate_offset':[0,0], "scale": 1},
         text_decoration=DECORATION_TEXT_DEFAULT,
         labels={"text": [], "anchor": [], "orientation": [], "decoration": None},
     ):
@@ -1366,8 +1420,8 @@ class trapezoid(baseShape):
         x, y, *_ = self.dim_pars
         if apply_translate:
             return (
-                x + self.transformation["translate"][0],
-                y + self.transformation["translate"][1],
+                x + self.transformation["translate"][0] + self.transformation['translate_offset'][0],
+                y + self.transformation["translate"][1] + self.transformation['translate_offset'][1],
             )
         else:
             return x, y
@@ -1452,10 +1506,10 @@ class trapezoid(baseShape):
         p1, p2, p3, p4 = self._cal_corner_point_coordinates(False)
         pos_ = rotate_multiple_points(
             [(x, y)],
-            np.array(self.rot_center) + np.array(self.transformation["translate"]),
+            np.array(self.rot_center) + np.array(self.transformation["translate"]) + self.transformation["translate_offset"],
             -self.transformation["rotate"],
         )
-        pos_ = np.array(pos_) - np.array(self.transformation["translate"])
+        pos_ = np.array(pos_) - (np.array(self.transformation["translate"] + self.transformation["translate_offset"]))
         x_, y_ = pos_
         if (p3[0] <= x_ <= p4[0]) and (p1[1] <= y_ <= p3[1]):
             return True
@@ -1521,6 +1575,7 @@ class shapeComposite(TaurusBaseComponent, QObject):
         callbacks_upon_mouseclick=[],
         callbacks_upon_rightmouseclick=[],
         static_labels=[],
+        beam_height_offset = 0
     ):
         # connection_patter = {'shapes':[[0,1],[1,2]], 'anchors':[['left','top'],['right', 'bottom']]}
         # alignment_patter = {'shapes':[[0,1],[1,2]], 'anchors':[['left','top'],['right', 'bottom']]}
@@ -1544,7 +1599,11 @@ class shapeComposite(TaurusBaseComponent, QObject):
         self.build_composite()
         self.callbacks = {}
         self._models = {}
+        self.beam_height_offset = beam_height_offset
         self.parent = findMainWindow()
+
+    def set_beam_height_offset(self, offset):
+        self.beam_height_offset = offset
 
     def copy_object_meta(self):
         return (
@@ -1698,6 +1757,7 @@ class shapeComposite(TaurusBaseComponent, QObject):
         }
 
     def build_composite(self):
+        # self.set_shape_parent()
         self.align_shapes()
         self.make_line_connection()
         self.set_static_labels()
@@ -1711,6 +1771,10 @@ class shapeComposite(TaurusBaseComponent, QObject):
             ), "num of shapes must match the num of static labels"
             for i, each in enumerate(self.static_labels):
                 self.shapes[i].labels = {"text": [each]}
+
+    def set_shape_parent(self):
+        for each in self.shapes:
+            each.set_parent(self)
 
     def align_shapes(self):
         if self.alignment == None:
@@ -1927,7 +1991,8 @@ class buildTools(object):
             else:
                 sf = 1
             composite_obj_container_subset = {}
-            acc_boundary_offset = 0
+            acc_boundary_offset_x = 0
+            acc_boundary_offset_y = 0
             for i, each in enumerate(viewer_info["composites"]):
                 init_kwargs, cbs, models = composite_obj_container[
                     each
@@ -1936,6 +2001,7 @@ class buildTools(object):
                 composite.callbacks = cbs
                 composite._models = models
                 composite.unpack_callbacks_and_models()
+                composite.set_shape_parent()
                 # composite = copy.deepcopy(composite_obj_container[each])
                 if i == 0:
                     translate = viewer_info["transformation"]["translate"][
@@ -1959,9 +2025,10 @@ class buildTools(object):
                                 viewer_info["transformation"]["translate"]["values"][0]
                             )
                             * i
-                        ) + [acc_boundary_offset,0]
+                        ) + [acc_boundary_offset_x,acc_boundary_offset_y]
                 x_min, x_max, *_ = buildTools.calculate_boundary_for_combined_shapes(composite.shapes)
-                acc_boundary_offset = acc_boundary_offset + abs(x_max - x_min)
+                acc_boundary_offset_x = acc_boundary_offset_x + abs(x_max - x_min)
+                acc_boundary_offset_y = acc_boundary_offset_y + composite.beam_height_offset
                 composite.translate(translate)
                 if each in composite_obj_container_subset:
                     j = 2
@@ -2074,7 +2141,7 @@ class buildTools(object):
 
     @classmethod
     def make_line_connection_btw_two_anchors(
-        cls, shapes, anchors, short_head_line_len=10, direct_connection=False
+        cls, shapes, anchors, short_head_line_len=10, direct_connection=False,**kwargs
     ):
         line_nodes = []
         if direct_connection:
@@ -2132,12 +2199,25 @@ class buildTools(object):
         dirs = []
         anchor_pos = []
         for shape, anchor in zip(shapes, anchors):
-            dirs.append(shape.get_proper_extention_dir_for_one_anchor(anchor))
-            anchor_pos.append(
-                shape.compute_anchor_pos_after_transformation(
-                    anchor, return_pos_only=True
+            if anchor=='dynamic_anchor':
+                dirs.append('top')
+                if shapes.index(shape)==0:#if left anchor is dynamic, it is ready to use
+                    if kwargs['side'][0] not in shape.dynamic_anchor:
+                        return []
+                    else:
+                        anchor_pos.append(shape.dynamic_anchor[kwargs['side'][0]])
+                else:
+                    # print(kwargs['angle'])
+                    anchor_pos.append(shape.calculate_dynamic_anchor(anchor_pos[0], kwargs['angle'], kwargs['side'][1]))
+                    if type(anchor_pos[-1]) == type(None): #no crosspoint due to parallel lines
+                        return []
+            else:
+                dirs.append(shape.get_proper_extention_dir_for_one_anchor(anchor))
+                anchor_pos.append(
+                    shape.compute_anchor_pos_after_transformation(
+                        anchor, return_pos_only=True
+                    )
                 )
-            )
 
         if direct_connection:
             line_pos = []

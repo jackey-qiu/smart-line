@@ -1,3 +1,5 @@
+import numpy as np
+import copy
 from PyQt5.QtGui import QPaintEvent, QPainter, QPen, QColor
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtCore import pyqtSlot as Slot
@@ -78,31 +80,53 @@ class beamlineSynopticViewer(QWidget):
             pen_width = pen['width']
             pen_style = getattr(Qt,pen['ls'])
             return QPen(pen_color, pen_width, pen_style)
-        
         for key, con_info in self.viewer_connection.items():
-            shape_lf, anchor_lf, composite_key_lf, shape_ix_lf = _unpack_str(key.rsplit('<=>')[0])
-            shape_rg, anchor_rg, composite_key_rg, shape_ix_rg = _unpack_str(key.rsplit('<=>')[1])
-                
-            pen = _make_qpen_from_txt(con_info['pen'])
-            direct_connect = con_info['direct_connect']
-            draw_after = con_info['draw_after']
-            lines = buildTools.make_line_connection_btw_two_anchors(shapes = [shape_lf, shape_rg], anchors=[anchor_lf, anchor_rg], direct_connection=direct_connect)
-            if 'syringe' in composite_key_lf:
-                if composite_key_lf not in syringe_lines_container:
-                    syringe_lines_container[composite_key_lf] = {shape_ix_lf: [lines, False]}
+            nodes = key.rsplit('<=>')
+            #this way there could be any number of conections
+            nodes_formated = [[nodes[i], nodes[i+1]] for i in range(len(nodes)-1)]
+            for i, (str_lf, str_rg) in enumerate(nodes_formated):
+                shape_lf, anchor_lf, composite_key_lf, shape_ix_lf = _unpack_str(str_lf)
+                draw_after = con_info['draw_after'][i] if type(con_info['draw_after'])==list else con_info['draw_after']
+                if str_rg == 'end':#a line from the anchor to the very end of screen
+                    if anchor_lf not in shape_lf.anchors:
+                        if anchor_lf == 'dynamic_anchor':
+                            dynamic_anchor_info = copy.deepcopy(con_info['dynamic_anchor_pars'][i]) if type(con_info['dynamic_anchor_pars'])==list else copy.deepcopy(con_info['dynamic_anchor_pars'])
+                            side = dynamic_anchor_info['side'][0]
+                            if side in shape_lf.dynamic_anchor:
+                                pt_left = shape_lf.dynamic_anchor[side]
+                                pt_right = [10000,pt_left[1]]#x is arbitrarily large number
+                                lines = [pt_left, pt_right]
+                            else:
+                                continue
+                        else:
+                            continue
+                    else:
+                        pt_left = shape_lf.compute_anchor_pos_after_transformation(
+                            anchor_lf, return_pos_only=True
+                        )
+                        pt_right = [10000,pt_left[1]]#x is arbitrarily large number
+                        lines = [pt_left, pt_right]
                 else:
-                    syringe_lines_container[composite_key_lf][shape_ix_lf] = [lines, False]
-            if 'syringe' in composite_key_rg:
-                if composite_key_rg not in syringe_lines_container:
-                    syringe_lines_container[composite_key_rg] = {shape_ix_rg: [lines, False]}
+                    shape_rg, anchor_rg, composite_key_rg, shape_ix_rg = _unpack_str(str_rg)
+                    pen_dict = con_info['pen'][i] if type(con_info['pen'])==list else con_info['pen']
+                    pen = _make_qpen_from_txt(pen_dict)
+                    direct_connect = con_info['direct_connect'][i] if type(con_info['direct_connect'])==list else con_info['direct_connect']
+                    if anchor_rg=='dynamic_anchor':
+                        dynamic_anchor_info = copy.deepcopy(con_info['dynamic_anchor_pars'][i]) if type(con_info['dynamic_anchor_pars'])==list else copy.deepcopy(con_info['dynamic_anchor_pars'])
+                        if type(dynamic_anchor_info['angle'])==str:
+                            ang_str = dynamic_anchor_info['angle'].replace('shape', 'shape_lf')
+                            dynamic_anchor_info['angle'] = eval(ang_str)
+                        lines = buildTools.make_line_connection_btw_two_anchors(shapes = [shape_lf, shape_rg], anchors=[anchor_lf, anchor_rg], direct_connection=direct_connect, **dynamic_anchor_info)
+                    else:
+                        lines = buildTools.make_line_connection_btw_two_anchors(shapes = [shape_lf, shape_rg], anchors=[anchor_lf, anchor_rg], direct_connection=direct_connect)
+                    if len(lines)==0:
+                        continue   
+                if draw_after:
+                    lines_draw_after.append(lines)
+                    pen_lines_draw_after.append(pen)
                 else:
-                    syringe_lines_container[composite_key_rg][shape_ix_rg] = [lines, False]    
-            if draw_after:
-                lines_draw_after.append(lines)
-                pen_lines_draw_after.append(pen)
-            else:
-                lines_draw_before.append(lines)
-                pen_lines_draw_before.append(pen)
+                    lines_draw_before.append(lines)
+                    pen_lines_draw_before.append(pen)
         return lines_draw_before, lines_draw_after, pen_lines_draw_before, pen_lines_draw_after, syringe_lines_container
 
     def scale_composite_shapes(self, sf = None):
@@ -129,13 +153,15 @@ class beamlineSynopticViewer(QWidget):
         # for each in self.shapes:                       
         if self.viewer_shape == None:
             return
+        #first update extra_offset par
+        extra_offset = [0,0]
+        for composite_shape in self.viewer_shape.values():
+            for each_shape in composite_shape.shapes:
+                each_shape.transformation['translate_offset'] = extra_offset
+                #each_shape.paint(qp, extra_offset)
+            extra_offset = np.array(extra_offset) + [0,composite_shape.beam_height_offset]            
         self.update_connection()
         #make line connections
-        #if len(self.viewer_connection)!=0:
-        #    self.parent.lines_draw_before, self.parent.lines_draw_after, self.parent.pen_lines_draw_before, self.parent.pen_lines_draw_after, self.parent.syringe_lines_container = self._generate_connection()
-        #else:
-        #    lines_draw_before = []
-        #    lines_draw_after = []
         for line_set in self.parent.syringe_lines_container:
             for shape_ix in self.parent.syringe_lines_container[line_set]:
                 lines, draw = self.parent.syringe_lines_container[line_set][shape_ix]
@@ -179,8 +205,8 @@ class beamlineSynopticViewer(QWidget):
 
     def mouseMoveEvent(self, event):
         self.last_x, self.last_y = event.x(), event.y()
-        # if self.parent !=None:
-            # self.parent.statusbar.showMessage('Mouse coords: ( %d : %d )' % (event.x(), event.y()))
+        if self.parent !=None:
+            self.parent.statusbar.showMessage('Mouse coords: ( %d : %d )' % (event.x(), event.y()))
         if self.viewer_shape == None:
             return
         for composite_shape in self.viewer_shape.values():

@@ -5,7 +5,7 @@ from taurus.core.taurusbasetypes import AttrQuality
 from taurus.core.tango import DevState
 import numpy as np
 from magicgui import magicgui
-
+from taurus.qt.qtgui.panel import TaurusDevicePanel
 QT_DEVICE_STATE_PALETTE = QtColorPalette(DEVICE_STATE_DATA, DevState) 
 QT_ATTRIBUTE_QUALITY_PALETTE = QtColorPalette(ATTRIBUTE_QUALITY_DATA, AttrQuality) 
 
@@ -25,7 +25,8 @@ __all__ = ['callback_model_change_with_decoration',
            'callback_leftmouse_click_change_attribute_value',
            'callback_leftmouse_click_change_attribute_bool',
            'callback_rightmouse_click_set_step_size',
-           'callback_rightmouse_click_show_device_panel']
+           'callback_rightmouse_click_show_device_panel',
+           'callback_model_change_with_composite_rotation']
 
 def _apply_translation_steps(shape, value_model, mv_dir = 'x', sign = '+', model_limits = None, max_translation_range = None, val_ix = None, translate = 'True'):
     if type(translate)==str:
@@ -159,6 +160,12 @@ def callback_model_change_with_text_label(parent, shape, value_model, anchor='le
         shape.labels = {'text':[f'{label}{round(_get_model_value(value_model)[int(val_ix)]*float(sf),2)} {end_txt}'],'anchor':[anchor], 'orientation': [orientation]}
     callback_model_change_with_decoration(shape, value_model)
 
+def callback_model_change_with_composite_rotation(parent, shape, value_model):
+    if shape.parent==None:
+        return
+    callback_model_change_with_decoration(shape, value_model)
+    shape.parent.rotate(_get_model_value(value_model))
+
 #state updated from main gui attribute
 def callback_model_change_with_text_label_main_gui(parent, shape, value_model, anchor='left', orientation='horizontal', attr= "attr", label="", end_txt=""):
     shape.labels = {'text':[f'{label}:{getattr(parent, attr)} {end_txt}'],'anchor':[anchor], 'orientation': [orientation]}
@@ -199,27 +206,42 @@ def callback_leftmouse_click_change_attribute_value(parent, shape, value_model, 
 def callback_leftmouse_click_change_attribute_bool(parent, shape, value_model):
     value_model.write(not bool(value_model.rvalue))
 
-def callback_rightmouse_click_set_step_size(parent, shape, value_model, attr_name):
+def callback_rightmouse_click_set_step_size(parent, shape, value_model, attr_name, composite_attr_name = None):
     complete_name = f'_dynamic_attribute_{attr_name}'
     if not hasattr(shape, complete_name):
         print(f'Attribute {complete_name} is not defined in the shape!')
         return
     else:
         attr_value = getattr(shape, complete_name)
+    if composite_attr_name==None:
+        composite_attr_name = 'composite_attr_name'
+        composite_attr_value = float(0)
+    else:
+        if shape.parent==None:
+            composite_attr_value = float(0)
+        else:
+            if hasattr(shape.parent, composite_attr_name):
+                composite_attr_value = getattr(shape.parent, composite_attr_name)
 
-    @magicgui(call_button='apply',step_size={'min': -100, 'max': 100})
-    def setup_func(step_size=float(attr_value)):
+    @magicgui(call_button='apply',step_size={'min': -100, 'max': 100},set_value={'min': -100, 'max': 100}, composite_attr_value={'min': -100, 'max': 100})
+    def setup_func(step_size=float(attr_value), set_value=float(value_model.rvalue.m), composite_attr_name = composite_attr_name,composite_attr_value=float(composite_attr_value)):
         setattr(shape, complete_name, step_size)
+        value_model.write(set_value)
+        if shape.parent!=None:
+            if hasattr(shape.parent, composite_attr_name):
+                setattr(shape.parent, composite_attr_name, composite_attr_value)
     return setup_func        
         
 def callback_rightmouse_click_show_device_panel(parent, shape, value_model):
-    from taurus.qt.qtgui.panel import TaurusDevicePanel
+    #this func for displaying device panel conflit with magicgui popup frame
+    #side effect is the mgicgui popup window close automatically after around 2 seconds
     dev_proxy = _get_model_value_parent_object(value_model)
     name = dev_proxy.name
     host = dev_proxy.get_db_host()
     port = dev_proxy.get_db_port()
     full_name = f'tango://{host}:{port}/{name}'
-    widget = TaurusDevicePanel()
-    widget.setModel(full_name)
-    widget.show()
+    setattr(parent, '_taurus_device_widget', TaurusDevicePanel())
+    parent._taurus_device_widget.setModel(full_name)
+    parent._taurus_device_widget.closeEvent = lambda _: setattr(parent, '_taurus_device_widget', None)
+    parent._taurus_device_widget.show()
 

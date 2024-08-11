@@ -70,6 +70,9 @@ basic_shapes:
         anchor: ['bottom']
         orientation: ['horizontal']   
         decoration: null   
+    channel_cut_plane:
+      dim: [0, 0, 90, 10]
+      anchor_pars: [[8,8],true,false] 
     tube:
       dim: [0, 0, 25, 50]
       anchor_pars: null      
@@ -137,6 +140,9 @@ basic_shapes:
         anchor: ['anchor_0','anchor_1','anchor_2','anchor_3']
         orientation: ['vertical','vertical','horizontal', 'horizontal']
         decoration: None
+    channel_cut_guide:
+      dim: [0, 0, 20]
+      anchor_pars: [8]        
     small:
       dim: [0, 0, 25]
       anchor_pars: [8]
@@ -148,7 +154,7 @@ basic_shapes:
       dim: [0, 0, 50]
       anchor_pars: null
     tiny:
-      dim: [0, 0, 1]
+      dim: [0, 0, 4]
       anchor_pars: [8]
   isocelesTriangle:
     type1:
@@ -184,6 +190,35 @@ basic_shapes:
         orientation: ['horizontal']
         decoration: null              
 composite_shapes:
+  channel_cut:
+    shapes: ['rectangle.channel_cut_plane*2']
+    # shapes: ['circle.channel_cut_guide*1', 'rectangle.channel_cut_plane*2']
+    ref_shape: null
+    hide: []
+    dynamic_shape_attributes:
+      (0,):
+        step_size: -1
+    alignment:
+      shapes: [[0,1]]
+      anchors:
+        # - ['bottom', 'anchor_top_2']
+        # - ['top','anchor_bottom_2']
+        - ['anchor_top_5','anchor_bottom_5']
+      gaps: [5]
+      # ref_anchors: [[null, 'top'],[null,'bottom']]
+      ref_anchors: [['top','bottom']]
+    transformation: 
+      translate: [0,0]
+    models: 
+      0: tango://localhost:10000/sys/tg_test/1/ampli
+      # index: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+      # model: tango://localhost:10000/sys/tg_test/1/boolean_spectrum_ro
+    callbacks_upon_model_change:
+      0: ['callback_model_change_with_composite_rotation']
+    callbacks_upon_leftmouse_click:
+      0: null
+    callbacks_upon_rightmouse_click:
+      0: ['callback_rightmouse_click_set_step_size','attr_name','step_size','composite_attr_name','beam_height_offset']
   BPM:
     shapes: ['circle.tiny*1', 'rectangle.BPM_frame*1','circle.BPM_unit*4']
     ref_shape: null
@@ -334,7 +369,7 @@ composite_shapes:
   slit:
     shapes: ['circle.tiny*2', 'rectangle.type3*2', 'rectangle.type4*2']
     ref_shape: null
-    hide: [0]
+    hide: [0,1]
     alignment:
       shapes: [[0,4],[4,1],[1,5],[1,2], [1,3]]
       anchors: [['right','left'],['right','left'], ['right','left'],['top','bottom'],['bottom','top']]
@@ -485,7 +520,7 @@ composite_shapes:
   valve:
     shapes: ['circle.tiny*2', 'isocelesTriangle.type1*2']
     ref_shape: null
-    hide: []
+    hide: [0,1]
     alignment:
       shapes: [[0,2],[2,1],[2,3]]
       anchors: [['right','bottom'],['top','left'],['top','top']]
@@ -572,7 +607,7 @@ composite_shapes:
   anchor:
     shapes: ['circle.tiny*2']
     ref_shape: null
-    hide: [0, 1]
+    hide: [0,1]
     alignment:
       shapes: [[0,1]]
       anchors: [['right','left']]
@@ -634,13 +669,13 @@ composite_shapes:
       2: null      
 viewers:
   shared_optics_table:
-    composites: ['anchor','valve', 'slit','shutter', 'BPM','absorber2', 'valve','CRL','slit','pinhole','x-ray-eye','pinhole','valve','pipe','anchor']
+    composites: ['anchor','channel_cut', 'slit','shutter', 'BPM','absorber2', 'valve','CRL','slit','pinhole','x-ray-eye','pinhole','valve','pipe','anchor']
     transformation:
       translate:
         type: relative #or absolute
         first_composite: [10, 220] #always in absolute value
         values: 
-          - [35, 0] #either relative offsets in dx and dy directions or a list of absolute values for the other composite shapes.
+          - [45, 0] #either relative offsets in dx and dy directions or a list of absolute values for the other composite shapes.
         # - [10, 220]
         # - [40,220]
         # - [200, 220]
@@ -652,13 +687,37 @@ viewers:
         # - [1750, 220]
         # - [1990, 220]
     connection:
-      anchor.1.right<=>anchor2.1.left:
+      anchor.1.right<=>channel_cut.0.dynamic_anchor<=>channel_cut.1.dynamic_anchor<=>end:
         pen:
           color: [255, 0, 0]
           width: 2
           ls: DotLine
         direct_connect: True
-        draw_after: False        
+        draw_after: False
+        dynamic_anchor_pars:
+          - angle: 0
+            side: [null,'top']    
+          - angle: -shape.transformation['rotate']*2
+            side: ['top','bottom']                
+          - angle: 0
+            side: ['bottom',null]                
+      # channel_cut.0.dynamic_anchor<=>channel_cut.1.dynamic_anchor:
+      #   pen:
+      #     color: [255, 0, 0]
+      #     width: 2
+      #     ls: DotLine
+      #   direct_connect: True
+      #   draw_after: False
+      #   dynamic_anchor_pars:
+      #     angle: shape.transformation['rotate']*2
+      #     side: ['top','bottom']     
+      # anchor.1.right<=>anchor2.1.left:
+      #   pen:
+      #     color: [255, 0, 0]
+      #     width: 2
+      #     ls: DotLine
+      #   direct_connect: True
+      #   draw_after: False        
       x-ray-eye.3.bottom<=>x-ray-eye.4.left:
         pen:
           color: [255, 0, 0]
@@ -697,6 +756,14 @@ viewers:
         first_composite: [100, 220] #always in absolute value
         values:   
           - [220, 220]
+  channel_cut:
+    composites: ['channel_cut','anchor']
+    transformation:
+      translate:
+        type: absolute #or absolute
+        first_composite: [100, 220] #always in absolute value
+        values:   
+          - [220, 220]          
   x-ray-eye:
     composites: ['x-ray-eye','anchor']
     transformation:

@@ -23,7 +23,7 @@ class synopticViewerControl(object):
         self.comboBox_viewer_obj_name.addItems(viewers)
 
     def connect_slots_synoptic_viewer_control(self):
-        self.horizontalSlider_sf.valueChanged.connect(self.set_scaling_factor)
+        # self.horizontalSlider_sf.valueChanged.connect(self.set_scaling_factor)
         self.pushButton_render.clicked.connect(self.widget_synoptic.init_viewer)
         self.comboBox_viewer_filename.textActivated.connect(self.populate_synoptic_objs)
 
@@ -36,5 +36,5 @@ class synopticViewerControl(object):
                 getattr(self, key).model = value            
 
     def set_scaling_factor(self):
-        self.widget_synoptic.scale_composite_shapes(self.horizontalSlider_sf.value()/2)
+        # self.widget_synoptic.scale_composite_shapes(self.horizontalSlider_sf.value()/2)
         self.widget_synoptic.update()
