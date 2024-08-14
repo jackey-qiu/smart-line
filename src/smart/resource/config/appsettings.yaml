@@ -56,5 +56,13 @@ spockLogin:
   doorName: tango://hasp029rack.desy.de:10000/p06/door/hasp029rack.01
   msAlias: MS-hasp029rack
   msName: tango://hasp029rack.desy.de:10000/p06/macroserver/hasp029rack.01
+synopticViewer:
+  camera_sources:
+  - model: tango://localhost:10000/sys/tg_test/1/uchar_image_ro
+    type: 2D
+  - model: tango://localhost:10000/sys/tg_test/1/ulong64_image_ro
+    type: 2D
+  - model: tango://localhost:10000/sys/tg_test/1/short_image_ro
+    type: 2D
 widgetMaps:
   beamlineControlGpNames: SampleStages

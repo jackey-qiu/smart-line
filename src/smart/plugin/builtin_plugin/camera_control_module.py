@@ -214,7 +214,6 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self.rgb_viewer = rgb_viewer
         self._init_ui()
         self.width = None
-        self.width = None
         self.data_format_cbs = [lambda x: x]
         self.autolevel = True
         self.roi_scan = None

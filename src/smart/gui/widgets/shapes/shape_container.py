@@ -490,6 +490,7 @@ class baseShape(object):
             return False
         cursor_inside_shape = self.check_pos(x, y)
         if cursor_inside_shape:
+            # self.parent.parent.widget_synoptic.setToolTip('hello I am here')
             self.decoration = copy.deepcopy(self.decoration_cursor_on)
             return True
         else:
@@ -1973,6 +1974,105 @@ class buildTools(object):
 
     @classmethod
     def build_view_from_yaml(cls, yaml_file_path, canvas_width):
+        composite_obj_container = cls.build_composite_shape_from_yaml(yaml_file_path)
+        with open(yaml_file_path, "r", encoding="utf8") as f:
+            viewer_config = yaml.safe_load(f.read())["viewers"]
+        viewer_container = {}
+        connection_container = {}
+        for viewer, viewer_info in viewer_config.items():
+            if viewer_info["transformation"]["translate"]["type"] == "absolute":
+                max_width = 0
+                max_width = max(
+                    [
+                        each[0]
+                        for each in viewer_info["transformation"]["translate"]["values"]
+                    ]
+                )
+                sf = canvas_width / max_width
+            else:
+                sf = 1
+
+            def _build_view(viewer_info):
+                composite_obj_container_subset = {}
+                acc_boundary_offset_x = 0
+                acc_boundary_offset_y = 0
+                for i, each in enumerate(viewer_info["composites"]):
+                    init_kwargs, cbs, models = composite_obj_container[
+                        each
+                    ].copy_object_meta()
+                    composite = shapeComposite(**init_kwargs)
+                    composite.callbacks = cbs
+                    composite._models = models
+                    composite.unpack_callbacks_and_models()
+                    composite.set_shape_parent()
+                    # composite = copy.deepcopy(composite_obj_container[each])
+                    if i == 0:
+                        translate = viewer_info["transformation"]["translate"][
+                            "first_composite"
+                        ]
+                        translate = [int(translate[0] * sf), translate[1]]
+                    else:
+                        if viewer_info["transformation"]["translate"]["type"] == "absolute":
+                            translate = viewer_info["transformation"]["translate"][
+                                "values"
+                            ][i - 1]
+                            translate = [int(translate[0] * sf), translate[1]]
+                        elif (
+                            viewer_info["transformation"]["translate"]["type"] == "relative"
+                        ):
+                            translate = (
+                                viewer_info["transformation"]["translate"][
+                                    "first_composite"
+                                ]
+                                + np.array(
+                                    viewer_info["transformation"]["translate"]["values"][0]
+                                )
+                                * i
+                            ) + [acc_boundary_offset_x,acc_boundary_offset_y]
+                    x_min, x_max, *_ = buildTools.calculate_boundary_for_combined_shapes(composite.shapes)
+                    acc_boundary_offset_x = acc_boundary_offset_x + abs(x_max - x_min)
+                    acc_boundary_offset_y = acc_boundary_offset_y + composite.beam_height_offset
+                    composite.translate(translate)
+                    if each in composite_obj_container_subset:
+                        j = 2
+                        while True:
+                            if each + f"{j}" in composite_obj_container_subset:
+                                j = j + 1
+                                continue
+                            else:
+                                composite_obj_container_subset[each + f"{j}"] = composite
+                                break
+                    else:
+                        composite_obj_container_subset[each] = composite
+                return composite_obj_container_subset
+                
+            if 'cut_points' not in viewer_info:
+                viewer_container[viewer] = _build_view(viewer_info)
+            else:
+                viewer_container[viewer] = {}
+                inx_chain = [0] + viewer_info['cut_points'] + [len(viewer_info["composites"])]
+                inx_boundary = [[inx_chain[i],inx_chain[i+1]] for i in range(len(inx_chain)-1)]
+                for i,[l,r] in enumerate(inx_boundary):
+                    viewer_info_temp = {
+                        'composites': viewer_info['composites'][l:r],
+                        'transformation': {
+                            'translate':{
+                                'type': viewer_info['transformation']['translate']['type'][i],
+                                'first_composite':viewer_info['transformation']['translate']['first_composite'][i],
+                                'values': viewer_info['transformation']['translate']['values'][i]
+                            }
+                        }
+                    }
+                    viewer_container[viewer].update(_build_view(viewer_info_temp))
+            if "connection" in viewer_info:
+                connection_container[viewer] = viewer_info["connection"]
+            else:
+                connection_container[viewer] = {}
+        return viewer_container, connection_container             
+
+
+    @classmethod
+    def build_view_from_yaml_old(cls, yaml_file_path, canvas_width):
         composite_obj_container = cls.build_composite_shape_from_yaml(yaml_file_path)
         with open(yaml_file_path, "r", encoding="utf8") as f:
             viewer_config = yaml.safe_load(f.read())["viewers"]
