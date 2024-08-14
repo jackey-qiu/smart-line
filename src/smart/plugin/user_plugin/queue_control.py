@@ -146,7 +146,7 @@ class queueControl(object):
             self.widget_queue_synoptic_viewer.set_data(self.pandas_model_queue._data)
         except Exception as er:
             error(f"Fail to connect to queue server with the following error:/n {str(er)}") 
-            self.statusUpdate(f'Failure to connect to queue server!')
+            self.statusUpdate(f'Failure to connect to queue server! error msg: {str(er)}')
 
     def get_available_queues(self, set_text_field = True):
         if self.queue_comm==None:

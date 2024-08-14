@@ -2045,7 +2045,7 @@ class buildTools(object):
                     else:
                         composite_obj_container_subset[each] = composite
                 return composite_obj_container_subset
-                
+
             if 'cut_points' not in viewer_info:
                 viewer_container[viewer] = _build_view(viewer_info)
             else:
@@ -2241,11 +2241,11 @@ class buildTools(object):
 
     @classmethod
     def make_line_connection_btw_two_anchors(
-        cls, shapes, anchors, short_head_line_len=10, direct_connection=False,**kwargs
+        cls, shapes, anchors, short_head_line_len=0, direct_connection=False,**kwargs
     ):
         line_nodes = []
-        if direct_connection:
-            short_head_line_len = 0
+        # if direct_connection:
+            # short_head_line_len = 0
 
         def _apply_offset(pos, dir):
             offset = {
