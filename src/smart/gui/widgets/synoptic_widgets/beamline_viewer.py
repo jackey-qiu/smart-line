@@ -4,6 +4,7 @@ from PyQt5.QtGui import QPaintEvent, QPainter, QPen, QColor
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtCore import pyqtSlot as Slot
 from PyQt5.QtWidgets import QWidget
+from taurus.qt.qtgui.base import TaurusBaseComponent
 from ...widgets.shapes.shape_container import rectangle, shapeComposite, isocelesTriangle, buildTools, make_decoration_from_text
 from ...widgets.shapes.callback_container import *
 from ...widgets.shapes.customized_callbacks import *
@@ -35,6 +36,9 @@ class beamlineSynopticViewer(QWidget):
         self.update()
 
     def init_viewer(self):
+        #reset the class attribute first
+        shapeComposite.model_str_list = []
+        shapeComposite.modelKeys = [TaurusBaseComponent.MLIST]
         config_file = str(rs_path / 'config' / (self.parent.comboBox_viewer_filename.currentText() + '.yaml'))
         which_viewer = self.parent.comboBox_viewer_obj_name.currentText()
         view_shape, view_connection = buildTools.build_view_from_yaml(config_file, self.size().width())

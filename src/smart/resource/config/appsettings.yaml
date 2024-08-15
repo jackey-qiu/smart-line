@@ -12,7 +12,7 @@ Camaras:
   viewerWidgetName: camara_widget
 FileManager:
   currentImageDatabaseDir: C:\\Users\\_admin\\Downloads\\monitor_test
-  currentimagedbDir: C:/Users/qiucanro/Desktop/img_reg
+  currentimagedbDir: C:/Users/qiucanro/Downloads
   restoreimagedb: C:\\Users\\qiucanro\\apps\\imgReg\\imgReg\\ImageBackup.imagedb
 General:
   ScaleColor: null
