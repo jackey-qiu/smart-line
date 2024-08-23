@@ -22,7 +22,7 @@ class beamlineControl(object):
 
     def connect_slots_beamline_control(self):
         self.init_pandas_model_queue_camara_viewer()
-        self.update_pixel_size()
+        # self.update_pixel_size()
         # self.pushButton_connect_model.clicked.connect(self.set_models)
         self.pushButton_append_job.clicked.connect(self.add_one_task_to_scan_viewer)
         self.tableView_scan_list_camera_viewer.clicked.connect(self.update_roi_upon_click_tableview_camera_widget)
@@ -41,6 +41,7 @@ class beamlineControl(object):
         self.camara_widget.img_viewer.axes['bottom']['item'].setLabel('hor (mm)')
 
     def set_models(self):
+        self.update_pixel_size()
         allkeys = self.settings_object.keys()
         selected_keys = [key for key in allkeys if key in self.group_names]
         for each in selected_keys:
@@ -165,6 +166,9 @@ class beamlineControl(object):
         roi = eval(self.pandas_model_queue_camara_viewer._data.iloc[row,:]['geo_roi'])
         x, y, w, h = roi
         scan_cmd_list = self.pandas_model_queue_camara_viewer._data.iloc[row,:]['scan_command'].rsplit(' ')
+        if scan_cmd_list[0]=='pmesh':
+            #pmesh scan could not set the polylineRoi this way, just ignore this
+            return
         x_, y_ = float(scan_cmd_list[2]), float(scan_cmd_list[6])
         self.camara_widget.roi_scan_xy_stage = [x_, y_]
         x, y = self.camara_widget._convert_stage_coord_to_pix_unit(x_, y_)

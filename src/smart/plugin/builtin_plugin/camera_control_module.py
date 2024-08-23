@@ -19,6 +19,7 @@ from ...util.util import findMainWindow
 class camera_control_panel(object):
 
     def __init__(self):
+        self.camera_is_on = False
         self.last_cursor_pos_on_camera_viewer = [0,0]
         self.build_cam_widget()
         self._create_toolbar_camera_widget()
@@ -42,7 +43,7 @@ class camera_control_panel(object):
         if gridLayoutWidgetName!=None:
             if viewerWidgetName!=None:
                 if not hasattr(self, viewerWidgetName):
-                    setattr(self, viewerWidgetName,TaurusImageItem(parent=self))
+                    setattr(self, viewerWidgetName,TaurusImageItem(parent=self, rgb_viewer=self.settings_object['Camaras']['rgb']))
                     getattr(self, gridLayoutWidgetName).addWidget(getattr(self, viewerWidgetName))
 
     def connect_slots_cam(self):
@@ -64,6 +65,7 @@ class camera_control_panel(object):
         model_samx, model_samy = self._extract_sample_stage_models()
         if getattr(self, viewerWidgetName).getModel()!='':
             return
+        self.camera_is_on = True
         getattr(self, viewerWidgetName).setModel(camaraStreamModel)
         getattr(self, viewerWidgetName).setModel(model_samx, key='samx')
         getattr(self, viewerWidgetName).setModel(model_samy, key='samy')
@@ -79,10 +81,12 @@ class camera_control_panel(object):
     def stop_cam_stream(self):
         _, viewerWidgetName, *_ = self._extract_cam_info_from_config()
         getattr(self, viewerWidgetName).setModel(None)
+        self.camera_is_on = False
         self.statusbar.showMessage('stop cam streaming')
 
     def _append_img_processing_cbs(self, cb_str):
         #cb_str must be an lambda func of form like lambda data:data.reshape((2048, 2048, 3))
+        # - lambda data:np.rot90(data[0].reshape((2048,2048,3)),3)
         if cb_str in self.camara_widget.data_format_cbs:
             pass
         else:
@@ -205,7 +209,7 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
     modelKeys = ['img','samx','samy']
     # modelKeys = [TaurusBaseComponent.MLIST]
     # TODO: clear image if .setModel(None)
-    def __init__(self, parent = None, rgb_viewer = True, *args, **kwargs):
+    def __init__(self, parent = None, rgb_viewer = False, *args, **kwargs):
         GraphicsLayoutWidget.__init__(self, *args, **kwargs)
         TaurusBaseComponent.__init__(self, "TaurusImageItem")
         self._timer = Qt.QTimer()
@@ -222,6 +226,10 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self.pos_calibration_done = False
         self.sigScanRoiAdded.connect(self.set_reference_zone)
         # self.setModel('sys/tg_test/1/long64_image_ro')
+
+    def update_viewer_type(self, rgb: bool):
+        self.rgb_viewer = rgb
+        self._setup_rgb_viewer()
 
     def set_roi_type(self, roi_type):
         if roi_type in ['rectangle','polyline']:
@@ -242,10 +250,8 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self.autolevel = autolevel
 
     def _init_ui(self):
-        if self.rgb_viewer:
-            self._setup_rgb_viewer()
-        else:
-            self._setup_one_channel_viewer()
+        self.rgb_viewer = findMainWindow().settings_object['Camaras']['rgb']
+        self._setup_rgb_viewer()
         self._setup_context_action()
 
     def _setup_context_action(self):
@@ -255,82 +261,28 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
             self.vt.attachToPlotItem(self.img_viewer)
         self.fr = CumForcedReadTool(self, period=0)
         self.fr.attachToPlotItem(self.img_viewer)
-        # self.resume_prim_action = resumePrim(self)
-        # self.resume_prim_action.attachToPlotItem(self.img_viewer)
-        # self.cam_switch = camSwitch(self._parent)
-        # self.cam_switch.attachToPlotItem(self.img_viewer)
-        # self.autolevel = AutoLevelTool(self)
-        # self.autolevel.attachToPlotItem(self.img_viewer) 
-        # self.crosshair = LockCrossTool(self)
-        # self.crosshair.attachToPlotItem(self.img_viewer) 
-        # self.savecrosshair = SaveCrossHair(self)
-        # self.savecrosshair.attachToPlotItem(self.img_viewer) 
-        # self.resumecrosshair = ResumeCrossHair(self)
-        # self.resumecrosshair.attachToPlotItem(self.img_viewer) 
-        # self.setPosRef = setRef(self)
-        # self.setPosRef.attachToPlotItem(self.img_viewer) 
         if main_gui.user_right == 'super':
             self.mvMotors = mvMotors(self._parent)
             self.mvMotors.attachToPlotItem(self.img_viewer) 
 
-    def _setup_one_channel_viewer(self):
-        #for horizontal profile
-        self.prof_hoz = self.addPlot(col = 1, colspan = 5, rowspan = 2)
-        #for vertical profile
-        self.prof_ver = self.addPlot(col = 6, colspan = 5, rowspan = 2)
-        self.nextRow()
-        self.hist = pg.HistogramLUTItem()
-        self.isoLine = pg.InfiniteLine(angle=0, movable=True, pen='g')
-        self.hist.vb.addItem(self.isoLine)
-        self.hist.vb.setMouseEnabled(y=True) # makes user interaction a little easier
-        self.isoLine.setValue(0.8)
-        self.isoLine.setZValue(100000) # bring iso line above contrast controls
-        # self.addItem(self.hist, row = 2, col = 0, rowspan = 5, colspan = 1)
-        self.addItem(self.hist, row = 2, col = 0, rowspan = 5, colspan = 1)
-        #for image
-        self.img_viewer = self.addPlot(row = 2, col = 1, rowspan = 5, colspan = 10)
-        self.img_viewer.setAspectLocked()
-        self.img = pg.ImageItem()
-        self.img_viewer.addItem(self.img)
-        self.hist.setImageItem(self.img)
-        #isocurve for image
-        self.iso = pg.IsocurveItem(level = 0.8, pen = 'g')
-        self.iso.setParentItem(self.img)
-        #cuts on image
-        self.region_cut_hor = pg.LinearRegionItem(orientation=pg.LinearRegionItem.Horizontal)
-        self.region_cut_ver = pg.LinearRegionItem(orientation=pg.LinearRegionItem.Vertical)
-        self.region_cut_hor.setRegion([120,150])
-        self.region_cut_ver.setRegion([120,150])
-        self.img_viewer.addItem(self.region_cut_hor, ignoreBounds = True)
-        self.img_viewer.addItem(self.region_cut_ver, ignoreBounds = True)
-        # self.vt = VisuaTool(self, properties = ['prof_hoz','prof_ver'])
-        # self.vt.attachToPlotItem(self.img_viewer)
-
     def _setup_rgb_viewer(self):
-
         self.isoLine_v = pg.InfiniteLine(angle=90, movable=True, pen=pg.mkPen('green', width=4))
         self.isoLine_h = pg.InfiniteLine(angle=0, movable=True, pen=pg.mkPen('green', width=4))
         self.isoLine_v.setValue(0)
         self.isoLine_v.setZValue(100000) # bring iso line above contrast controls
         self.isoLine_h.setValue(0)
         self.isoLine_h.setZValue(100000) # bring iso line above contrast controls
-        # self.isoLine_h.sigPositionChangeFinished.connect(lambda:self.update_stage_pos_at_prim_beam(self.isoLine_h,'y'))
-        # self.isoLine_v.sigPositionChangeFinished.connect(lambda:self.update_stage_pos_at_prim_beam(self.isoLine_v,'x'))
         self.img_viewer = self.addPlot(row = 2, col = 1, rowspan = 5, colspan = 10)
         self.img_viewer.setAspectLocked()
-        # ax_item_img_hor = scale_pixel(scale = 0.036, shift = 0, orientation = 'bottom')
-        # ax_item_img_ver = scale_pixel(scale = 0.036, shift = 0, orientation = 'left')
-        # ax_item_img_hor.attachToPlotItem(self.img_viewer)
-        # ax_item_img_ver.attachToPlotItem(self.img_viewer)
         self.img = pg.ImageItem()
         self.img_viewer.addItem(self.img)
 
         self.img_viewer.addItem(self.isoLine_v, ignoreBounds = True)
         self.img_viewer.addItem(self.isoLine_h, ignoreBounds = True)
-
-        self.hist = pg.HistogramLUTItem(levelMode='rgba')
-        #self.isoLine = pg.InfiniteLine(angle=0, movable=True, pen='g')
-        #self.hist.vb.addItem(self.isoLine)
+        if self.rgb_viewer:
+            self.hist = pg.HistogramLUTItem(levelMode='rgba')
+        else:
+            self.hist = pg.HistogramLUTItem(levelMode='mono')
         self.hist.vb.setMouseEnabled(y=True) # makes user interaction a little easier
         self.addItem(self.hist, row = 2, col = 0, rowspan = 5, colspan = 1)
         self.hist.setImageItem(self.img)
@@ -372,9 +324,6 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
             self.roi_scan.addScaleHandle([1, 0.5], [0, 0.5], lockAspect=False)
             self.roi_scan.addScaleHandle([0.5, 0], [0.5, 1], lockAspect=False)
             self.roi_scan.addScaleHandle([0.5, 1], [0.5, 0], lockAspect=False)
-            # self.roi_scan.addScaleHandle([0.5, 1], [0.5, 0.5], lockAspect=False)
-            # self.roi_scan.addScaleHandle([0.5, 0], [0.5, 0.5], lockAspect=False)
-            # self.roi_scan.addScaleHandle([1, 0.5], [0.5, 0.5], lockAspect=False)
         elif self.roi_type == 'polyline':
             pen = pg.mkPen((0, 200, 200), width=1)
             self.roi_scan = pg.PolyLineROI([],closed=True)
@@ -389,11 +338,6 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
     def _cal_scan_coordinates(self):
         main_gui = findMainWindow()
         if self.roi_type=='rectangle':
-            #samx = Attribute(main_gui.settings_object["SampleStages"]["label_x_stage_value"]).read().value
-            #samy = Attribute(main_gui.settings_object["SampleStages"]["label_y_stage_value"]).read().value
-            #current_stage_pos = np.array([samx, samy])
-            #crosshair_pos_offset = (current_stage_pos - main_gui.stage_pos_at_prim_beam)/main_gui.camara_pixel_size
-            #crosshair_pos_corrected_by_offset = main_gui.crosshair_pos_at_prim_beam + crosshair_pos_offset
             self.roi_scan_xy_stage = [None, None]
             scan_cmd = main_gui.lineEdit_scan_cmd.text()
             stage_x = main_gui.lineEdit_sample_stage_name_x.text()
@@ -401,10 +345,6 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
             step_size = eval(main_gui.lineEdit_step_size.text())
             steps_x = main_gui.spinBox_steps_hor.value()
             steps_y = main_gui.spinBox_steps_ver.value()
-            #topleft = np.array(self.roi_scan.pos())
-            # dist_from_prim_beam_pos = (topleft - main_gui.crosshair_pos_at_prim_beam)*main_gui.camara_pixel_size
-            #dist_from_prim_beam_pos = (topleft - crosshair_pos_corrected_by_offset)*main_gui.camara_pixel_size
-            #sample_x_stage_start_pos, sample_y_stage_start_pos = main_gui.stage_pos_at_prim_beam + dist_from_prim_beam_pos
             sample_x_stage_start_pos, sample_y_stage_start_pos = self._cal_scan_coordinates_from_pos(np.array(self.roi_scan.pos())*main_gui.camara_pixel_size)
             width, height = abs(np.array(self.roi_scan.size()))*main_gui.camara_pixel_size
             if main_gui.checkBox_use_step_size.isChecked():
@@ -420,7 +360,13 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
             return scan_cmd_str
         else:
             self.roi_scan_xy_stage = [None, None]
-            main_gui.lineEdit_full_macro_name.setText(str(self._generate_handle_pos_list_polylineroi()))
+            scan_cmd = 'pmesh'
+            stage_x = main_gui.lineEdit_sample_stage_name_x.text()
+            stage_y = main_gui.lineEdit_sample_stage_name_y.text()
+            exposure_time = float(main_gui.lineEdit_exposure_time.text())
+            step_size_x, step_size_y = np.array(eval(main_gui.lineEdit_step_size.text()))/1000
+            coords = str(self._generate_handle_pos_list_polylineroi()).replace(',','')
+            main_gui.lineEdit_full_macro_name.setText(f'{scan_cmd} {stage_x} {step_size_x} {stage_y} {step_size_y} {exposure_time} {coords}')
     
     def _from_viewport_coords_to_stage_coords(self, x_vp, y_vp):
         main_gui = findMainWindow()
@@ -474,16 +420,6 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         crosshair_pos_offset_mm = np.array(pos) - np.array(main_gui.crosshair_pos_at_prim_beam)*main_gui.camara_pixel_size
         sample_x_stage_start_pos, sample_y_stage_start_pos = current_stage_pos + crosshair_pos_offset_mm*[1,-1]
         return sample_x_stage_start_pos, sample_y_stage_start_pos
-
-    def _convert_stage_coord_to_pix_unit_old(self, original_samx, original_samy):
-        main_gui = findMainWindow()
-        samx = Attribute(main_gui.settings_object["SampleStages"]["label_x_stage_value"]).read().value
-        samy = Attribute(main_gui.settings_object["SampleStages"]["label_y_stage_value"]).read().value
-        #if the stage is right at the prim beam position
-        pos = (np.array([original_samx, original_samy]) - main_gui.stage_pos_at_prim_beam)/main_gui.camara_pixel_size + main_gui.crosshair_pos_at_prim_beam
-        #if the stage already move away from the prim beam position, then another translation is needed
-        diff_pos = (np.array([samx, samy]) - main_gui.stage_pos_at_prim_beam)/main_gui.camara_pixel_size
-        return pos-diff_pos
 
     def _convert_stage_coord_to_pix_unit(self, original_samx, original_samy):
         main_gui = findMainWindow()
@@ -604,10 +540,16 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
                     #data = np.clip(data, 0, 255).astype(np.ubyte)
 
                 self.img.setImage(data)
+                self.hist.imageChanged(self.autolevel, self.autolevel)
+                # if self.autolevel:
+                    # self.hist.regionChanged()
+                '''
                 if self.autolevel:
                     self.hist.imageChanged(self.autolevel, self.autolevel)
                 else:
                     self.hist.regionChanged()
+                '''
+                '''
                 if not self.rgb_viewer:
                     hor_region_down,  hor_region_up= self.region_cut_hor.getRegion()
                     ver_region_l, ver_region_r = self.region_cut_ver.getRegion()
@@ -615,6 +557,7 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
                     ver_region_l, ver_region_r = int(ver_region_l), int(ver_region_r)
                     self.prof_ver.plot(data[ver_region_l:ver_region_r,:].sum(axis=0),pen='g',clear=True)
                     self.prof_hoz.plot(data[:,hor_region_down:hor_region_up].sum(axis=1), pen='r',clear = True)
+                '''
             elif key in ['samx','samy']:
                 self.reposition_scan_roi()
                 #self.mv_roi_upon_stage_move()
@@ -670,7 +613,10 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         #else:
         point = self.img_viewer.vb.mapSceneToView(evt).toPoint()
         px_size = main_gui.camara_pixel_size
-        main_gui.last_cursor_pos_on_camera_viewer = self._cal_scan_coordinates_from_pos([round(point.x()*px_size,4), round(point.y()*px_size,4)])
+        if main_gui.camera_is_on:
+            main_gui.last_cursor_pos_on_camera_viewer = self._cal_scan_coordinates_from_pos([round(point.x()*px_size,4), round(point.y()*px_size,4)])
+        else:
+            main_gui.last_cursor_pos_on_camera_viewer = 'NaN'
         main_gui.statusbar.showMessage(f'viewport coords (stage in mm): {main_gui.last_cursor_pos_on_camera_viewer};viewport coords (native in pix):{point.x(),point.y()}')
         #findMainWindow().statusbar.showMessage(f'viewport coords: {round(point.x()*px_size,4), round(point.y()*px_size,4)}')
 

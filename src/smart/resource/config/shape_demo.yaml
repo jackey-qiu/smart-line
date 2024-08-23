@@ -272,9 +272,9 @@ composite_shapes:
     transformation: 
       translate: [0,0]
     models: 
-      0: tango://localhost:10000/sys/tg_test/1/ampli
+      0: tango://hasp029rack:10000/sys/tg_test/1/ampli
       # index: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
-      # model: tango://localhost:10000/sys/tg_test/1/boolean_spectrum_ro
+      # model: tango://hasp029rack:10000/sys/tg_test/1/boolean_spectrum_ro
     callbacks_upon_model_change:
       0: ['callback_model_change_with_composite_rotation']
     callbacks_upon_leftmouse_click:
@@ -298,12 +298,12 @@ composite_shapes:
     transformation: 
       translate: [0,0]
     models: 
-      2: tango://localhost:10000/sys/tg_test/1/long64_scalar
-      3: tango://localhost:10000/sys/tg_test/1/long_scalar
-      4: tango://localhost:10000/sys/tg_test/1/short_scalar
-      5: tango://localhost:10000/sys/tg_test/1/short_scalar_ro
+      2: tango://hasp029rack:10000/sys/tg_test/1/long64_scalar
+      3: tango://hasp029rack:10000/sys/tg_test/1/long_scalar
+      4: tango://hasp029rack:10000/sys/tg_test/1/short_scalar
+      5: tango://hasp029rack:10000/sys/tg_test/1/short_scalar_ro
       # index: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
-      # model: tango://localhost:10000/sys/tg_test/1/boolean_spectrum_ro
+      # model: tango://hasp029rack:10000/sys/tg_test/1/boolean_spectrum_ro
     callbacks_upon_model_change:
       index: [2,3,4,5]
       callback: ['callback_model_change_with_text_label', 'anchor','center','label', null]
@@ -328,7 +328,7 @@ composite_shapes:
       translate: [0,0]
     models: []
       # index: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
-      # model: tango://localhost:10000/sys/tg_test/1/boolean_spectrum_ro
+      # model: tango://hasp029rack:10000/sys/tg_test/1/boolean_spectrum_ro
     callbacks_upon_model_change:
       index: [2,3,4,5]
       callback: ['callback_model_change_with_text_label', 'anchor','center','label', null]
@@ -374,7 +374,7 @@ composite_shapes:
         - ['cen', 'bottom']
         - ['cen', 'left']
         - ['cen', 'right']
-        - ['anchor_bottom_10', 'bottom']
+        - ['anchor_bottom_10', 'top']
         - ['anchor_bottom_11', 'bottom']
         - ['anchor_bottom_9', 'top']
         - ['anchor_bottom_8', 'top']
@@ -392,7 +392,7 @@ composite_shapes:
         - ['bottom',null]
         - ['right',null]
         - ['left',null]
-        - ['top',null]
+        - ['bottom',null]
         - ['bottom',null]
         - ['bottom',null]
         - ['bottom',null]
@@ -400,7 +400,7 @@ composite_shapes:
       translate: [0,0]
     models: []
       # index: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
-      # model: tango://localhost:10000/sys/tg_test/1/boolean_spectrum_ro
+      # model: tango://hasp029rack:10000/sys/tg_test/1/boolean_spectrum_ro
     callbacks_upon_model_change:
       index: [2,3,4,5]
       callback: ['callback_model_change_with_text_label', 'anchor','center','label', null]
@@ -424,9 +424,9 @@ composite_shapes:
     transformation: 
       translate: [0,0]
     models: 
-      1: tango://localhost:10000/sys/tg_test/1/boolean_scalar
+      1: tango://hasp029rack:10000/sys/tg_test/1/boolean_scalar
       # index: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
-      # model: tango://localhost:10000/sys/tg_test/1/boolean_spectrum_ro
+      # model: tango://hasp029rack:10000/sys/tg_test/1/boolean_spectrum_ro
     callbacks_upon_model_change:
       index: [1]
       callback: ['callback_model_change_with_transformation', 'mv_dir', 'y', 'sign', '+', 'max_translation_range', '[-60,0]']
@@ -450,10 +450,10 @@ composite_shapes:
     transformation: 
       translate: [0,0]
     models: 
-      1: tango://localhost:10000/sys/tg_test/1/boolean_scalar
-      #1: tango://localhost:10000/sys/tg_test/1/boolean_scalar
+      1: tango://hasp029rack:10000/sys/tg_test/1/boolean_scalar
+      #1: tango://hasp029rack:10000/sys/tg_test/1/boolean_scalar
       # index: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
-      # model: tango://localhost:10000/sys/tg_test/1/boolean_spectrum_ro
+      # model: tango://hasp029rack:10000/sys/tg_test/1/boolean_spectrum_ro
     callbacks_upon_model_change:
       1: null
     callbacks_upon_leftmouse_click:
@@ -564,7 +564,7 @@ composite_shapes:
       translate: [0,0]
     models: 
       index: [1,2,3,4,5,6,7,8,9,10,11,12]
-      model: tango://localhost:10000/sys/tg_test/1/long_scalar_w
+      model: tango://hasp029rack:10000/sys/tg_test/1/long_scalar_w
     dynamic_shape_attributes:
       (5,6,7,8):
         change_value: 1
@@ -640,7 +640,7 @@ composite_shapes:
       translate: [0,0]
     models: 
       index: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
-      model: tango://localhost:10000/sys/tg_test/1/boolean_spectrum_ro
+      model: tango://hasp029rack:10000/sys/tg_test/1/boolean_spectrum_ro
     callbacks_upon_model_change:
       index: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
       callback: ['callback_model_change_with_decoration_on_off_idx', 'idx']
@@ -663,9 +663,9 @@ composite_shapes:
     transformation: 
       translate: [0,0]
     models: 
-      1: tango://localhost:10000/sys/tg_test/1/boolean_scalar
-      2: tango://localhost:10000/sys/tg_test/1/boolean_scalar
-      3: tango://localhost:10000/sys/tg_test/1/boolean_scalar
+      1: tango://hasp029rack:10000/sys/tg_test/1/boolean_scalar
+      2: tango://hasp029rack:10000/sys/tg_test/1/boolean_scalar
+      3: tango://hasp029rack:10000/sys/tg_test/1/boolean_scalar
     callbacks_upon_model_change:
       1: ['callback_model_change_with_text_label_on_off', 'anchor', 'top']
       2: ['callback_model_change_with_decoration_on_off']
@@ -700,14 +700,14 @@ composite_shapes:
     transformation: 
       translate: [0,0]
     models: 
-      9: tango://localhost:10000/sys/tg_test/1/boolean_spectrum_ro
-      2: tango://localhost:10000/sys/tg_test/1/boolean_spectrum_ro
-      3: tango://localhost:10000/sys/tg_test/1/boolean_spectrum_ro
-      4: tango://localhost:10000/sys/tg_test/1/boolean_spectrum_ro
-      5: tango://localhost:10000/sys/tg_test/1/boolean_spectrum_ro
-      6: tango://localhost:10000/sys/tg_test/1/boolean_spectrum_ro
-      7: tango://localhost:10000/sys/tg_test/1/boolean_spectrum_ro
-      8: tango://localhost:10000/sys/tg_test/1/boolean_spectrum_ro
+      9: tango://hasp029rack:10000/sys/tg_test/1/boolean_spectrum_ro
+      2: tango://hasp029rack:10000/sys/tg_test/1/boolean_spectrum_ro
+      3: tango://hasp029rack:10000/sys/tg_test/1/boolean_spectrum_ro
+      4: tango://hasp029rack:10000/sys/tg_test/1/boolean_spectrum_ro
+      5: tango://hasp029rack:10000/sys/tg_test/1/boolean_spectrum_ro
+      6: tango://hasp029rack:10000/sys/tg_test/1/boolean_spectrum_ro
+      7: tango://hasp029rack:10000/sys/tg_test/1/boolean_spectrum_ro
+      8: tango://hasp029rack:10000/sys/tg_test/1/boolean_spectrum_ro
       # 0: sys/tg_test/1/boolean_scalar
       # 1: sys/tg_test/1/boolean_scalar
       # 2: sys/tg_test/1/boolean_scalar
