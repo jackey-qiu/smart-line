@@ -340,6 +340,10 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
 
     @Slot(float,float,float,float)
     def set_reference_zone(self, x0, y0, w, h):
+        self.set_reference_zone_pure(x0,y0,w,h)
+        self._cal_scan_coordinates()
+
+    def set_reference_zone_pure(self, x0, y0, w, h):
         """
         Sets the coordinates of the rectangle selection within the reference zone
 
@@ -370,7 +374,6 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
             self.roi_scan.handlePen = pg.mkPen("#FFFFFF")
         self.img_viewer.vb.addItem(self.roi_scan)
         self.roi_scan.sigRegionChanged.connect(self._cal_scan_coordinates)
-        self._cal_scan_coordinates()
 
     def _cal_scan_coordinates(self):
         main_gui = findMainWindow()

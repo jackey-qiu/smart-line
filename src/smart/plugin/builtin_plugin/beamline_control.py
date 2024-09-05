@@ -2,10 +2,12 @@ from PyQt5.QtWidgets import QLabel, QPushButton, QSlider, QAbstractItemView, QMe
 from PyQt5.QtCore import Qt, pyqtSlot as Slot
 from PyQt5.QtGui import QFont
 from PyQt5 import QtCore
+import re
 from functools import partial
 from taurus.qt.qtgui.display import TaurusLabel
 from taurus import Attribute
 import pandas as pd
+import pyqtgraph as pg
 from smart.util.util import PandasModel
 from smart.plugin.user_plugin.queue_control import REQUIRED_KEYS
 
@@ -201,16 +203,45 @@ class beamlineControl(object):
     @Slot(QtCore.QModelIndex)
     def update_roi_upon_click_tableview_camera_widget(self, modelindex):
         row = modelindex.row()
-        roi = eval(self.pandas_model_queue_camara_viewer._data.iloc[row,:]['geo_roi'])
-        x, y, w, h = roi
+        # roi = eval(self.pandas_model_queue_camara_viewer._data.iloc[row,:]['geo_roi'])
+        #x, y, w, h = roi
         scan_cmd_list = self.pandas_model_queue_camara_viewer._data.iloc[row,:]['scan_command'].rsplit(' ')
-        x_, y_ = float(scan_cmd_list[2]), float(scan_cmd_list[6])
-        self.camara_widget.roi_scan_xy_stage = [x_, y_]
-        x, y = self.camara_widget._convert_stage_coord_to_pix_unit(x_, y_)
-
-        self.camara_widget.roi_scan.setX(x)
-        self.camara_widget.roi_scan.setY(y)
-        self.camara_widget.roi_scan.setSize((w, h))
+        if scan_cmd_list[0]=='pmesh':
+            anchors_list = re.findall(r"(\[[-+]?(?:\d*\.*\d+) [-+]?(?:\d*\.*\d+)\])", self.pandas_model_queue_camara_viewer._data.iloc[row,:]['scan_command'])
+            anchors_list = [self.camara_widget._convert_stage_coord_to_pix_unit(*eval(each.replace(' ', ','))) for each in anchors_list]
+            # if type(self.camara_widget.roi_scan)==pg.PolyLineROI:
+                # self.camara_widget.roi_scan.setPos(0,0,update=False,finish=False)
+                # self.camara_widget.roi_scan.setPoints(anchors_list)
+            # else:
+            self.camara_widget.roi_type = 'polyline'
+            #this is an ugly hack to remove the footprint of pos of old roi_scan
+            self.camara_widget.roi_scan.setPos(0,0)
+            self.camara_widget.img_viewer.vb.removeItem(self.camara_widget.roi_scan)
+            pen = pg.mkPen((0, 200, 200), width=1)
+            self.camara_widget.roi_scan = pg.PolyLineROI([],closed=True)
+            self.camara_widget.roi_scan.handleSize = 10
+            self.camara_widget.roi_scan.setPoints(anchors_list)
+            self.camara_widget.roi_scan.setZValue(10000)
+            self.camara_widget.roi_scan.handlePen = pg.mkPen("#FFFFFF")
+            self.camara_widget.img_viewer.vb.addItem(self.camara_widget.roi_scan)
+            self.camara_widget.roi_scan.setPos(0,0)
+            self.camara_widget.roi_scan.sigRegionChanged.connect(self.camara_widget._cal_scan_coordinates)
+        else:                
+            x_, y_ = float(scan_cmd_list[2]), float(scan_cmd_list[6])
+            x_end_, y_end_ = float(scan_cmd_list[3]), float(scan_cmd_list[7])
+            self.camara_widget.roi_scan_xy_stage = [x_, y_]
+            x, y = self.camara_widget._convert_stage_coord_to_pix_unit(x_, y_)
+            x_end, y_end = self.camara_widget._convert_stage_coord_to_pix_unit(x_end_, y_end_)
+            w, h = abs(x - x_end), abs(y - y_end)
+            if type(self.camara_widget.roi_scan)==pg.PolyLineROI:
+                self.camara_widget.roi_type = 'rectangle'
+                self.camara_widget.set_reference_zone(x,y,w,h)
+            else:
+                # self.camara_widget.set_reference_zone(x,y,w,h)
+                self.camara_widget.roi_scan.setPos(x,y,update=False,finish=False)
+                #self.camara_widget.roi_scan.setX(x)
+                #self.camara_widget.roi_scan.setY(y)
+                self.camara_widget.roi_scan.setSize((w, h))
 
     def update_roi_at_row(self, row):
         roi = eval(self.pandas_model_queue_camara_viewer._data.iloc[row,:]['geo_roi'])
