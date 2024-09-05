@@ -2,7 +2,17 @@ Camaras:
   camaraDataFormatCallbacks:
   - lambda data:np.rot90(data,3)
   camaraDevice: tango://hasp029rack.desy.de:10000/p06/tangovimba/test.01
+  camaraExposure_mode:
+    attr_name: ExposureAuto
+    options:
+    - 'Off'
+    - Once
+    - Continuous
+  camaraExposure_time:
+    attr_name: ExposureTimeAbs
+    default_value: null
   camaraStreamModel: tango://hasp029rack.desy.de:10000/p06/tangovimba/test.01/image8
+  click_move_timeout: 120
   gridLayoutWidgetName: gridLayout_cam
   pixel_size: tango://hasp029rack.desy.de:10000/p06/mscope/lab.01/pixelsize
   presetZoom:
@@ -29,8 +39,8 @@ Mscope:
   comboBox_illum_types: tango://hasp029rack.desy.de:10000/p06/beamlinemicroscopeillumination/test.01/AvailableIlluminationTypes
   label_illum_pos: tango://hasp029rack.desy.de:10000/p06/beamlinemicroscopeillumination/test.01/intensity{}
 PrimBeamGeo:
-  img_x: -1521.498571474854
-  img_y: -2311.0388956907104
+  img_x: -1443.021826817273
+  img_y: -2339.9093239048266
   iso_h: -1363.6363636363637
   iso_v: -454.5454545454544
   stage_x: -9.999999999999996
@@ -43,10 +53,9 @@ SampleStageMotorNames:
   y: samlz
   z: samlx
 SampleStages:
-  label_x_stage_value: tango://hasp029rack.desy.de:10000/p06/motor/exp.02/position
-  label_y_stage_value: tango://hasp029rack.desy.de:10000/p06/motor/exp.01/position
-  label_z_stage_value: tango://hasp029rack.desy.de:10000/motor/dummy_mot_ctrl/3/position
-  label_zoom_pos: tango://hasp029rack.desy.de:10000/p06/mscope/lab.01/zoom
+  x_stage_value: tango://hasp029rack.desy.de:10000/p06/motor/exp.02/position
+  y_stage_value: tango://hasp029rack.desy.de:10000/p06/motor/exp.01/position
+  z_stage_value: tango://hasp029rack.desy.de:10000/motor/dummy_mot_ctrl/3/position
 Visuals:
   boxColor: null
   boxLinewidth: 2

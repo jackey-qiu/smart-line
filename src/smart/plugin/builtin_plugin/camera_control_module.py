@@ -7,6 +7,8 @@ from pyqtgraph import GraphicsLayoutWidget, ImageItem
 from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal
 from PyQt5 import QtWidgets
 import pyqtgraph as pg
+import tango
+from tango._tango import DevState as dev_state
 from taurus import Device, Attribute
 from taurus.core import TaurusEventType, TaurusTimeVal
 from smart.gui.widgets.context_menu_actions import setRef, resumePrim, mvMotors, VisuaTool, camSwitch, AutoLevelTool, LockCrossTool, SaveCrossHair, ResumeCrossHair
@@ -14,7 +16,9 @@ from taurus.qt.qtgui.tpg import ForcedReadTool
 from functools import partial
 import numpy as np
 from smart import icon_path
-from ...util.util import findMainWindow
+from ...util.util import findMainWindow, trigger
+
+# timer_trigger = trigger(timeout=0.1)
 
 class camera_control_panel(object):
 
@@ -33,8 +37,8 @@ class camera_control_panel(object):
         return gridLayoutWidgetName, viewerWidgetName, camaraStreamModel, camaraDevice, camaraDataCallbacks
 
     def _extract_sample_stage_models(self):
-        samx = self.settings_object["SampleStages"]["label_x_stage_value"]
-        samy = self.settings_object["SampleStages"]["label_y_stage_value"]
+        samx = self.settings_object["SampleStages"]["x_stage_value"]
+        samy = self.settings_object["SampleStages"]["y_stage_value"]
         return samx, samy
 
     def build_cam_widget(self):
@@ -168,6 +172,10 @@ class camera_control_panel(object):
         roi_polyline = QAction(QIcon(str(icon_path / 'smart' / 'polyline_roi.png')),'select polygone roi',self)
         roi_polyline.setStatusTip('click an drag to get a polygone roi selection.')
         roi_polyline.triggered.connect(lambda: self.camara_widget.set_roi_type('polyline'))               
+        click_move = QAction(QIcon(str(icon_path / 'smart' / 'click.png')),'enable click to move stage mode',self)
+        click_move.setStatusTip('click to activate stage moving with mouse click.')
+        click_move.triggered.connect(lambda: self.camara_widget.set_mouse_click_move_stage(True)) 
+        self.click_move = click_move          
         self.camToolBar.addAction(action_switch_on_camera)
         self.camToolBar.addAction(action_switch_off_camera)
         self.camToolBar.addAction(autoscale)
@@ -181,6 +189,7 @@ class camera_control_panel(object):
         self.camToolBar.addAction(unlock)
         self.camToolBar.addAction(roi_rect)
         self.camToolBar.addAction(roi_polyline)
+        self.camToolBar.addAction(click_move)
         self.addToolBar(Qt.LeftToolBarArea, self.camToolBar)
 
 class CumForcedReadTool(ForcedReadTool):
@@ -214,6 +223,10 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         TaurusBaseComponent.__init__(self, "TaurusImageItem")
         self._timer = Qt.QTimer()
         self._timer.timeout.connect(self._forceRead)
+        self.timer_mouse_click_reaction = trigger()
+        self.thread_mouse_click_reation = QtCore.QThread()
+        self.timer_mouse_click_reaction.moveToThread(self.thread_mouse_click_reation)
+        self.thread_mouse_click_reation.started.connect(self.timer_mouse_click_reaction.run)        
         self._parent = parent
         self.rgb_viewer = rgb_viewer
         self._init_ui()
@@ -223,6 +236,7 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self.roi_scan = None
         self.roi_scan_xy_stage = [None, None]
         self.roi_type = 'rectangle'
+        self.mouse_click_move_stage_enabled = False
         self.pos_calibration_done = False
         self.sigScanRoiAdded.connect(self.set_reference_zone)
         # self.setModel('sys/tg_test/1/long64_image_ro')
@@ -230,6 +244,22 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
     def update_viewer_type(self, rgb: bool):
         self.rgb_viewer = rgb
         self._setup_rgb_viewer()
+
+    def set_mouse_click_move_stage(self, enabled):
+        self.mouse_click_move_stage_enabled = enabled
+        gui = findMainWindow()
+        if enabled:
+            gui.click_move.setEnabled(False)
+            try:
+                self.thread_mouse_click_reation.terminate()
+            except:
+                pass
+            self.timer_mouse_click_reaction.start_new_cb(self.disable_click_move_stage, gui.settings_object['Camaras']['click_move_timeout'])
+            self.thread_mouse_click_reation.start()
+
+    def disable_click_move_stage(self):
+        self.mouse_click_move_stage_enabled = False
+        findMainWindow().click_move.setEnabled(True)
 
     def set_roi_type(self, roi_type):
         if roi_type in ['rectangle','polyline']:
@@ -259,7 +289,7 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         if not self.rgb_viewer:
             self.vt = VisuaTool(self, properties = ['prof_hoz','prof_ver'])
             self.vt.attachToPlotItem(self.img_viewer)
-        self.fr = CumForcedReadTool(self, period=0)
+        self.fr = CumForcedReadTool(self, period=200)
         self.fr.attachToPlotItem(self.img_viewer)
         if main_gui.user_right == 'super':
             self.mvMotors = mvMotors(self._parent)
@@ -288,10 +318,17 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self.hist.setImageItem(self.img)
 
         self.img_viewer.vb.scene().sigMouseMoved.connect(self._connect_mouse_move_event)
+        self.img_viewer.vb.scene().sigMouseClicked.connect(self._execute_stage_move_upon_mouseclick)
         self.img_viewer.vb.mouseDragEvent = partial(self._mouseDragEvent, self.img_viewer.vb)
 
         #set the img to origin (0,0)
         self._mv_img_to_pos(0, 0)
+
+    def _execute_stage_move_upon_mouseclick(self):
+        door = tango.DeviceProxy(findMainWindow().settings_object['spockLogin']['doorName'])
+        run = (door.state() == dev_state.RUNNING)
+        if self.mouse_click_move_stage_enabled and (not run):
+            findMainWindow().mv_stages_to_cursor_pos()
 
     #suppose to move the bottomleft corner of image to the pos(x, y)
     def _mv_img_to_pos(self, x, y):
@@ -370,8 +407,8 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
     
     def _from_viewport_coords_to_stage_coords(self, x_vp, y_vp):
         main_gui = findMainWindow()
-        samx = Attribute(main_gui.settings_object["SampleStages"]["label_x_stage_value"]).read().value
-        samy = Attribute(main_gui.settings_object["SampleStages"]["label_y_stage_value"]).read().value
+        samx = Attribute(main_gui.settings_object["SampleStages"]["x_stage_value"]).read().value
+        samy = Attribute(main_gui.settings_object["SampleStages"]["y_stage_value"]).read().value
         current_stage_pos = np.array([samx, samy])
         crosshair_pos_offset = (current_stage_pos - main_gui.stage_pos_at_prim_beam)/main_gui.camara_pixel_size
         crosshair_pos_corrected_by_offset = main_gui.crosshair_pos_at_prim_beam + crosshair_pos_offset
@@ -397,8 +434,8 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
     def _cal_scan_coordinates_from_pos_old(self, pos):
         #pos is in mm unit
         main_gui = findMainWindow()
-        samx = Attribute(main_gui.settings_object["SampleStages"]["label_x_stage_value"]).read().value
-        samy = Attribute(main_gui.settings_object["SampleStages"]["label_y_stage_value"]).read().value
+        samx = Attribute(main_gui.settings_object["SampleStages"]["x_stage_value"]).read().value
+        samy = Attribute(main_gui.settings_object["SampleStages"]["y_stage_value"]).read().value
         current_stage_pos = np.array([samx, samy])
         crosshair_pos_offset = (current_stage_pos - main_gui.stage_pos_at_prim_beam)/main_gui.camara_pixel_size
         crosshair_pos_corrected_by_offset = main_gui.crosshair_pos_at_prim_beam + crosshair_pos_offset
@@ -412,8 +449,8 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         #pos is in mm unit
         main_gui = findMainWindow()
         try:
-            samx = Attribute(main_gui.settings_object["SampleStages"]["label_x_stage_value"]).read().value
-            samy = Attribute(main_gui.settings_object["SampleStages"]["label_y_stage_value"]).read().value
+            samx = Attribute(main_gui.settings_object["SampleStages"]["x_stage_value"]).read().value
+            samy = Attribute(main_gui.settings_object["SampleStages"]["y_stage_value"]).read().value
         except:
             return 0, 0
         current_stage_pos = np.array([samx, samy])
@@ -423,19 +460,19 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
 
     def _convert_stage_coord_to_pix_unit(self, original_samx, original_samy):
         main_gui = findMainWindow()
-        samx = Attribute(main_gui.settings_object["SampleStages"]["label_x_stage_value"]).read().value
-        samy = Attribute(main_gui.settings_object["SampleStages"]["label_y_stage_value"]).read().value
+        samx = Attribute(main_gui.settings_object["SampleStages"]["x_stage_value"]).read().value
+        samy = Attribute(main_gui.settings_object["SampleStages"]["y_stage_value"]).read().value
         pos = (np.array([original_samx, original_samy]) - [samx, samy])/main_gui.camara_pixel_size*[1,-1] + [main_gui.camara_widget.isoLine_v.value(),main_gui.camara_widget.isoLine_h.value()]
         return pos
 
     def update_stage_pos_at_prim_beam(self, infline_obj = None, dir='x'):
         main_gui = findMainWindow()
         if dir=='x':
-            attr = Attribute(main_gui.settings_object["SampleStages"]["label_x_stage_value"]).read()
+            attr = Attribute(main_gui.settings_object["SampleStages"]["x_stage_value"]).read()
             main_gui.stage_pos_at_prim_beam[0] = attr.value
             main_gui.crosshair_pos_at_prim_beam[0] = infline_obj.value()
         elif dir == 'y':
-            attr = Attribute(main_gui.settings_object["SampleStages"]["label_y_stage_value"]).read()
+            attr = Attribute(main_gui.settings_object["SampleStages"]["y_stage_value"]).read()
             main_gui.stage_pos_at_prim_beam[1] = attr.value
             main_gui.crosshair_pos_at_prim_beam[1] = infline_obj.value()
         

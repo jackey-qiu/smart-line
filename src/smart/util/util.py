@@ -2,6 +2,27 @@ import numpy as np
 import weakref
 import typing
 from PyQt5.QtWidgets import QMainWindow, QApplication
+from PyQt5 import QtCore
+from threading import Event, Thread
+import time
+
+class trigger(QtCore.QObject):
+    def __init__(self, cb = lambda:None, timeout = 10):
+        super().__init__()
+        self.cb = cb
+        self.timeout = timeout
+
+    def start_new_cb(self, cb, timeout = None):
+        self.cb = cb
+        if timeout != None:
+            self.timeout = timeout
+
+    def run(self):
+        start = time.time()
+        while True:
+            if (time.time() - start) > self.timeout:
+                self.cb()
+                break
 
 def findMainWindow() -> typing.Union[QMainWindow, None]:
     # Global function to find the (open) QMainWindow in application
