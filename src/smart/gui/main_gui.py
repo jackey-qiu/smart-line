@@ -87,6 +87,25 @@ class smartGui(
         self.__init_gui(config=config)
         self.init_taurus()
         self.add_smart_toolbar()
+        self._connect_device_at_startup()
+
+    def _connect_device_at_startup(self):
+        #connect tango model at startup?
+        if 'connect_model_startup' in self.settings_object['General']:
+            if self.settings_object['General']['connect_model_startup']:
+                try:
+                    self.set_models()
+                except:
+                    pass
+                self.start_cam_stream()
+                self._resume_prim_beam_pos(direct=True)
+        else:
+            try:
+                self.set_models()
+            except:
+                pass
+            self.start_cam_stream()
+            self._resume_prim_beam_pos(direct=True)
 
     def __init_gui(self, config):
         uic.loadUi(str(ui_file_folder / "smart_main_window.ui"), self)
@@ -203,6 +222,7 @@ class smartGui(
 
         # // draw scalebar
         # self.draw_scalebar()
+
         self.connect_slots()
         self.init_attribute_values()
         self.imageBuffer.recallImgBackup()

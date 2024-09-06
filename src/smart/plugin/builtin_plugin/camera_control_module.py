@@ -113,15 +113,18 @@ class camera_control_panel(object):
         self.camara_widget.isoLine_v.setValue(x)
         self.camara_widget.isoLine_h.setValue(y)
 
-    def _resume_prim_beam_pos(self):
-        msgBox = QtWidgets.QMessageBox()
-        msgBox.setIcon(QtWidgets.QMessageBox.Question)
-        msgBox.setText(f"Are you sure to resume the crosshair position?")
-        msgBox.setWindowTitle("Resume crosshair pos")
-        msgBox.setStandardButtons(QtWidgets.QMessageBox.Ok | QtWidgets.QMessageBox.Cancel)
-        #msgBox.buttonClicked.connect(self._parent.mv_sample_stage_to_cursor_point)
-        returnValue = msgBox.exec()
-        if returnValue == QtWidgets.QMessageBox.Ok:
+    def _resume_prim_beam_pos(self, direct = False):
+        if not direct:
+            msgBox = QtWidgets.QMessageBox()
+            msgBox.setIcon(QtWidgets.QMessageBox.Question)
+            msgBox.setText(f"Are you sure to resume the crosshair position?")
+            msgBox.setWindowTitle("Resume crosshair pos")
+            msgBox.setStandardButtons(QtWidgets.QMessageBox.Ok | QtWidgets.QMessageBox.Cancel)
+            #msgBox.buttonClicked.connect(self._parent.mv_sample_stage_to_cursor_point)
+            returnValue = msgBox.exec()
+            if returnValue == QtWidgets.QMessageBox.Ok:
+                self.camara_widget.resume_prim_beam_to_saved_values()
+        else:
             self.camara_widget.resume_prim_beam_to_saved_values()
 
     def _calibrate_pos(self):
@@ -176,6 +179,9 @@ class camera_control_panel(object):
         click_move.setStatusTip('click to activate stage moving with mouse click.')
         click_move.triggered.connect(lambda: self.camara_widget.set_mouse_click_move_stage(True)) 
         self.click_move = click_move          
+        stop_click_move = QAction(QIcon(str(icon_path / 'smart' / 'stop.png')),'disable click to move stage mode',self)
+        stop_click_move.setStatusTip('click to deactivate stage moving with mouse click.')
+        stop_click_move.triggered.connect(lambda: self.camara_widget.set_mouse_click_move_stage(False)) 
         self.camToolBar.addAction(action_switch_on_camera)
         self.camToolBar.addAction(action_switch_off_camera)
         self.camToolBar.addAction(autoscale)
@@ -190,6 +196,7 @@ class camera_control_panel(object):
         self.camToolBar.addAction(roi_rect)
         self.camToolBar.addAction(roi_polyline)
         self.camToolBar.addAction(click_move)
+        self.camToolBar.addAction(stop_click_move)
         self.addToolBar(Qt.LeftToolBarArea, self.camToolBar)
 
 class CumForcedReadTool(ForcedReadTool):
@@ -256,6 +263,8 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
                 pass
             self.timer_mouse_click_reaction.start_new_cb(self.disable_click_move_stage, gui.settings_object['Camaras']['click_move_timeout'])
             self.thread_mouse_click_reation.start()
+        else:
+            self.disable_click_move_stage()
 
     def disable_click_move_stage(self):
         self.mouse_click_move_stage_enabled = False
@@ -274,7 +283,8 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
                 x, y = float(scan_cmd_list[2]), float(scan_cmd_list[6])
             self.roi_scan_xy_stage = [x, y]
         else:
-            pass
+            self.roi_scan_xy_stage = self._generate_handle_pos_list_polylineroi()[0]
+            #pass
 
     def update_autolevel(self, autolevel):
         self.autolevel = autolevel
@@ -367,7 +377,7 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
             self.roi_scan.addScaleHandle([0.5, 1], [0.5, 0], lockAspect=False)
         elif self.roi_type == 'polyline':
             pen = pg.mkPen((0, 200, 200), width=1)
-            self.roi_scan = pg.PolyLineROI([],closed=True)
+            self.roi_scan = pg.PolyLineROI([],closed=True, movable=False)
             self.roi_scan.handleSize = 10
             self.roi_scan.setPoints([[x0,y0],[x0+w,y0],[x0+w, y0+h],[x0,y0+h]])
             self.roi_scan.setZValue(10000)
@@ -383,21 +393,20 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
             stage_x = main_gui.lineEdit_sample_stage_name_x.text()
             stage_y = main_gui.lineEdit_sample_stage_name_y.text()
             step_size = eval(main_gui.lineEdit_step_size.text())
-            steps_x = main_gui.spinBox_steps_hor.value()
-            steps_y = main_gui.spinBox_steps_ver.value()
+            # steps_x = main_gui.spinBox_steps_hor.value()
+            # steps_y = main_gui.spinBox_steps_ver.value()
             sample_x_stage_start_pos, sample_y_stage_start_pos = self._cal_scan_coordinates_from_pos(np.array(self.roi_scan.pos())*main_gui.camara_pixel_size)
             width, height = abs(np.array(self.roi_scan.size()))*main_gui.camara_pixel_size
-            if main_gui.checkBox_use_step_size.isChecked():
-                steps_x = int(width/step_size[0]*1000)
-                steps_y = int(height/step_size[1]*1000)
+            # if main_gui.checkBox_use_step_size.isChecked():
+            steps_x = int(width/step_size[0]*1000)
+            steps_y = int(height/step_size[1]*1000)
             exposure_time = float(main_gui.lineEdit_exposure_time.text())
             scan_cmd_str = f'{scan_cmd} {stage_x}' + \
                         f' {round(sample_x_stage_start_pos,4)} {round(sample_x_stage_start_pos+width,4)} {steps_x}' + \
                         f' {stage_y} {round(sample_y_stage_start_pos,4)} {round(sample_y_stage_start_pos-height,4)} {steps_y}'+\
                         f' {exposure_time}'
             main_gui.lineEdit_full_macro_name.setText(scan_cmd_str)
-            self.save_current_roi_xy()
-            return scan_cmd_str
+            # return scan_cmd_str
         else:
             self.roi_scan_xy_stage = [None, None]
             scan_cmd = 'pmesh'
@@ -407,6 +416,7 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
             step_size_x, step_size_y = np.array(eval(main_gui.lineEdit_step_size.text()))/1000
             coords = str(self._generate_handle_pos_list_polylineroi()).replace(',','')
             main_gui.lineEdit_full_macro_name.setText(f'{scan_cmd} {stage_x} {step_size_x} {stage_y} {step_size_y} {exposure_time} {coords}')
+        self.save_current_roi_xy()
     
     def _from_viewport_coords_to_stage_coords(self, x_vp, y_vp):
         main_gui = findMainWindow()
@@ -529,7 +539,17 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         if self.roi_scan_xy_stage[0]!=None:
             pos = self._convert_stage_coord_to_pix_unit(*self.roi_scan_xy_stage)
             if self.roi_scan != None:
-                self.roi_scan.setPos(pos=pos)
+                if self.roi_type=='rectangle':
+                    self.roi_scan.setPos(pos=pos)
+                elif self.roi_type=='polyline':
+                    # self.roi_scan.setPos(pos=pos)
+                    pass
+                    # self.roi_scan.setPos(pos=pos)
+                    # anchor_pos = self._generate_handle_pos_list_polylineroi()
+                    #offset = np.array(anchor_pos[0]) + pos
+                    #original_pos = np.array(list(self.roi_scan.pos()))
+                    # self.roi_scan.setPos(pos=(0,0))
+                    # self.roi_scan.setPoints([np.array(each) for each in anchor_pos])
         else:
             pass
 

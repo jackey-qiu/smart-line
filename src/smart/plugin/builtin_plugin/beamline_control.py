@@ -39,8 +39,10 @@ class beamlineControl(object):
             name_map = self.settings_object['SampleStageMotorNames']
             if 'x' in name_map:
                 getattr(self, 'label_sample_stage_x').setText(name_map['x'])
+                self.lineEdit_sample_stage_name_x.setText(name_map['x'])
             if 'y' in name_map:
                 getattr(self, 'label_sample_stage_y').setText(name_map['y'])
+                self.lineEdit_sample_stage_name_y.setText(name_map['y'])
             if 'z' in name_map:
                 getattr(self, 'label_sample_stage_z').setText(name_map['z'])
 
@@ -50,10 +52,14 @@ class beamlineControl(object):
             self.camara_pixel_size = Attribute(self.settings_object["Camaras"]["pixel_size"]).read().value
         except:
             pass
+        x_label = self.settings_object["SampleStageMotorNames"]['x']
+        y_label = self.settings_object["SampleStageMotorNames"]['y']
+        x_unit = Attribute(self.settings_object['SampleStages']['x_stage_value']).getParentObj().get_attribute_config('position').display_unit
+        y_unit = Attribute(self.settings_object['SampleStages']['y_stage_value']).getParentObj().get_attribute_config('position').display_unit
         self.camara_widget.img_viewer.axes['left']['item'].setScale(self.camara_pixel_size)
-        self.camara_widget.img_viewer.axes['left']['item'].setLabel('ver (mm)')
+        self.camara_widget.img_viewer.axes['left']['item'].setLabel(f'{y_label} ({y_unit})')
         self.camara_widget.img_viewer.axes['bottom']['item'].setScale(self.camara_pixel_size)
-        self.camara_widget.img_viewer.axes['bottom']['item'].setLabel('hor (mm)')
+        self.camara_widget.img_viewer.axes['bottom']['item'].setLabel(f'{x_label} ({x_unit})')
 
     def set_models(self):
         self.update_pixel_size()
@@ -218,7 +224,7 @@ class beamlineControl(object):
             self.camara_widget.roi_scan.setPos(0,0)
             self.camara_widget.img_viewer.vb.removeItem(self.camara_widget.roi_scan)
             pen = pg.mkPen((0, 200, 200), width=1)
-            self.camara_widget.roi_scan = pg.PolyLineROI([],closed=True)
+            self.camara_widget.roi_scan = pg.PolyLineROI([],closed=True,movable=False)
             self.camara_widget.roi_scan.handleSize = 10
             self.camara_widget.roi_scan.setPoints(anchors_list)
             self.camara_widget.roi_scan.setZValue(10000)

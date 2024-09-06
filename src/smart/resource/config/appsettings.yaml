@@ -32,6 +32,7 @@ General:
   ScalePosition: Bottom Right
   ScaleSize: 1000
   beamlinePCHostName: hasm5570cq
+  connect_model_startup: true
 Motors:
   samly: tango://hasp029rack.desy.de:10000/p06/motor/exp.02
   samlz: tango://hasp029rack.desy.de:10000/p06/motor/exp.01
@@ -39,10 +40,10 @@ Mscope:
   comboBox_illum_types: tango://hasp029rack.desy.de:10000/p06/beamlinemicroscopeillumination/test.01/AvailableIlluminationTypes
   label_illum_pos: tango://hasp029rack.desy.de:10000/p06/beamlinemicroscopeillumination/test.01/intensity{}
 PrimBeamGeo:
-  img_x: -1443.021826817273
-  img_y: -2339.9093239048266
-  iso_h: -1363.6363636363637
-  iso_v: -454.5454545454544
+  img_x: -1460.1066036219715
+  img_y: -2254.4854398813363
+  iso_h: -1363.6363636363635
+  iso_v: -454.5454545454545
   stage_x: -9.999999999999996
   stage_y: -30.0
 QueueControl:
