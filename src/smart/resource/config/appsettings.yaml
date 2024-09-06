@@ -33,6 +33,7 @@ General:
   ScaleSize: 1000
   beamlinePCHostName: hasm5570cq
   connect_model_startup: true
+  db: tango://hasp029rack.desy.de:10000
 Motors:
   samly: tango://hasp029rack.desy.de:10000/p06/motor/exp.02
   samlz: tango://hasp029rack.desy.de:10000/p06/motor/exp.01
@@ -62,6 +63,10 @@ Visuals:
   boxLinewidth: 2
   showBox: 1
   showScalebar: 0
+motor_alias_address_map:
+  samlx: tango://hasp029rack.desy.de:10000/motor/dummy_mot_ctrl/3
+  samly: tango://hasp029rack.desy.de:10000/p06/motor/exp.02
+  samlz: tango://hasp029rack.desy.de:10000/p06/motor/exp.01
 spockLogin:
   doorAlias: Door-hasp029rack
   doorName: tango://hasp029rack.desy.de:10000/p06/door/hasp029rack.01

@@ -45,6 +45,7 @@ from sardana.taurus.qt.qtgui.extra_macroexecutor.macroexecutor import (
 from taurus import Device
 from taurus.core.util.containers import ArrayBuffer
 
+
 setting_file = str(
     Path(__file__).parent.parent / "resource" / "config" / "appsettings.yaml"
 )
@@ -312,8 +313,10 @@ class smartGui(
                     )
                     self.move_motor_action.attachToPlotItem(plot)
                     self.widget_online_monitor.manager.bind_obj = self.motor_pos_marker
+                    # device_name = Device(self.settings_object['spockLogin']['doorName']).getParentObj().getTangoDB().get_device_alias(plot.x_axis["name"])
                     self.widget_online_monitor.manager.setModel(
-                        Device(plot.x_axis["name"])._full_name + "/Position",
+                        # Device(plot.x_axis["name"])._full_name + "/Position",
+                        f"{self.settings_object['motor_alias_address_map'][plot.x_axis['name']]}/Position",
                         key="motor",
                     )
                     plot.addItem(self.motor_pos_marker)
