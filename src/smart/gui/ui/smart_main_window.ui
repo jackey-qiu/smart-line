@@ -1571,6 +1571,20 @@
                      <item>
                       <layout class="QHBoxLayout" name="horizontalLayout_16">
                        <item>
+                        <widget class="QPushButton" name="pushButton_show_rois">
+                         <property name="text">
+                          <string>show all rois</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item>
+                        <widget class="QPushButton" name="pushButton_rm_rois">
+                         <property name="text">
+                          <string>rm all rois</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item>
                         <spacer name="horizontalSpacer_9">
                          <property name="orientation">
                           <enum>Qt::Horizontal</enum>

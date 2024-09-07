@@ -33,6 +33,8 @@ class beamlineControl(object):
         self.tableView_scan_list_camera_viewer.clicked.connect(self.update_roi_upon_click_tableview_camera_widget)
         self.pushButton_remove_one_task.clicked.connect(self.remove_currently_selected_row)
         self.pushButton_submit_all.clicked.connect(lambda: self.submit_jobs_to_queue_server(viewer='camera'))
+        self.pushButton_show_rois.clicked.connect(self.show_all_rois)
+        self.pushButton_rm_rois.clicked.connect(self.delete_rois)
 
     def update_stage_name_from_config(self):
         if 'SampleStageMotorNames' in self.settings_object:
@@ -206,10 +208,45 @@ class beamlineControl(object):
         except:#nothing selected
             pass
 
+    def show_all_rois(self):
+        for each in self.camara_widget.rois:
+            self.camara_widget.img_viewer.vb.removeItem(each)
+        for i in range(self.pandas_model_queue_camara_viewer._data.shape[0]):
+            cmd = self.pandas_model_queue_camara_viewer._data.iloc[i,:]['scan_command']
+            if cmd.startswith('pmesh'):
+                anchors_list = re.findall(r"(\[[-+]?(?:\d*\.*\d+) [-+]?(?:\d*\.*\d+)\])", self.pandas_model_queue_camara_viewer._data.iloc[i,:]['scan_command'])
+                anchors_list = [self.camara_widget._convert_stage_coord_to_pix_unit(*eval(each.replace(' ', ','))) for each in anchors_list]
+                pen = pg.mkPen((0, 200, 200), width=1)
+                roi = pg.PolyLineROI([],closed=True,movable=False)
+                roi.setPoints(anchors_list)
+                roi.setZValue(10000)
+                roi.handlePen = pg.mkPen("#FFFFFF")
+                self.camara_widget.img_viewer.vb.addItem(roi)      
+                self.camara_widget.rois.append(roi)
+            elif cmd.startswith('mesh'):     
+                scan_cmd_list = cmd.rsplit(' ')
+                x_, y_ = float(scan_cmd_list[2]), float(scan_cmd_list[6])
+                x_end_, y_end_ = float(scan_cmd_list[3]), float(scan_cmd_list[7])
+                self.camara_widget.roi_scan_xy_stage = [x_, y_]
+                x, y = self.camara_widget._convert_stage_coord_to_pix_unit(x_, y_)
+                x_end, y_end = self.camara_widget._convert_stage_coord_to_pix_unit(x_end_, y_end_)
+                w, h = abs(x - x_end), abs(y - y_end)                     
+                pen = pg.mkPen((0, 200, 200), width=1)
+                roi = pg.ROI([x, y], [w, h], pen=pen)
+                roi.setZValue(10000)
+                self.camara_widget.img_viewer.vb.addItem(roi)      
+                self.camara_widget.rois.append(roi)
+
+    def delete_rois(self):
+        for each in self.camara_widget.rois:
+            self.camara_widget.img_viewer.vb.removeItem(each)
+
     @Slot(QtCore.QModelIndex)
     def update_roi_upon_click_tableview_camera_widget(self, modelindex):
         row = modelindex.row()
+        self.camara_widget.setPaused(True)
         self.update_roi_at_row(row)
+        self.camara_widget.setPaused(False)
 
     def update_roi_at_row(self, row):
         # roi = eval(self.pandas_model_queue_camara_viewer._data.iloc[row,:]['geo_roi'])
@@ -228,13 +265,13 @@ class beamlineControl(object):
             self.camara_widget.img_viewer.vb.removeItem(self.camara_widget.roi_scan)
             pen = pg.mkPen((0, 200, 200), width=1)
             self.camara_widget.roi_scan = pg.PolyLineROI([],closed=True,movable=False)
+            self.camara_widget.roi_scan.sigRegionChanged.connect(self.camara_widget._cal_scan_coordinates)
             self.camara_widget.roi_scan.handleSize = 10
             self.camara_widget.roi_scan.setPoints(anchors_list)
             self.camara_widget.roi_scan.setZValue(10000)
             self.camara_widget.roi_scan.handlePen = pg.mkPen("#FFFFFF")
             self.camara_widget.img_viewer.vb.addItem(self.camara_widget.roi_scan)
-            self.camara_widget.roi_scan.setPos(0,0)
-            self.camara_widget.roi_scan.sigRegionChangeFinished.connect(self.camara_widget._cal_scan_coordinates)
+            # self.camara_widget.roi_scan.setPos(0,0)
         else:                
             x_, y_ = float(scan_cmd_list[2]), float(scan_cmd_list[6])
             x_end_, y_end_ = float(scan_cmd_list[3]), float(scan_cmd_list[7])

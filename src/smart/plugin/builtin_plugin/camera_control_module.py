@@ -241,6 +241,7 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self.data_format_cbs = [lambda x: x]
         self.autolevel = True
         self.roi_scan = None
+        self.rois = []
         self.roi_scan_xy_stage = [None, None]
         self.roi_type = 'rectangle'
         self.mouse_click_move_stage_enabled = False
@@ -368,6 +369,7 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
     def set_reference_zone(self, x0, y0, w, h):
         self.set_reference_zone_pure(x0,y0,w,h)
         self._cal_scan_coordinates()
+        
 
     def set_reference_zone_pure(self, x0, y0, w, h):
         """
@@ -399,7 +401,10 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
             self.roi_scan.setZValue(10000)
             self.roi_scan.handlePen = pg.mkPen("#FFFFFF")
         self.img_viewer.vb.addItem(self.roi_scan)
-        self.roi_scan.sigRegionChangeFinished.connect(self._cal_scan_coordinates)
+        self.roi_scan.sigRegionChangeStarted.connect(lambda: self.setPaused(True))
+        self.roi_scan.sigRegionChanged.connect(self._cal_scan_coordinates)
+        self.roi_scan.sigRegionChangeFinished.connect(lambda: self.setPaused(False))
+
 
     def _cal_scan_coordinates(self):
         main_gui = findMainWindow()
