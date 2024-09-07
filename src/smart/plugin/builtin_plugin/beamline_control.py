@@ -209,6 +209,9 @@ class beamlineControl(object):
     @Slot(QtCore.QModelIndex)
     def update_roi_upon_click_tableview_camera_widget(self, modelindex):
         row = modelindex.row()
+        self.update_roi_at_row(row)
+
+    def update_roi_at_row(self, row):
         # roi = eval(self.pandas_model_queue_camara_viewer._data.iloc[row,:]['geo_roi'])
         #x, y, w, h = roi
         scan_cmd_list = self.pandas_model_queue_camara_viewer._data.iloc[row,:]['scan_command'].rsplit(' ')
@@ -231,7 +234,7 @@ class beamlineControl(object):
             self.camara_widget.roi_scan.handlePen = pg.mkPen("#FFFFFF")
             self.camara_widget.img_viewer.vb.addItem(self.camara_widget.roi_scan)
             self.camara_widget.roi_scan.setPos(0,0)
-            self.camara_widget.roi_scan.sigRegionChanged.connect(self.camara_widget._cal_scan_coordinates)
+            self.camara_widget.roi_scan.sigRegionChangeFinished.connect(self.camara_widget._cal_scan_coordinates)
         else:                
             x_, y_ = float(scan_cmd_list[2]), float(scan_cmd_list[6])
             x_end_, y_end_ = float(scan_cmd_list[3]), float(scan_cmd_list[7])
@@ -249,7 +252,8 @@ class beamlineControl(object):
                 #self.camara_widget.roi_scan.setY(y)
                 self.camara_widget.roi_scan.setSize((w, h))
 
-    def update_roi_at_row(self, row):
+    #not used anymore
+    def _update_roi_at_row(self, row):
         roi = eval(self.pandas_model_queue_camara_viewer._data.iloc[row,:]['geo_roi'])
         x, y, w, h = roi
         scan_cmd_list = self.pandas_model_queue_camara_viewer._data.iloc[row,:]['scan_command'].rsplit(' ')

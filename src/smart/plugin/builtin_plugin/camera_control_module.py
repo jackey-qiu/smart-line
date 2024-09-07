@@ -1,4 +1,4 @@
-import sys, copy
+import sys, copy, re
 from taurus.qt.qtgui.base import TaurusBaseComponent
 from taurus.external.qt import Qt
 from pyqtgraph.Qt import QtCore, QtGui
@@ -272,19 +272,35 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
 
     def set_roi_type(self, roi_type):
         if roi_type in ['rectangle','polyline']:
-            self.roi_type = roi_type
+            if roi_type != self.roi_type:
+                if self.roi_scan!=None:
+                    self.img_viewer.vb.removeItem(self.roi_scan)
+                    self.roi_scan = None
+                    self.roi_type = roi_type
 
     def save_current_roi_xy(self):
         main_gui = findMainWindow()
+        cmd = main_gui.lineEdit_full_macro_name.text()
         if self.roi_type=='rectangle':
-            cmd = main_gui.lineEdit_full_macro_name.text()
             if cmd != '':
                 scan_cmd_list = cmd.rsplit(' ')
                 x, y = float(scan_cmd_list[2]), float(scan_cmd_list[6])
             self.roi_scan_xy_stage = [x, y]
         else:
-            self.roi_scan_xy_stage = self._generate_handle_pos_list_polylineroi()[0]
-            #pass
+            try:
+                pos_list = re.findall(r"(\[[-+]?(?:\d*\.*\d+) [-+]?(?:\d*\.*\d+)\])", cmd)
+                self.roi_scan_xy_stage = eval(pos_list[0].replace(' ',','))
+            except:
+                pass
+            '''
+            try:
+                anchor = eval(pos_list[0].replace(' ',','))
+                print(anchor)
+                self.roi_scan_xy_stage = anchor
+            except:
+                print(cmd)
+            #self.roi_scan_xy_stage = self._generate_handle_pos_list_polylineroi()[0]
+            '''
 
     def update_autolevel(self, autolevel):
         self.autolevel = autolevel
@@ -383,7 +399,7 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
             self.roi_scan.setZValue(10000)
             self.roi_scan.handlePen = pg.mkPen("#FFFFFF")
         self.img_viewer.vb.addItem(self.roi_scan)
-        self.roi_scan.sigRegionChanged.connect(self._cal_scan_coordinates)
+        self.roi_scan.sigRegionChangeFinished.connect(self._cal_scan_coordinates)
 
     def _cal_scan_coordinates(self):
         main_gui = findMainWindow()
@@ -406,6 +422,7 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
                         f' {stage_y} {round(sample_y_stage_start_pos,4)} {round(sample_y_stage_start_pos-height,4)} {steps_y}'+\
                         f' {exposure_time}'
             main_gui.lineEdit_full_macro_name.setText(scan_cmd_str)
+            self.save_current_roi_xy()
             # return scan_cmd_str
         else:
             self.roi_scan_xy_stage = [None, None]
@@ -416,7 +433,7 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
             step_size_x, step_size_y = np.array(eval(main_gui.lineEdit_step_size.text()))/1000
             coords = str(self._generate_handle_pos_list_polylineroi()).replace(',','')
             main_gui.lineEdit_full_macro_name.setText(f'{scan_cmd} {stage_x} {step_size_x} {stage_y} {step_size_y} {exposure_time} {coords}')
-        self.save_current_roi_xy()
+            self.save_current_roi_xy()
     
     def _from_viewport_coords_to_stage_coords(self, x_vp, y_vp):
         main_gui = findMainWindow()
@@ -431,7 +448,7 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         stage_coords = main_gui.stage_pos_at_prim_beam + dist_from_prim_beam_pos
         return list(stage_coords.round(3))
 
-    def _generate_handle_pos_list_polylineroi(self):
+    def _generate_handle_pos_list_polylineroi(self, use_pixel_unit = False):
         main_gui = findMainWindow()
         pos_list = []
         #the pos always start with [0,0] upon creating the polyroi no matter where you make this roi object
@@ -441,7 +458,10 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         for handle in self.roi_scan.handles:
             handle_ls = [handle['pos'].x(), handle['pos'].y()]
             # pos_list.append(self._from_viewport_coords_to_stage_coords(*handle_ls))
-            pos_list.append(list(np.array(self._cal_scan_coordinates_from_pos(np.array(handle_ls+offset)*main_gui.camara_pixel_size)).round(3)))
+            if use_pixel_unit:
+                pos_list.append(handle_ls + offset)
+            else:
+                pos_list.append(list(np.array(self._cal_scan_coordinates_from_pos(np.array(handle_ls+offset)*main_gui.camara_pixel_size)).round(3)))
         return pos_list
 
     def _cal_scan_coordinates_from_pos_old(self, pos):
@@ -540,16 +560,19 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
             pos = self._convert_stage_coord_to_pix_unit(*self.roi_scan_xy_stage)
             if self.roi_scan != None:
                 if self.roi_type=='rectangle':
-                    self.roi_scan.setPos(pos=pos)
+                    old_pos = np.array(list(self.roi_scan.pos()))
+                    if abs(sum(old_pos-pos))>0.1:
+                        self.roi_scan.setPos(pos=pos)
                 elif self.roi_type=='polyline':
                     # self.roi_scan.setPos(pos=pos)
-                    pass
                     # self.roi_scan.setPos(pos=pos)
-                    # anchor_pos = self._generate_handle_pos_list_polylineroi()
-                    #offset = np.array(anchor_pos[0]) + pos
+                    anchor_pos = self._generate_handle_pos_list_polylineroi(use_pixel_unit=True)
+                    offset = np.array(anchor_pos[0]) - pos
+                    #print('handle event', offset)
                     #original_pos = np.array(list(self.roi_scan.pos()))
-                    # self.roi_scan.setPos(pos=(0,0))
-                    # self.roi_scan.setPoints([np.array(each) for each in anchor_pos])
+                    if abs(sum(offset)) > 0.1:
+                        self.roi_scan.setPos(pos=(0,0))
+                        self.roi_scan.setPoints([np.array(each)-offset for each in anchor_pos])
         else:
             pass
 
