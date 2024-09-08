@@ -7,10 +7,11 @@ from threading import Event, Thread
 import time
 
 class trigger(QtCore.QObject):
-    def __init__(self, cb = lambda:None, timeout = 10):
+    def __init__(self, cb = lambda:None, timeout = 10, repeat = False):
         super().__init__()
         self.cb = cb
         self.timeout = timeout
+        self.repeat = repeat
 
     def start_new_cb(self, cb, timeout = None):
         self.cb = cb
@@ -22,7 +23,10 @@ class trigger(QtCore.QObject):
         while True:
             if (time.time() - start) > self.timeout:
                 self.cb()
-                break
+                if self.repeat:
+                    start = time.time()
+                else:
+                    break
 
 def findMainWindow() -> typing.Union[QMainWindow, None]:
     # Global function to find the (open) QMainWindow in application

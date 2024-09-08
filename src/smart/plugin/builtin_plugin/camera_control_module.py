@@ -228,8 +228,10 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
     def __init__(self, parent = None, rgb_viewer = False, *args, **kwargs):
         GraphicsLayoutWidget.__init__(self, *args, **kwargs)
         TaurusBaseComponent.__init__(self, "TaurusImageItem")
-        self._timer = Qt.QTimer()
-        self._timer.timeout.connect(self._forceRead)
+        self.period_timer_forceRead = trigger(cb=self._forceRead, repeat=True)
+        self.thread_period_timer_forceRead = QtCore.QThread()
+        self.period_timer_forceRead.moveToThread(self.thread_period_timer_forceRead)
+        self.thread_period_timer_forceRead.started.connect(self.period_timer_forceRead.run)
         self.timer_mouse_click_reaction = trigger()
         self.thread_mouse_click_reation = QtCore.QThread()
         self.timer_mouse_click_reaction.moveToThread(self.thread_mouse_click_reation)
@@ -293,15 +295,6 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
                 self.roi_scan_xy_stage = eval(pos_list[0].replace(' ',','))
             except:
                 pass
-            '''
-            try:
-                anchor = eval(pos_list[0].replace(' ',','))
-                print(anchor)
-                self.roi_scan_xy_stage = anchor
-            except:
-                print(cmd)
-            #self.roi_scan_xy_stage = self._generate_handle_pos_list_polylineroi()[0]
-            '''
 
     def update_autolevel(self, autolevel):
         self.autolevel = autolevel
@@ -569,12 +562,8 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
                     if abs(sum(old_pos-pos))>0.1:
                         self.roi_scan.setPos(pos=pos)
                 elif self.roi_type=='polyline':
-                    # self.roi_scan.setPos(pos=pos)
-                    # self.roi_scan.setPos(pos=pos)
                     anchor_pos = self._generate_handle_pos_list_polylineroi(use_pixel_unit=True)
                     offset = np.array(anchor_pos[0]) - pos
-                    #print('handle event', offset)
-                    #original_pos = np.array(list(self.roi_scan.pos()))
                     if abs(sum(offset)) > 0.1:
                         self.roi_scan.setPos(pos=(0,0))
                         self.roi_scan.setPoints([np.array(each)-offset for each in anchor_pos])
@@ -669,7 +658,7 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         """
         return self._timer.interval()
 
-    def setForcedReadPeriod(self, period):
+    def setForcedReadPeriod_old(self, period):
         """
         Forces periodic reading of the subscribed attribute in order to show
         new points even if no events are received.
@@ -677,6 +666,7 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         It will also block the plotting of regular events when period > 0.
         :param period: (int) period in milliseconds. Use period<=0 to stop the
                        forced periodic reading
+        QTimer eats the resource of main thread. You feel lagacy on widget opts.
         """
 
         # stop the timer and remove the __ONLY_OWN_EVENTS filter
@@ -690,6 +680,34 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         if period > 0:
             self.insertEventFilter(self.__ONLY_OWN_EVENTS)
             self._timer.start(period)
+
+    def setForcedReadPeriod(self, period):
+        """
+        Forces periodic reading of the subscribed attribute in order to show
+        new points even if no events are received.
+        It will create fake events as needed with the read value.
+        It will also block the plotting of regular events when period > 0.
+        :param period: (int) period in milliseconds. Use period<=0 to stop the
+                       forced periodic reading
+        """
+
+        # stop the timer and remove the __ONLY_OWN_EVENTS filter
+        # self._timer.stop()
+        try:
+            self.thread_period_timer_forceRead.terminate()
+        except:
+            pass
+        filters = self.getEventFilters()
+        if self.__ONLY_OWN_EVENTS in filters:
+            filters.remove(self.__ONLY_OWN_EVENTS)
+            self.setEventFilters(filters)
+
+        # if period is positive, set the filter and start
+        if period > 0:
+            self.insertEventFilter(self.__ONLY_OWN_EVENTS)
+            self.period_timer_forceRead.timeout = period/1000.
+            self.thread_period_timer_forceRead.start()
+            #self._timer.start(period)
 
     def _connect_mouse_move_event(self, evt):
         main_gui = findMainWindow()
