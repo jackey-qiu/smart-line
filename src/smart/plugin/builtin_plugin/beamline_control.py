@@ -244,13 +244,12 @@ class beamlineControl(object):
     @Slot(QtCore.QModelIndex)
     def update_roi_upon_click_tableview_camera_widget(self, modelindex):
         row = modelindex.row()
-        self.camara_widget.setPaused(True)
         self.update_roi_at_row(row)
-        self.camara_widget.setPaused(False)
 
     def update_roi_at_row(self, row):
         # roi = eval(self.pandas_model_queue_camara_viewer._data.iloc[row,:]['geo_roi'])
         #x, y, w, h = roi
+        self.camara_widget.setPaused(True)
         scan_cmd_list = self.pandas_model_queue_camara_viewer._data.iloc[row,:]['scan_command'].rsplit(' ')
         if scan_cmd_list[0]=='pmesh':
             anchors_list = re.findall(r"(\[[-+]?(?:\d*\.*\d+) [-+]?(?:\d*\.*\d+)\])", self.pandas_model_queue_camara_viewer._data.iloc[row,:]['scan_command'])
@@ -288,6 +287,7 @@ class beamlineControl(object):
                 #self.camara_widget.roi_scan.setX(x)
                 #self.camara_widget.roi_scan.setY(y)
                 self.camara_widget.roi_scan.setSize((w, h))
+        self.camara_widget.setPaused(False)
 
     #not used anymore
     def _update_roi_at_row(self, row):

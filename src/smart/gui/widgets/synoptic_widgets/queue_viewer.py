@@ -171,7 +171,7 @@ class queueSynopticView(QWidget):
         if len(self._data) == 0:
             self.shapes = []
             return
-        size_col = self._calculate_col_num_blocks()
+        size_col = max([self._calculate_col_num_blocks(),1])
         for i in range(len(self._data)):
             which_col = int((i + 1) / size_col)
             shape = rectangle(

@@ -378,10 +378,17 @@ class queueControl(object):
         cmd = running_row['scan_command'].to_list()[0]
         data = self.pandas_model_queue_camara_viewer._data
         #the active row ix
+        row_list = ((data['scan_command'] == cmd) & (data['queue'] == queue)).to_list()
+        if True in row_list:
+            which_row = row_list.index(True)
+        else:
+            which_row = None
+        '''
         try:
             which_row = ((data['scan_command'] == cmd) & (data['queue'] == queue)).to_list().index(True)
         except:
             which_row = None
+        '''
         if which_row != None:
             self.update_roi_at_row(which_row)
 
