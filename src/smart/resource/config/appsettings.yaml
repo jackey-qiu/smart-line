@@ -41,10 +41,10 @@ Mscope:
   comboBox_illum_types: tango://hasp029rack.desy.de:10000/p06/beamlinemicroscopeillumination/test.01/AvailableIlluminationTypes
   label_illum_pos: tango://hasp029rack.desy.de:10000/p06/beamlinemicroscopeillumination/test.01/intensity{}
 PrimBeamGeo:
-  img_x: -1460.1066036219715
-  img_y: -2254.4854398813363
-  iso_h: -1363.6363636363635
-  iso_v: -454.5454545454545
+  img_x: -1442.1062518516044
+  img_y: -2288.654993490733
+  iso_h: -1363.6363636363637
+  iso_v: -454.5454545454544
   stage_x: -9.999999999999996
   stage_y: -30.0
 QueueControl:

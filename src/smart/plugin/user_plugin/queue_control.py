@@ -122,6 +122,7 @@ class queueControl(object):
         self.queueToolBar.addAction(action_run_queue)
         #finally add the toolbar
         self.addToolBar(Qt.LeftToolBarArea, self.queueToolBar)
+        self.queueToolBar.hide()
 
     def connect_queue_server(self, which_instance = 0):
         try:

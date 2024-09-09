@@ -102,13 +102,19 @@ class camera_control_panel(object):
         else:
             self.camara_widget.data_format_cbs.append(cb_str)
 
-    def _lock_crosshair_lines(self):
+    def _lock_crosshair_lines(self, action_object_pair):
+        assert len(action_object_pair)==2, 'two action objects are needed here'
         self.camara_widget.isoLine_h.setMovable(False)
         self.camara_widget.isoLine_v.setMovable(False)
+        action_object_pair[0].setVisible(False)
+        action_object_pair[1].setVisible(True)
 
-    def _unlock_crosshair_lines(self):
+    def _unlock_crosshair_lines(self, action_object_pair):
+        assert len(action_object_pair)==2, 'two action objects are needed here'
         self.camara_widget.isoLine_h.setMovable(True)
         self.camara_widget.isoLine_v.setMovable(True)
+        action_object_pair[0].setVisible(False)
+        action_object_pair[1].setVisible(True)
 
     def _save_crosshair(self):
         x, y = self.camara_widget.isoLine_v.value(),self.camara_widget.isoLine_h.value()
@@ -148,12 +154,14 @@ class camera_control_panel(object):
         action_switch_off_camera = QAction(QIcon(str(icon_path / 'smart' / 'cam_off.png')),'switch off camera',self)
         action_switch_off_camera.setStatusTip('You can switch off the camera here.')
         action_switch_off_camera.triggered.connect(self.stop_cam_stream)
-        lock = QAction(QIcon(str(icon_path / 'smart' / 'lock.png')),'lock crosshair',self)
+        action_switch_off_camera.setVisible(False)
+        lock = QAction(QIcon(str(icon_path / 'smart' / 'unlock.png')),'lock crosshair',self)
         lock.setStatusTip('You can freeze the crosshair lines.')
-        lock.triggered.connect(self._lock_crosshair_lines)            
-        unlock = QAction(QIcon(str(icon_path / 'smart' / 'unlock.png')),'unlock crosshair',self)
+        unlock = QAction(QIcon(str(icon_path / 'smart' / 'lock.png')),'unlock crosshair',self)
         unlock.setStatusTip('You can unfreeze the crosshair lines.')
-        unlock.triggered.connect(self._unlock_crosshair_lines)               
+        lock.triggered.connect(lambda: self._lock_crosshair_lines([lock, unlock]))            
+        unlock.triggered.connect(lambda: self._unlock_crosshair_lines([unlock, lock]))               
+        unlock.setVisible(False)
         resumecrosshair = QAction(QIcon(str(icon_path / 'smart' / 'resume_crosshair.png')),'resume crosshair pos',self)
         resumecrosshair.setStatusTip('Resume the crosshair line positions to previous saved pars for prim beam.')
         resumecrosshair.triggered.connect(self._resume_prim_beam_pos)
@@ -163,25 +171,29 @@ class camera_control_panel(object):
         center = QAction(QIcon(str(icon_path / 'smart' / 'center.png')),'center the stage to prim beam',self)
         center.setStatusTip('You will move the stage back to the primary beam position saved in the config file.')
         center.triggered.connect(self.camara_widget.mv_stage_to_prim_beam)        
-        autoscale = QAction(QIcon(str(icon_path / 'smart' / 'scale_rgb.png')),'auto scaling the rgb color',self)
+        autoscale = QAction(QIcon(str(icon_path / 'smart' / 'unscale_rgb.png')),'auto scaling the rgb color',self)
         autoscale.setStatusTip('Turn on the autoscaling of RGB channels.')
-        autoscale.triggered.connect(lambda: self.camara_widget.update_autolevel(True))               
-        autoscaleoff = QAction(QIcon(str(icon_path / 'smart' / 'unscale_rgb.png')),'turn off auto scaling the rgb color',self)
+        autoscaleoff = QAction(QIcon(str(icon_path / 'smart' / 'scale_rgb.png')),'turn off auto scaling the rgb color',self)
         autoscaleoff.setStatusTip('Turn off the autoscaling of RGB channels.')
-        autoscaleoff.triggered.connect(lambda: self.camara_widget.update_autolevel(False))               
-        roi_rect = QAction(QIcon(str(icon_path / 'smart' / 'rectangle_roi.png')),'select rectangle roi',self)
+        autoscale.setVisible(False)
+        autoscale.triggered.connect(lambda: self.camara_widget.update_autolevel(True, [autoscale, autoscaleoff]))               
+        autoscaleoff.triggered.connect(lambda: self.camara_widget.update_autolevel(False, [autoscaleoff, autoscale]))               
+        roi_rect = QAction(QIcon(str(icon_path / 'smart' / 'polyline_roi.png')),'select rectangle roi',self)
         roi_rect.setStatusTip('click an drag to get a rectangle roi.')
-        roi_rect.triggered.connect(lambda: self.camara_widget.set_roi_type('rectangle'))               
-        roi_polyline = QAction(QIcon(str(icon_path / 'smart' / 'polyline_roi.png')),'select polygone roi',self)
+        roi_polyline = QAction(QIcon(str(icon_path / 'smart' / 'rectangle_roi.png')),'select polygone roi',self)
         roi_polyline.setStatusTip('click an drag to get a polygone roi selection.')
-        roi_polyline.triggered.connect(lambda: self.camara_widget.set_roi_type('polyline'))               
-        click_move = QAction(QIcon(str(icon_path / 'smart' / 'click.png')),'enable click to move stage mode',self)
+        roi_rect.setVisible(False)
+        roi_rect.triggered.connect(lambda: self.camara_widget.set_roi_type('rectangle', [roi_rect, roi_polyline]))               
+        roi_polyline.triggered.connect(lambda: self.camara_widget.set_roi_type('polyline', [roi_polyline, roi_rect]))               
+        click_move = QAction(QIcon(str(icon_path / 'smart' / 'stop.png')),'enable click to move stage mode',self)
         click_move.setStatusTip('click to activate stage moving with mouse click.')
-        click_move.triggered.connect(lambda: self.camara_widget.enable_mouse_click_move_stage()) 
-        self.click_move = click_move          
-        stop_click_move = QAction(QIcon(str(icon_path / 'smart' / 'stop.png')),'disable click to move stage mode',self)
+        # click_move.triggered.connect(lambda: self.camara_widget.enable_mouse_click_move_stage()) 
+        # self.click_move = click_move          
+        stop_click_move = QAction(QIcon(str(icon_path / 'smart' / 'click.png')),'disable click to move stage mode',self)
         stop_click_move.setStatusTip('click to deactivate stage moving with mouse click.')
-        stop_click_move.triggered.connect(lambda: self.camara_widget.disable_click_move_stage()) 
+        click_move.triggered.connect(lambda: self.camara_widget.enable_mouse_click_move_stage([click_move, stop_click_move])) 
+        stop_click_move.triggered.connect(lambda: self.camara_widget.disable_click_move_stage([stop_click_move, click_move])) 
+        stop_click_move.setVisible(False)
         show_bound_roi = QAction(QIcon(str(icon_path / 'smart' / 'boundary.png')),'show the boundary according to current stage softlimits',self)
         show_bound_roi.setStatusTip('click to show or hide the boundary roi based on current stage softlimits.')
         show_bound_roi.triggered.connect(lambda: self.camara_widget.get_stage_bounds())
@@ -280,8 +292,11 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self.rgb_viewer = rgb
         self._setup_rgb_viewer()
 
-    def enable_mouse_click_move_stage(self):
+    def enable_mouse_click_move_stage(self, action_object_pair):
         self.mouse_click_move_stage_enabled = True
+        assert len(action_object_pair)==2, 'two action objects are needed here'
+        action_object_pair[0].setVisible(False)
+        action_object_pair[1].setVisible(True)
 
     def set_mouse_click_move_stage(self, enabled):
         self.mouse_click_move_stage_enabled = enabled
@@ -297,17 +312,23 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         else:
             self.disable_click_move_stage()
 
-    def disable_click_move_stage(self):
+    def disable_click_move_stage(self, action_object_pair):
         self.mouse_click_move_stage_enabled = False
+        assert len(action_object_pair)==2, 'two action objects are needed here'
+        action_object_pair[0].setVisible(False)
+        action_object_pair[1].setVisible(True)
         # findMainWindow().click_move.setEnabled(True)
 
-    def set_roi_type(self, roi_type):
+    def set_roi_type(self, roi_type, action_object_pair):
         if roi_type in ['rectangle','polyline']:
             if roi_type != self.roi_type:
                 if self.roi_scan!=None:
                     self.img_viewer.vb.removeItem(self.roi_scan)
                     self.roi_scan = None
                     self.roi_type = roi_type
+        assert len(action_object_pair)==2, 'two action objects are needed here'
+        action_object_pair[0].setVisible(False)
+        action_object_pair[1].setVisible(True)
 
     def save_current_roi_xy(self):
         main_gui = findMainWindow()
@@ -324,8 +345,11 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
             except:
                 pass
 
-    def update_autolevel(self, autolevel):
+    def update_autolevel(self, autolevel, action_object_pair):
         self.autolevel = autolevel
+        assert len(action_object_pair)==2, 'two action objects are needed here'
+        action_object_pair[0].setVisible(False)
+        action_object_pair[1].setVisible(True)
 
     def _init_ui(self):
         self.rgb_viewer = findMainWindow().settings_object['Camaras']['rgb']
@@ -344,8 +368,11 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
             self.mvMotors.attachToPlotItem(self.img_viewer) 
 
     def _setup_rgb_viewer(self):
+        main_gui = findMainWindow()
         self.isoLine_v = pg.InfiniteLine(angle=90, movable=True, pen=pg.mkPen('green', width=4))
         self.isoLine_h = pg.InfiniteLine(angle=0, movable=True, pen=pg.mkPen('green', width=4))
+        self.isoLine_h.sigPositionChanged.connect(main_gui._calibrate_pos)
+        self.isoLine_v.sigPositionChanged.connect(main_gui._calibrate_pos)
         self.isoLine_v.setValue(0)
         self.isoLine_v.setZValue(100000) # bring iso line above contrast controls
         self.isoLine_h.setValue(0)
@@ -584,12 +611,14 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         img_x, img_y = geo_dict['img_x'], geo_dict['img_y']
         iso_h, iso_v = geo_dict['iso_h'], geo_dict['iso_v']
         stage_x, stage_y = geo_dict['stage_x'],geo_dict['stage_y']
-        self.img.setX(img_x)
-        self.img.setY(img_y)
         main_gui.stage_pos_at_prim_beam = [stage_x, stage_y]
         main_gui.crosshair_pos_at_prim_beam = [iso_v, iso_h]
+        #here the order matters
+        #set isoline first and then set the img x and y
         self.isoLine_h.setValue(iso_h)
         self.isoLine_v.setValue(iso_v)
+        self.img.setX(img_x)
+        self.img.setY(img_y)
 
     def reposition_scan_roi(self):
         if self.roi_scan_xy_stage[0]!=None:
