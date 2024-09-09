@@ -985,5 +985,6 @@ class smartGui(
                 event.accept()
             else:
                 event.accept()
+            self.camara_widget.thread_period_timer_forceRead.quit()
         elif reply == QMessageBox.No:
             event.ignore()

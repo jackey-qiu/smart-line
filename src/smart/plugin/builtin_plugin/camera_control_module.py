@@ -16,7 +16,7 @@ from taurus.qt.qtgui.tpg import ForcedReadTool
 from functools import partial
 import numpy as np
 from smart import icon_path
-from ...util.util import findMainWindow, trigger
+from ...util.util import findMainWindow, trigger, trigger2
 
 # timer_trigger = trigger(timeout=0.1)
 
@@ -77,6 +77,7 @@ class camera_control_panel(object):
         getattr(self, viewerWidgetName).width = _device.width
         getattr(self, viewerWidgetName).height = _device.height
         getattr(self, viewerWidgetName).data_format_cbs = data_format_cbs
+        # self.camara_widget.setForcedReadPeriod(0.2)
         self.statusbar.showMessage(f'start cam streaming with model of {camaraStreamModel}')
 
     def set_zoom_level(self, level = 50):
@@ -84,8 +85,13 @@ class camera_control_panel(object):
 
     def stop_cam_stream(self):
         _, viewerWidgetName, *_ = self._extract_cam_info_from_config()
+        model_samx, model_samy = self._extract_sample_stage_models()
         getattr(self, viewerWidgetName).setModel(None)
+        getattr(self, viewerWidgetName).setModel(None, key='samx')
+        getattr(self, viewerWidgetName).setModel(None, key='samy')
         self.camera_is_on = False
+        #set aribitray long timeout to simulate cam swtich off
+        # self.camara_widget.setForcedReadPeriod(3600)
         self.statusbar.showMessage('stop cam streaming')
 
     def _append_img_processing_cbs(self, cb_str):
@@ -142,27 +148,21 @@ class camera_control_panel(object):
         action_switch_off_camera = QAction(QIcon(str(icon_path / 'smart' / 'cam_off.png')),'switch off camera',self)
         action_switch_off_camera.setStatusTip('You can switch off the camera here.')
         action_switch_off_camera.triggered.connect(self.stop_cam_stream)
-        # flip_left_right = QAction(QIcon(str(icon_path / 'smart' / 'left_and_right.png')),'flip left and right',self)
-        # flip_left_right.setStatusTip('You can flip the image left and right.')
-        # flip_left_right.triggered.connect(lambda:self._append_img_processing_cbs('lambda data:np.flipud(data)'))  
-        # flip_up_down = QAction(QIcon(str(icon_path / 'smart' / 'up_and_down.png')),'flip up and down',self)
-        # flip_up_down.setStatusTip('You can flip the image up and down.')
-        # flip_up_down.triggered.connect(lambda:self._append_img_processing_cbs('lambda data:np.fliplr(data)'))               
         lock = QAction(QIcon(str(icon_path / 'smart' / 'lock.png')),'lock crosshair',self)
         lock.setStatusTip('You can freeze the crosshair lines.')
         lock.triggered.connect(self._lock_crosshair_lines)            
         unlock = QAction(QIcon(str(icon_path / 'smart' / 'unlock.png')),'unlock crosshair',self)
         unlock.setStatusTip('You can unfreeze the crosshair lines.')
         unlock.triggered.connect(self._unlock_crosshair_lines)               
-        # savecrosshair = QAction(QIcon(str(icon_path / 'smart' / 'save_crosshair.png')),'save crosshair pos',self)
-        # savecrosshair.setStatusTip('Save the crosshair line positions to be resumed in future.')
-        # savecrosshair.triggered.connect(self._save_crosshair)     
         resumecrosshair = QAction(QIcon(str(icon_path / 'smart' / 'resume_crosshair.png')),'resume crosshair pos',self)
         resumecrosshair.setStatusTip('Resume the crosshair line positions to previous saved pars for prim beam.')
         resumecrosshair.triggered.connect(self._resume_prim_beam_pos)
         poscalibration = QAction(QIcon(str(icon_path / 'icons_n' / 'lasing_navigate.png')),'stage calibration',self)
         poscalibration.setStatusTip('You can calibrate the crosshair pos to reflect sample stage position at the prim beam.')
         poscalibration.triggered.connect(self._calibrate_pos)               
+        center = QAction(QIcon(str(icon_path / 'smart' / 'center.png')),'center the stage to prim beam',self)
+        center.setStatusTip('You will move the stage back to the primary beam position saved in the config file.')
+        center.triggered.connect(self.camara_widget.mv_stage_to_prim_beam)        
         autoscale = QAction(QIcon(str(icon_path / 'smart' / 'scale_rgb.png')),'auto scaling the rgb color',self)
         autoscale.setStatusTip('Turn on the autoscaling of RGB channels.')
         autoscale.triggered.connect(lambda: self.camara_widget.update_autolevel(True))               
@@ -177,26 +177,28 @@ class camera_control_panel(object):
         roi_polyline.triggered.connect(lambda: self.camara_widget.set_roi_type('polyline'))               
         click_move = QAction(QIcon(str(icon_path / 'smart' / 'click.png')),'enable click to move stage mode',self)
         click_move.setStatusTip('click to activate stage moving with mouse click.')
-        click_move.triggered.connect(lambda: self.camara_widget.set_mouse_click_move_stage(True)) 
+        click_move.triggered.connect(lambda: self.camara_widget.enable_mouse_click_move_stage()) 
         self.click_move = click_move          
         stop_click_move = QAction(QIcon(str(icon_path / 'smart' / 'stop.png')),'disable click to move stage mode',self)
         stop_click_move.setStatusTip('click to deactivate stage moving with mouse click.')
-        stop_click_move.triggered.connect(lambda: self.camara_widget.set_mouse_click_move_stage(False)) 
+        stop_click_move.triggered.connect(lambda: self.camara_widget.disable_click_move_stage()) 
+        show_bound_roi = QAction(QIcon(str(icon_path / 'smart' / 'boundary.png')),'show the boundary according to current stage softlimits',self)
+        show_bound_roi.setStatusTip('click to show or hide the boundary roi based on current stage softlimits.')
+        show_bound_roi.triggered.connect(lambda: self.camara_widget.get_stage_bounds())
         self.camToolBar.addAction(action_switch_on_camera)
         self.camToolBar.addAction(action_switch_off_camera)
         self.camToolBar.addAction(autoscale)
         self.camToolBar.addAction(autoscaleoff)
-        # self.camToolBar.addAction(flip_up_down)
-        # self.camToolBar.addAction(flip_left_right)
-        # self.camToolBar.addAction(savecrosshair)
         self.camToolBar.addAction(resumecrosshair)
         self.camToolBar.addAction(poscalibration)
+        self.camToolBar.addAction(center)
         self.camToolBar.addAction(lock)
         self.camToolBar.addAction(unlock)
         self.camToolBar.addAction(roi_rect)
         self.camToolBar.addAction(roi_polyline)
         self.camToolBar.addAction(click_move)
         self.camToolBar.addAction(stop_click_move)
+        self.camToolBar.addAction(show_bound_roi)
         self.addToolBar(Qt.LeftToolBarArea, self.camToolBar)
 
 class CumForcedReadTool(ForcedReadTool):
@@ -232,10 +234,10 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self.thread_period_timer_forceRead = QtCore.QThread()
         self.period_timer_forceRead.moveToThread(self.thread_period_timer_forceRead)
         self.thread_period_timer_forceRead.started.connect(self.period_timer_forceRead.run)
-        self.timer_mouse_click_reaction = trigger()
-        self.thread_mouse_click_reation = QtCore.QThread()
-        self.timer_mouse_click_reaction.moveToThread(self.thread_mouse_click_reation)
-        self.thread_mouse_click_reation.started.connect(self.timer_mouse_click_reaction.run)        
+        # self.timer_mouse_click_reaction = trigger2()
+        # self.thread_mouse_click_reation = QtCore.QThread()
+        # self.timer_mouse_click_reaction.moveToThread(self.thread_mouse_click_reation)
+        # self.thread_mouse_click_reation.started.connect(self.timer_mouse_click_reaction.run)        
         self._parent = parent
         self.rgb_viewer = rgb_viewer
         self._init_ui()
@@ -243,6 +245,7 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self.data_format_cbs = [lambda x: x]
         self.autolevel = True
         self.roi_scan = None
+        self.roi_limit = None
         self.rois = []
         self.roi_scan_xy_stage = [None, None]
         self.roi_type = 'rectangle'
@@ -251,9 +254,34 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self.sigScanRoiAdded.connect(self.set_reference_zone)
         # self.setModel('sys/tg_test/1/long64_image_ro')
 
+    def get_stage_bounds(self):
+        #this is fragile, and should be changed whenever you change the model key
+        hor_stage_limits = [each.m for each in self.getModelObj(key='samx').getLimits()]
+        ver_stage_limits = [each.m for each in self.getModelObj(key='samy').getLimits()]
+        x_, x_end_ = hor_stage_limits
+        y_, y_end_ = ver_stage_limits
+        #self.camara_widget.roi_scan_xy_stage = [x_, y_]
+        x, y = self._convert_stage_coord_to_pix_unit(x_, y_)
+        x_end, y_end = self._convert_stage_coord_to_pix_unit(x_end_, y_end_)
+        w, h = abs(x - x_end), abs(y - y_end)
+        or_x = x if x<x_end else x_end
+        or_y = y if y>y_end else y_end
+        #note (x,y) is bottom left corner, while top left corner is needed
+        if self.roi_limit == None:
+            pen = pg.mkPen((200, 0, 0), width=2)
+            self.roi_limit = pg.ROI([or_x, or_y-h], [w, h], pen=pen, movable=False, removable=False)
+            self.roi_limit.setZValue(100)
+            self.img_viewer.vb.addItem(self.roi_limit)
+        else:
+            self.img_viewer.vb.removeItem(self.roi_limit)
+            self.roi_limit = None
+
     def update_viewer_type(self, rgb: bool):
         self.rgb_viewer = rgb
         self._setup_rgb_viewer()
+
+    def enable_mouse_click_move_stage(self):
+        self.mouse_click_move_stage_enabled = True
 
     def set_mouse_click_move_stage(self, enabled):
         self.mouse_click_move_stage_enabled = enabled
@@ -271,7 +299,7 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
 
     def disable_click_move_stage(self):
         self.mouse_click_move_stage_enabled = False
-        findMainWindow().click_move.setEnabled(True)
+        # findMainWindow().click_move.setEnabled(True)
 
     def set_roi_type(self, roi_type):
         if roi_type in ['rectangle','polyline']:
@@ -537,6 +565,16 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
             'stage_y': main_gui.stage_pos_at_prim_beam[1]
         }
 
+    def mv_stage_to_prim_beam(self):
+        main_gui = findMainWindow()
+        if 'PrimBeamGeo' not in main_gui.settings_object:
+            return
+        geo_dict = main_gui.settings_object['PrimBeamGeo']
+        stage_x, stage_y = geo_dict['stage_x'],geo_dict['stage_y']
+        motor_names_dict = main_gui.settings_object['SampleStageMotorNames']
+        door = Device(main_gui.settings_object['spockLogin']['doorName'])
+        door.runmacro(['mv',motor_names_dict['x'], str(stage_x),motor_names_dict['y'], str(stage_y)])
+
     def resume_prim_beam_to_saved_values(self):
         #after this movement, the pos of crosshair pos reflect the current sample stage position
         main_gui = findMainWindow()
@@ -719,10 +757,11 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         #else:
         point = self.img_viewer.vb.mapSceneToView(evt).toPoint()
         px_size = main_gui.camara_pixel_size
-        if main_gui.camera_is_on:
-            main_gui.last_cursor_pos_on_camera_viewer = self._cal_scan_coordinates_from_pos([round(point.x()*px_size,4), round(point.y()*px_size,4)])
-        else:
-            main_gui.last_cursor_pos_on_camera_viewer = 'NaN'
+        main_gui.last_cursor_pos_on_camera_viewer = self._cal_scan_coordinates_from_pos([round(point.x()*px_size,4), round(point.y()*px_size,4)])
+        #if main_gui.camera_is_on:
+        #    main_gui.last_cursor_pos_on_camera_viewer = self._cal_scan_coordinates_from_pos([round(point.x()*px_size,4), round(point.y()*px_size,4)])
+        #else:
+        #    main_gui.last_cursor_pos_on_camera_viewer = 'NaN'
         main_gui.statusbar.showMessage(f'viewport coords (stage in mm): {main_gui.last_cursor_pos_on_camera_viewer};viewport coords (native in pix):{point.x(),point.y()}')
         #findMainWindow().statusbar.showMessage(f'viewport coords: {round(point.x()*px_size,4), round(point.y()*px_size,4)}')
 
