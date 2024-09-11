@@ -35,6 +35,7 @@ class beamlineControl(object):
         self.pushButton_submit_all.clicked.connect(lambda: self.submit_jobs_to_queue_server(viewer='camera'))
         self.pushButton_show_rois.clicked.connect(self.show_all_rois)
         self.pushButton_rm_rois.clicked.connect(self.delete_rois)
+        self.pushButton_fetch_jobs.clicked.connect(self.fetch_data_from_server)
 
     def update_stage_name_from_config(self):
         if 'SampleStageMotorNames' in self.settings_object:
@@ -77,7 +78,8 @@ class beamlineControl(object):
         illum_devices = list(Attribute(self.settings_object["Mscope"]["comboBox_illum_types"]).read().value)
         self.populate_illum_widgets(illum_devices, 3)
         self._set_exposure()
-        self._start_spock()
+        if self.settings_object['spockLogin']['useQTSpock']:
+            self._start_spock()
 
     def _set_exposure(self):
         tg_dv = self.settings_object['Camaras']['camaraDevice']
@@ -208,6 +210,20 @@ class beamlineControl(object):
         except:#nothing selected
             pass
 
+    def fetch_data_from_server(self):
+        columns = ['queue','scan_command','state']
+        column_map = {'state':'scan_info'}
+        other_info = {'session': self.lineEdit_queue_section_name.text(), 
+                      'queue': self.lineEdit_scan_queue_name.text(),
+                      'geo_roi': 'NA',
+                      'new_task_or_not': False}
+        columns_ordered = ['new_task_or_not','session','queue','scan_command','scan_info','geo_roi']
+        df = self.pandas_model_queue._data[columns].copy().rename(columns=column_map).copy()
+        for each, value in other_info.items():
+            df[each] = value
+        self.pandas_model_queue_camara_viewer._data = df[columns_ordered]
+        self.pandas_model_queue_camara_viewer.update_view()
+
     def show_all_rois(self):
         for each in self.camara_widget.rois:
             self.camara_widget.img_viewer.vb.removeItem(each)
@@ -258,19 +274,24 @@ class beamlineControl(object):
                 # self.camara_widget.roi_scan.setPos(0,0,update=False,finish=False)
                 # self.camara_widget.roi_scan.setPoints(anchors_list)
             # else:
-            self.camara_widget.roi_type = 'polyline'
             #this is an ugly hack to remove the footprint of pos of old roi_scan
             self.camara_widget.roi_scan.setPos(0,0)
+            self.camara_widget.roi_type = 'polyline'
             self.camara_widget.img_viewer.vb.removeItem(self.camara_widget.roi_scan)
             pen = pg.mkPen((0, 200, 200), width=1)
             self.camara_widget.roi_scan = pg.PolyLineROI([],closed=True,movable=False)
-            self.camara_widget.roi_scan.sigRegionChanged.connect(self.camara_widget._cal_scan_coordinates)
+            # self.camara_widget.roi_scan.sigRegionChanged.connect(self.camara_widget._cal_scan_coordinates)
             self.camara_widget.roi_scan.handleSize = 10
             self.camara_widget.roi_scan.setPoints(anchors_list)
             self.camara_widget.roi_scan.setZValue(10000)
             self.camara_widget.roi_scan.handlePen = pg.mkPen("#FFFFFF")
             self.camara_widget.img_viewer.vb.addItem(self.camara_widget.roi_scan)
-            # self.camara_widget.roi_scan.setPos(0,0)
+            #for some reason, the following sig/slot connections are not needed
+            # if added, the main thread is dragging, but why? Garbage collection not fast enough?
+            # self.camara_widget.roi_scan.sigRegionChangeStarted.connect(lambda: self.camara_widget.setPaused(True))
+            # self.camara_widget.roi_scan.sigRegionChanged.connect(self.camara_widget._cal_scan_coordinates)
+            # self.camara_widget.roi_scan.sigRegionChangeStarted.connect(lambda: self.camara_widget.setPaused(True))
+            self.camara_widget._cal_scan_coordinates()
         else:                
             x_, y_ = float(scan_cmd_list[2]), float(scan_cmd_list[6])
             x_end_, y_end_ = float(scan_cmd_list[3]), float(scan_cmd_list[7])

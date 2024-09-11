@@ -5,7 +5,7 @@ Camaras:
   camaraExposure_mode:
     attr_name: ExposureAuto
     options:
-    - 'Off'
+    - false
     - Once
     - Continuous
   camaraExposure_time:
@@ -41,8 +41,8 @@ Mscope:
   comboBox_illum_types: tango://hasp029rack.desy.de:10000/p06/beamlinemicroscopeillumination/test.01/AvailableIlluminationTypes
   label_illum_pos: tango://hasp029rack.desy.de:10000/p06/beamlinemicroscopeillumination/test.01/intensity{}
 PrimBeamGeo:
-  img_x: -1442.1062518516044
-  img_y: -2288.654993490733
+  img_x: -1393.8711318588025
+  img_y: -2372.2167231341714
   iso_h: -1363.6363636363637
   iso_v: -454.5454545454544
   stage_x: -9.999999999999996
@@ -72,6 +72,7 @@ spockLogin:
   doorName: tango://hasp029rack.desy.de:10000/p06/door/hasp029rack.01
   msAlias: MS-hasp029rack
   msName: tango://hasp029rack.desy.de:10000/p06/macroserver/hasp029rack.01
+  useQTSpock: false
 synopticViewer:
   camera_sources:
   - model: tango://hasp029rack:10000/sys/tg_test/1/uchar_image_ro

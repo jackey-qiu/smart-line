@@ -1598,16 +1598,23 @@
                         </spacer>
                        </item>
                        <item>
+                        <widget class="QPushButton" name="pushButton_fetch_jobs">
+                         <property name="text">
+                          <string>fetch</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item>
                         <widget class="QPushButton" name="pushButton_duplicate_one">
                          <property name="text">
-                          <string>duplicate one</string>
+                          <string>duplicate</string>
                          </property>
                         </widget>
                        </item>
                        <item>
                         <widget class="QPushButton" name="pushButton_remove_one_task">
                          <property name="text">
-                          <string>remove one</string>
+                          <string>remove</string>
                          </property>
                         </widget>
                        </item>
@@ -1621,7 +1628,7 @@
                        <item>
                         <widget class="QPushButton" name="pushButton_submit_all">
                          <property name="text">
-                          <string>submit new tasks</string>
+                          <string>submit</string>
                          </property>
                         </widget>
                        </item>

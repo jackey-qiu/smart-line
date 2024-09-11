@@ -371,8 +371,8 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         main_gui = findMainWindow()
         self.isoLine_v = pg.InfiniteLine(angle=90, movable=True, pen=pg.mkPen('green', width=4))
         self.isoLine_h = pg.InfiniteLine(angle=0, movable=True, pen=pg.mkPen('green', width=4))
-        self.isoLine_h.sigPositionChanged.connect(main_gui._calibrate_pos)
-        self.isoLine_v.sigPositionChanged.connect(main_gui._calibrate_pos)
+        # self.isoLine_h.sigPositionChanged.connect(main_gui._calibrate_pos)
+        # self.isoLine_v.sigPositionChanged.connect(main_gui._calibrate_pos)
         self.isoLine_v.setValue(0)
         self.isoLine_v.setZValue(100000) # bring iso line above contrast controls
         self.isoLine_h.setValue(0)

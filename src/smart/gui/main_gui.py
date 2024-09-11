@@ -100,6 +100,11 @@ class smartGui(
                     pass
                 self.start_cam_stream()
                 self._resume_prim_beam_pos(direct=True)
+                self.camara_widget.isoLine_h.sigPositionChanged.connect(self._calibrate_pos)
+                self.camara_widget.isoLine_v.sigPositionChanged.connect(self._calibrate_pos)
+            else:
+                self.camara_widget.isoLine_h.sigPositionChanged.connect(self._calibrate_pos)
+                self.camara_widget.isoLine_v.sigPositionChanged.connect(self._calibrate_pos)
         else:
             try:
                 self.set_models()
@@ -107,6 +112,8 @@ class smartGui(
                 pass
             self.start_cam_stream()
             self._resume_prim_beam_pos(direct=True)
+            self.camara_widget.isoLine_h.sigPositionChanged.connect(self._calibrate_pos)
+            self.camara_widget.isoLine_v.sigPositionChanged.connect(self._calibrate_pos)
 
     def __init_gui(self, config):
         uic.loadUi(str(ui_file_folder / "smart_main_window.ui"), self)
@@ -237,7 +244,15 @@ class smartGui(
         connect = QAction(QIcon(str(icon_path / 'others' / 'connect.png')),'connect tango device',self)
         connect.setStatusTip('Connect tango device servers and setup spock section.')
         connect.triggered.connect(self.set_models)
+        save = QAction(QIcon(str(icon_path / 'smart' / 'save.png')),'save config file',self)
+        save.setStatusTip('Save config file.')
+        save.triggered.connect(self.update_setting_file)
+        stop = QAction(QIcon(str(icon_path / 'smart' / 'stop_macro.png')),'abort macro run',self)
+        stop.setStatusTip('Stop currently running macro.')
+        stop.triggered.connect(lambda: Device(self.settings_object['spockLogin']['doorName']).AbortMacro())
         tb.addAction(connect)
+        tb.addAction(save)
+        tb.addAction(stop)
         self.smart_toolbar = tb
         self.addToolBar(self.smart_toolbar)
 
@@ -278,8 +293,9 @@ class smartGui(
         # self.createTaurusMenu()
         self.createHelpMenu()
         # it is needed for backward compatibility for using qtspock
-        self.widget_spock.kernel_manager.is_valid_spock_profile = True
-        self.widget_spock.set_default_style("linux")
+        if self.settings_object['spockLogin']['useQTSpock']:
+            self.widget_spock.kernel_manager.is_valid_spock_profile = True
+            self.widget_spock.set_default_style("linux")
 
     def connect_mouseClick_event_for_online_monitor(self):
         self.move_motor_action = None
@@ -963,8 +979,12 @@ class smartGui(
 
     def update_setting_file(self):
         self.camara_widget.update_img_settings()
-        with open(self.setting_file_yaml, "w") as f:
-            yaml.dump(self.settings_object, f, default_flow_style=False)
+        try:
+            with open(self.setting_file_yaml, "w") as f:
+                yaml.dump(self.settings_object, f, default_flow_style=False)
+            self.statusUpdate('Success to save yaml config file locally!')
+        except Exception as err:
+            self.statusUpdate('Fail to save config due to:', str(err))
 
     def closeEvent(self, event):
         quit_msg = "About to Exit the program, are you sure? "
