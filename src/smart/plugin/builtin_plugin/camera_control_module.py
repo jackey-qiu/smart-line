@@ -69,16 +69,25 @@ class camera_control_panel(object):
         model_samx, model_samy = self._extract_sample_stage_models()
         if getattr(self, viewerWidgetName).getModel()!='':
             return
-        self.camera_is_on = True
-        getattr(self, viewerWidgetName).setModel(camaraStreamModel)
+        
+        _device = Device(device_name)
+        if _device.state.name == 'Ready':
+            self.camera_is_on = True
+            getattr(self, viewerWidgetName).setModel(camaraStreamModel)
+            getattr(self, viewerWidgetName).width = _device.width
+            getattr(self, viewerWidgetName).height = _device.height
+            self.statusbar.showMessage(f'start cam streaming with model of {camaraStreamModel}')
+        else:
+            self.camera_is_on = False
+            self.camara_widget.img.setImage(self.camara_widget.fake_img)
+            self.camara_widget.hist.imageChanged(self.camara_widget.autolevel, self.camara_widget.autolevel)
+            getattr(self, viewerWidgetName).setModel(None)
+            self.statusbar.showMessage(f'Fail to start cam streaming with state of {_device.state.name}')
+
         getattr(self, viewerWidgetName).setModel(model_samx, key='samx')
         getattr(self, viewerWidgetName).setModel(model_samy, key='samy')
-        _device = Device(device_name)
-        getattr(self, viewerWidgetName).width = _device.width
-        getattr(self, viewerWidgetName).height = _device.height
         getattr(self, viewerWidgetName).data_format_cbs = data_format_cbs
         # self.camara_widget.setForcedReadPeriod(0.2)
-        self.statusbar.showMessage(f'start cam streaming with model of {camaraStreamModel}')
 
     def set_zoom_level(self, level = 50):
         Attribute(self.settings_object["SampleStages"]["label_zoom_pos"]).write(level)
@@ -264,6 +273,7 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self.mouse_click_move_stage_enabled = False
         self.pos_calibration_done = False
         self.sigScanRoiAdded.connect(self.set_reference_zone)
+        self.fake_img = np.random.rand(2048,2048,3) * 255
         # self.setModel('sys/tg_test/1/long64_image_ro')
 
     def get_stage_bounds(self):
@@ -361,7 +371,7 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         if not self.rgb_viewer:
             self.vt = VisuaTool(self, properties = ['prof_hoz','prof_ver'])
             self.vt.attachToPlotItem(self.img_viewer)
-        self.fr = CumForcedReadTool(self, period=200)
+        self.fr = CumForcedReadTool(self, period=0)
         self.fr.attachToPlotItem(self.img_viewer)
         if main_gui.user_right == 'super':
             self.mvMotors = mvMotors(self._parent)
@@ -570,7 +580,19 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         x_pix, y_pix = main_gui.crosshair_pos_at_prim_beam
         x, y = x_pix * main_gui.camara_pixel_size, y_pix * main_gui.camara_pixel_size
         stage_x, stage_y = main_gui.stage_pos_at_prim_beam
-        dx, dy = (stage_x - x)/main_gui.camara_pixel_size, (stage_y - y)/main_gui.camara_pixel_size
+        # The following lines are needed to avoid crashing GUI by setting isoline to a extremly small value (BUT NOT 0)
+        # This happen when the values of x_pix or y_pix and stage_pos_at_prim_beam are still at their intial values (0)
+        # If that is the case, the result of (stage_x - x)/main_gui.camara_pixel_size is not zero but a small value like 1e-13
+        #the isoLine setValue is not happy taking such a small value, and that will crash the whole program
+        if abs(stage_x - x) < 1e-5:
+            dx = 0
+        else:
+            dx = (stage_x - x)/main_gui.camara_pixel_size
+        if abs(stage_y - y) < 1e-5:
+            dy = 0
+        else:
+            dy = (stage_y - y)/main_gui.camara_pixel_size
+
         self.img.setX(self.img.x()+dx)
         self.img.setY(self.img.y()+dy)
         if self.roi_scan != None:
@@ -778,12 +800,8 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
 
     def _connect_mouse_move_event(self, evt):
         main_gui = findMainWindow()
-        vp_pos = self.img_viewer.vb.mapSceneToView(evt)
-        x, y = vp_pos.x(), vp_pos.y()
-        #in_side_scene, coords = self._scale_rotate_and_translate([x,y])
-        #if not in_side_scene:
-        #    self._parent.statusbar.showMessage('viewport coords:'+str(self.mapSceneToView(evt)))
-        #else:
+        # vp_pos = self.img_viewer.vb.mapSceneToView(evt)
+        # x, y = vp_pos.x(), vp_pos.y()
         point = self.img_viewer.vb.mapSceneToView(evt).toPoint()
         px_size = main_gui.camara_pixel_size
         main_gui.last_cursor_pos_on_camera_viewer = self._cal_scan_coordinates_from_pos([round(point.x()*px_size,4), round(point.y()*px_size,4)])

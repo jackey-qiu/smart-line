@@ -1,6 +1,6 @@
 Camaras:
   camaraDataFormatCallbacks:
-  - lambda data:np.rot90(data,3)
+  - lambda data:np.rot90(data[0].reshape((2048,2048,3)),3)
   camaraDevice: tango://hasp029rack.desy.de:10000/p06/tangovimba/test.01
   camaraExposure_mode:
     attr_name: ExposureAuto
@@ -11,7 +11,7 @@ Camaras:
   camaraExposure_time:
     attr_name: ExposureTimeAbs
     default_value: null
-  camaraStreamModel: tango://hasp029rack.desy.de:10000/p06/tangovimba/test.01/image8
+  camaraStreamModel: tango://hasp029rack.desy.de:10000/p06/tangovimba/test.01/imageRaw
   click_move_timeout: 120
   gridLayoutWidgetName: gridLayout_cam
   pixel_size: tango://hasp029rack.desy.de:10000/p06/mscope/lab.01/pixelsize
@@ -19,7 +19,7 @@ Camaras:
   - 60
   - 80
   - 100
-  rgb: false
+  rgb: true
   viewerWidgetName: camara_widget
 FileManager:
   currentImageDatabaseDir: C:\\Users\\_admin\\Downloads\\monitor_test
@@ -41,12 +41,12 @@ Mscope:
   comboBox_illum_types: tango://hasp029rack.desy.de:10000/p06/beamlinemicroscopeillumination/test.01/AvailableIlluminationTypes
   label_illum_pos: tango://hasp029rack.desy.de:10000/p06/beamlinemicroscopeillumination/test.01/intensity{}
 PrimBeamGeo:
-  img_x: -1393.8711318588025
-  img_y: -2372.2167231341714
-  iso_h: -1363.6363636363637
-  iso_v: -454.5454545454544
-  stage_x: -9.999999999999996
-  stage_y: -30.0
+  img_x: -1489.842293904284
+  img_y: -2347.434796814017
+  iso_h: -1316.5269886363624
+  iso_v: -485.99964488636334
+  stage_x: -10.691992187499999
+  stage_y: -28.963593749999973
 QueueControl:
   ntp_host: haspp06deb10
   ntp_port: 13345
@@ -72,7 +72,7 @@ spockLogin:
   doorName: tango://hasp029rack.desy.de:10000/p06/door/hasp029rack.01
   msAlias: MS-hasp029rack
   msName: tango://hasp029rack.desy.de:10000/p06/macroserver/hasp029rack.01
-  useQTSpock: false
+  useQTSpock: true
 synopticViewer:
   camera_sources:
   - model: tango://hasp029rack:10000/sys/tg_test/1/uchar_image_ro
