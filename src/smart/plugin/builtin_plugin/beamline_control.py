@@ -57,8 +57,8 @@ class beamlineControl(object):
             pass
         x_label = self.settings_object["SampleStageMotorNames"]['x']
         y_label = self.settings_object["SampleStageMotorNames"]['y']
-        x_unit = Attribute(self.settings_object['SampleStages']['x_stage_value']).getParentObj().get_attribute_config('position').display_unit
-        y_unit = Attribute(self.settings_object['SampleStages']['y_stage_value']).getParentObj().get_attribute_config('position').display_unit
+        x_unit = Attribute(self.settings_object['SampleStages']['x_stage_value']).display_unit
+        y_unit = Attribute(self.settings_object['SampleStages']['y_stage_value']).display_unit
         self.camara_widget.img_viewer.axes['left']['item'].setScale(self.camara_pixel_size)
         self.camara_widget.img_viewer.axes['left']['item'].setLabel(f'{y_label} ({y_unit})')
         self.camara_widget.img_viewer.axes['bottom']['item'].setScale(self.camara_pixel_size)

@@ -378,7 +378,6 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
             self.mvMotors.attachToPlotItem(self.img_viewer) 
 
     def _setup_rgb_viewer(self):
-        main_gui = findMainWindow()
         self.isoLine_v = pg.InfiniteLine(angle=90, movable=True, pen=pg.mkPen('green', width=4))
         self.isoLine_h = pg.InfiniteLine(angle=0, movable=True, pen=pg.mkPen('green', width=4))
         # self.isoLine_h.sigPositionChanged.connect(main_gui._calibrate_pos)
@@ -602,6 +601,7 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self.isoLine_v.setValue(self.isoLine_v.value()+dx)
         main_gui.crosshair_pos_at_prim_beam[0] = self.isoLine_v.value()
         main_gui.crosshair_pos_at_prim_beam[1] = self.isoLine_h.value()
+        self.img_viewer.vb.autoRange()
 
     def update_img_settings(self):
         main_gui = findMainWindow()
