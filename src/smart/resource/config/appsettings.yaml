@@ -32,9 +32,11 @@ General:
   ScalePosition: Bottom Right
   ScaleSize: 1000
   beamlinePCHostName: hasm5570cq
-  connect_model_startup: false
+  connect_model_startup: true
   db: tango://hasp029rack.desy.de:10000
 Motors:
+  exp_mot03: tango://hasp029rack.desy.de:10000/p06/motor/exp.03
+  exp_mot04: tango://hasp029rack.desy.de:10000/p06/motor/exp.04
   samly: tango://hasp029rack.desy.de:10000/p06/motor/exp.02
   samlz: tango://hasp029rack.desy.de:10000/p06/motor/exp.01
 Mscope:
@@ -43,20 +45,26 @@ Mscope:
 PrimBeamGeo:
   img_x: -1421.5917418166514
   img_y: -2421.394670165403
-  iso_h: -1316.5269886363626
+  iso_h: -1326.2897182390475
   iso_v: -454.5454545454544
-  stage_x: -9.999999999999996
-  stage_y: -28.963593749999973
+  stage_x: -4.796015624999999
+  stage_y: -24.3996875
 QueueControl:
   ntp_host: haspp06deb10
   ntp_port: 13345
 SampleStageMotorNames:
+  scanx: exp_mot03
+  scany: exp_mot04
+  scanz: exp_dmy02
   x: samly
   y: samlz
-  z: samlx
+  z: exp_dmy03
 SampleStages:
+  x_pstage_value: tango://hasp029rack.desy.de:10000/p06/motor/exp.03/position
   x_stage_value: tango://hasp029rack.desy.de:10000/p06/motor/exp.02/position
+  y_pstage_value: tango://hasp029rack.desy.de:10000/p06/motor/exp.04/position
   y_stage_value: tango://hasp029rack.desy.de:10000/p06/motor/exp.01/position
+  z_pstage_value: tango://hasp029rack.desy.de:10000/motor/dummy_mot_ctrl/2/position
   z_stage_value: tango://hasp029rack.desy.de:10000/motor/dummy_mot_ctrl/3/position
 Visuals:
   boxColor: null
@@ -64,6 +72,7 @@ Visuals:
   showBox: 1
   showScalebar: 0
 motor_alias_address_map:
+  exp_mot03: tango://hasp029rack.desy.de:10000/p06/motor/exp.03
   samlx: tango://hasp029rack.desy.de:10000/motor/dummy_mot_ctrl/3
   samly: tango://hasp029rack.desy.de:10000/p06/motor/exp.02
   samlz: tango://hasp029rack.desy.de:10000/p06/motor/exp.01

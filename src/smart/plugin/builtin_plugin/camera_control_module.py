@@ -39,7 +39,9 @@ class camera_control_panel(object):
     def _extract_sample_stage_models(self):
         samx = self.settings_object["SampleStages"]["x_stage_value"]
         samy = self.settings_object["SampleStages"]["y_stage_value"]
-        return samx, samy
+        scanx = self.settings_object["SampleStages"]["x_pstage_value"]
+        scany = self.settings_object["SampleStages"]["y_pstage_value"]
+        return samx, samy, scanx, scany
 
     def build_cam_widget(self):
         gridLayoutWidgetName, viewerWidgetName, *_ = self._extract_cam_info_from_config()
@@ -55,7 +57,7 @@ class camera_control_panel(object):
         self.pushButton_zoom_level1.clicked.connect(lambda: self.set_zoom_level(level1))
         self.pushButton_zoom_level2.clicked.connect(lambda: self.set_zoom_level(level2))
         self.pushButton_zoom_level3.clicked.connect(lambda: self.set_zoom_level(level3))
-        self.pushButton_save_roi_xy.clicked.connect(self.camara_widget.save_current_roi_xy)
+        # self.pushButton_save_roi_xy.clicked.connect(self.camara_widget.save_current_roi_xy)
 
     def control_cam(self):
         gridLayoutWidgetName, viewerWidgetName, camaraStreamModel, *_ = self._extract_cam_info_from_config()
@@ -66,7 +68,7 @@ class camera_control_panel(object):
 
     def start_cam_stream(self):
         _, viewerWidgetName, camaraStreamModel, device_name, data_format_cbs = self._extract_cam_info_from_config()
-        model_samx, model_samy = self._extract_sample_stage_models()
+        model_samx, model_samy, model_scanx, model_scany = self._extract_sample_stage_models()
         if getattr(self, viewerWidgetName).getModel()!='':
             return
         
@@ -86,6 +88,8 @@ class camera_control_panel(object):
 
         getattr(self, viewerWidgetName).setModel(model_samx, key='samx')
         getattr(self, viewerWidgetName).setModel(model_samy, key='samy')
+        getattr(self, viewerWidgetName).setModel(model_scanx, key='scanx')
+        getattr(self, viewerWidgetName).setModel(model_scany, key='scany')
         getattr(self, viewerWidgetName).data_format_cbs = data_format_cbs
         # self.camara_widget.setForcedReadPeriod(0.2)
 
@@ -94,10 +98,12 @@ class camera_control_panel(object):
 
     def stop_cam_stream(self):
         _, viewerWidgetName, *_ = self._extract_cam_info_from_config()
-        model_samx, model_samy = self._extract_sample_stage_models()
+        #model_samx, model_samy, model_scanx, model_scany = self._extract_sample_stage_models()
         getattr(self, viewerWidgetName).setModel(None)
         getattr(self, viewerWidgetName).setModel(None, key='samx')
         getattr(self, viewerWidgetName).setModel(None, key='samy')
+        getattr(self, viewerWidgetName).setModel(None, key='scanx')
+        getattr(self, viewerWidgetName).setModel(None, key='scany')
         self.camera_is_on = False
         #set aribitray long timeout to simulate cam swtich off
         # self.camara_widget.setForcedReadPeriod(3600)
@@ -245,7 +251,7 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
     Displays 2D and 3D image data
     """
     sigScanRoiAdded = Signal(float, float, float, float)
-    modelKeys = ['img','samx','samy']
+    modelKeys = ['img','samx','samy','scanx','scany']
     # modelKeys = [TaurusBaseComponent.MLIST]
     # TODO: clear image if .setModel(None)
     def __init__(self, parent = None, rgb_viewer = False, *args, **kwargs):
@@ -269,6 +275,8 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self.roi_limit = None
         self.rois = []
         self.roi_scan_xy_stage = [None, None]
+        self.roi_scan_xy_stage_piezo = [None, None]
+        self.piezo_stage_roi_ref_set = False
         self.roi_type = 'rectangle'
         self.mouse_click_move_stage_enabled = False
         self.pos_calibration_done = False
@@ -340,8 +348,27 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         action_object_pair[0].setVisible(False)
         action_object_pair[1].setVisible(True)
 
-    def save_current_roi_xy(self):
+    def _save_current_roi_xy_piezo(self, roi_xy_stage = None):
         main_gui = findMainWindow()
+        if type(roi_xy_stage)!=type(None):
+            self.roi_scan_xy_stage_piezo = list(roi_xy_stage)
+        else:
+            self.roi_scan_xy_stage_piezo = [
+                Attribute(main_gui.settings_object['SampleStages']['x_pstage_value']).rvalue.m,
+                Attribute(main_gui.settings_object['SampleStages']['y_pstage_value']).rvalue.m
+            ]
+
+    def save_current_roi_xy(self, roi_xy_stage = None):
+        main_gui = findMainWindow()
+        if type(roi_xy_stage)!=type(None):
+            self.roi_scan_xy_stage = list(roi_xy_stage)
+            if not self.piezo_stage_roi_ref_set:
+                self._save_current_roi_xy_piezo()
+                self.piezo_stage_roi_ref_set = True
+            x_stage = main_gui.settings_object['SampleStageMotorNames']['x']
+            y_stage = main_gui.settings_object['SampleStageMotorNames']['y']
+            main_gui.lineEdit_pre_scan_action_list.setText(f"[['mv','{x_stage}', {self.roi_scan_xy_stage[0]}],['mv','{y_stage}',{self.roi_scan_xy_stage[1]}]]")
+            return
         cmd = main_gui.lineEdit_full_macro_name.text()
         if self.roi_type=='rectangle':
             if cmd != '':
@@ -354,6 +381,9 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
                 self.roi_scan_xy_stage = eval(pos_list[0].replace(' ',','))
             except:
                 pass
+        x_stage = main_gui.settings_object['SampleStageMotorNames']['x']
+        y_stage = main_gui.settings_object['SampleStageMotorNames']['y']
+        main_gui.lineEdit_pre_scan_action_list.setText(f"[['mv',{x_stage}, {self.roi_scan_xy_stage[0]}],['mv',{y_stage},{self.roi_scan_xy_stage[1]}]]")
 
     def update_autolevel(self, autolevel, action_object_pair):
         self.autolevel = autolevel
@@ -438,6 +468,7 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         :param h: roi height in ver direction
         :return:
         """
+        self.piezo_stage_roi_ref_set = False
         if self.roi_scan != None:
             self.img_viewer.vb.removeItem(self.roi_scan)
         if self.roi_type == 'rectangle':
@@ -462,11 +493,48 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self.roi_scan.sigRegionChanged.connect(self._cal_scan_coordinates)
         self.roi_scan.sigRegionChangeFinished.connect(lambda: self.setPaused(False))
 
-
     def _cal_scan_coordinates(self):
         main_gui = findMainWindow()
         if self.roi_type=='rectangle':
             self.roi_scan_xy_stage = [None, None]
+            scan_cmd = main_gui.lineEdit_scan_cmd.text()
+            stage_x = main_gui.lineEdit_sample_stage_name_x.text()
+            stage_y = main_gui.lineEdit_sample_stage_name_y.text()
+            step_size = eval(main_gui.lineEdit_step_size.text())
+            # steps_x = main_gui.spinBox_steps_hor.value()
+            # steps_y = main_gui.spinBox_steps_ver.value()
+            sample_x_stage_start_pos, sample_y_stage_start_pos = self._cal_scan_coordinates_from_pos(np.array(self.roi_scan.pos())*main_gui.camara_pixel_size)
+            sample_x_pstage_start_pos, sample_y_pstage_start_pos = main_gui.pstage_pos_at_prim_beam
+            width, height = abs(np.array(self.roi_scan.size()))*main_gui.camara_pixel_size*1000 # in mícro
+            # if main_gui.checkBox_use_step_size.isChecked():
+            steps_x = int(width/step_size[0])
+            steps_y = int(height/step_size[1])
+            exposure_time = float(main_gui.lineEdit_exposure_time.text())
+            scan_cmd_str = f'{scan_cmd} {stage_x}' + \
+                        f' {round(sample_x_pstage_start_pos,4)} {round(sample_x_pstage_start_pos+width,4)} {steps_x}' + \
+                        f' {stage_y} {round(sample_y_pstage_start_pos,4)} {round(sample_y_pstage_start_pos-height,4)} {steps_y}'+\
+                        f' {exposure_time}'
+            main_gui.lineEdit_full_macro_name.setText(scan_cmd_str)
+            self.save_current_roi_xy([round(sample_x_stage_start_pos,4),round(sample_y_stage_start_pos,4)])
+            # return scan_cmd_str
+        else:
+            self.roi_scan_xy_stage = [None, None]
+            scan_cmd = 'pmesh'
+            stage_x = main_gui.lineEdit_sample_stage_name_x.text()
+            stage_y = main_gui.lineEdit_sample_stage_name_y.text()
+            exposure_time = float(main_gui.lineEdit_exposure_time.text())
+            step_size_x, step_size_y = np.array(eval(main_gui.lineEdit_step_size.text()))
+            handles = self._generate_handle_pos_list_polylineroi()
+            pstage_handles = [list((np.array(each) - handles[0])*1000) for each in handles]
+            coords = str(pstage_handles).replace(',','')
+            main_gui.lineEdit_full_macro_name.setText(f'{scan_cmd} {stage_x} {step_size_x} {stage_y} {step_size_y} {exposure_time} {coords}')
+            self.save_current_roi_xy(handles[0])
+
+    def _cal_scan_coordinates_old(self):
+        main_gui = findMainWindow()
+        if self.roi_type=='rectangle':
+            self.roi_scan_xy_stage = [None, None]
+            self.roi_scan_xy_stage_piezo = [None, None]
             scan_cmd = main_gui.lineEdit_scan_cmd.text()
             stage_x = main_gui.lineEdit_sample_stage_name_x.text()
             stage_y = main_gui.lineEdit_sample_stage_name_y.text()
@@ -488,6 +556,7 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
             # return scan_cmd_str
         else:
             self.roi_scan_xy_stage = [None, None]
+            self.roi_scan_xy_stage_piezo = [None, None]
             scan_cmd = 'pmesh'
             stage_x = main_gui.lineEdit_sample_stage_name_x.text()
             stage_y = main_gui.lineEdit_sample_stage_name_y.text()
@@ -540,6 +609,23 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         sample_x_stage_start_pos, sample_y_stage_start_pos = main_gui.stage_pos_at_prim_beam - dist_from_prim_beam_pos
         return sample_x_stage_start_pos, sample_y_stage_start_pos
 
+    def _cal_pstage_offset_wrt_prim_beam(self):
+        main_gui = findMainWindow()
+        try:
+            if 'x_pstage_value' in main_gui.settings_object["SampleStages"]:
+                scanx = Attribute(main_gui.settings_object["SampleStages"]["x_pstage_value"]).read().value/1000.
+                scanx_offset_from_prim = scanx - self.roi_scan_xy_stage_piezo[0]/1000. #convert to mm unit
+            else:
+                scanx_offset_from_prim = 0
+            if 'y_pstage_value' in main_gui.settings_object["SampleStages"]:
+                scany = Attribute(main_gui.settings_object["SampleStages"]["y_pstage_value"]).read().value/1000.
+                scany_offset_from_prim = scany - self.roi_scan_xy_stage_piezo[1]/1000. #convert to mm
+            else:
+                scany_offset_from_prim = 0
+        except:
+            scanx_offset_from_prim, scany_offset_from_prim = 0, 0
+        return scanx_offset_from_prim, scany_offset_from_prim
+    
     def _cal_scan_coordinates_from_pos(self, pos):
         #pos is in mm unit
         main_gui = findMainWindow()
@@ -548,27 +634,42 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
             samy = Attribute(main_gui.settings_object["SampleStages"]["y_stage_value"]).read().value
         except:
             return 0, 0
+
         current_stage_pos = np.array([samx, samy])
         crosshair_pos_offset_mm = np.array(pos) - np.array(main_gui.crosshair_pos_at_prim_beam)*main_gui.camara_pixel_size
         sample_x_stage_start_pos, sample_y_stage_start_pos = current_stage_pos + crosshair_pos_offset_mm*[1,-1]
         return sample_x_stage_start_pos, sample_y_stage_start_pos
 
-    def _convert_stage_coord_to_pix_unit(self, original_samx, original_samy):
+    def _convert_stage_coord_to_pix_unit_old(self, original_samx, original_samy):
         main_gui = findMainWindow()
         samx = Attribute(main_gui.settings_object["SampleStages"]["x_stage_value"]).read().value
         samy = Attribute(main_gui.settings_object["SampleStages"]["y_stage_value"]).read().value
         pos = (np.array([original_samx, original_samy]) - [samx, samy])/main_gui.camara_pixel_size*[1,-1] + [main_gui.camara_widget.isoLine_v.value(),main_gui.camara_widget.isoLine_h.value()]
         return pos
-
+    
+    def _convert_stage_coord_to_pix_unit(self, original_samx, original_samy):
+        main_gui = findMainWindow()
+        samx = Attribute(main_gui.settings_object["SampleStages"]["x_stage_value"]).read().value
+        samy = Attribute(main_gui.settings_object["SampleStages"]["y_stage_value"]).read().value
+        pstage_offset = np.array(list(self._cal_pstage_offset_wrt_prim_beam()))
+        pos = (np.array([original_samx, original_samy]) - [samx, samy] - pstage_offset)/main_gui.camara_pixel_size*[1,-1] + [main_gui.camara_widget.isoLine_v.value(),main_gui.camara_widget.isoLine_h.value()]
+        return pos
+    
     def update_stage_pos_at_prim_beam(self, infline_obj = None, dir='x'):
         main_gui = findMainWindow()
         if dir=='x':
             attr = Attribute(main_gui.settings_object["SampleStages"]["x_stage_value"]).read()
             main_gui.stage_pos_at_prim_beam[0] = attr.value
+            if 'x_pstage_value' in main_gui.settings_object["SampleStages"]:
+                attr = Attribute(main_gui.settings_object["SampleStages"]["x_pstage_value"]).read()
+                main_gui.pstage_pos_at_prim_beam[0] = attr.value
             main_gui.crosshair_pos_at_prim_beam[0] = infline_obj.value()
         elif dir == 'y':
             attr = Attribute(main_gui.settings_object["SampleStages"]["y_stage_value"]).read()
             main_gui.stage_pos_at_prim_beam[1] = attr.value
+            if 'y_pstage_value' in main_gui.settings_object["SampleStages"]:
+                attr = Attribute(main_gui.settings_object["SampleStages"]["y_pstage_value"]).read()
+                main_gui.pstage_pos_at_prim_beam[1] = attr.value
             main_gui.crosshair_pos_at_prim_beam[1] = infline_obj.value()
         
     def mv_img_to_ref(self):
@@ -576,6 +677,9 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         main_gui = findMainWindow()
         self.update_stage_pos_at_prim_beam(self.isoLine_h, 'y')
         self.update_stage_pos_at_prim_beam(self.isoLine_v, 'x')
+        self.img_viewer.vb.autoRange()
+        return
+        '''
         x_pix, y_pix = main_gui.crosshair_pos_at_prim_beam
         x, y = x_pix * main_gui.camara_pixel_size, y_pix * main_gui.camara_pixel_size
         stage_x, stage_y = main_gui.stage_pos_at_prim_beam
@@ -602,7 +706,7 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         main_gui.crosshair_pos_at_prim_beam[0] = self.isoLine_v.value()
         main_gui.crosshair_pos_at_prim_beam[1] = self.isoLine_h.value()
         self.img_viewer.vb.autoRange()
-
+        '''
     def update_img_settings(self):
         main_gui = findMainWindow()
         main_gui.settings_object['PrimBeamGeo'] = {
@@ -691,6 +795,10 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
                 key= 'samx'
             elif evt_src is self.getModelObj(key='samy'):
                 key= 'samy'
+            elif evt_src is self.getModelObj(key='scanx'):
+                key= 'scanx'
+            elif evt_src is self.getModelObj(key='scany'):
+                key= 'scany'
             else:
                 key = None
         if evt_val is None or getattr(evt_val, "rvalue", None) is None:
@@ -707,25 +815,10 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
 
                 self.img.setImage(data)
                 self.hist.imageChanged(self.autolevel, self.autolevel)
-                # if self.autolevel:
-                    # self.hist.regionChanged()
-                '''
-                if self.autolevel:
-                    self.hist.imageChanged(self.autolevel, self.autolevel)
-                else:
-                    self.hist.regionChanged()
-                '''
-                '''
-                if not self.rgb_viewer:
-                    hor_region_down,  hor_region_up= self.region_cut_hor.getRegion()
-                    ver_region_l, ver_region_r = self.region_cut_ver.getRegion()
-                    hor_region_down,  hor_region_up = int(hor_region_down),  int(hor_region_up)
-                    ver_region_l, ver_region_r = int(ver_region_l), int(ver_region_r)
-                    self.prof_ver.plot(data[ver_region_l:ver_region_r,:].sum(axis=0),pen='g',clear=True)
-                    self.prof_hoz.plot(data[:,hor_region_down:hor_region_up].sum(axis=1), pen='r',clear = True)
-                '''
-            elif key in ['samx','samy']:
+            elif key in ['samx','samy','scanx','scany']:
                 self.reposition_scan_roi()
+                if key in ['scanx','scany']:
+                    self._save_current_roi_xy_piezo()
                 #self.mv_roi_upon_stage_move()
         except Exception as e:
             self.warning("Exception in handleEvent: %s", e)

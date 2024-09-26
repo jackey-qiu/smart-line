@@ -175,13 +175,14 @@ class queueControl(object):
                           'session': self.lineEdit_session.setText, 
                           'state': self.lineEdit_state.setText, 
                           'scan_info': self.lineEdit_scan_info.setText,
-                          'unique_id': self.lineEdit_job_id.setText}
+                          'unique_id': self.lineEdit_job_id.setText,
+                          'pre_scan_action': self.lineEdit_pre_scan_action.setText,}
         for each in task_key_widget_setAPI_map.values():
             each('')
 
     def _format_queue(self):
         available_queues = self.get_available_queues(set_text_field=False)
-        queue_info_dict = {'session':[], 'queue':[],'scan_command':[], 'scan_id':[], 'unique_id':[],'state':[]}
+        queue_info_dict = {'session':[], 'queue':[],'scan_command':[], 'pre_scan_action':[],'scan_id':[], 'unique_id':[],'state':[]}
         if available_queues==None:
             return pd.DataFrame(queue_info_dict)
         else:
@@ -194,6 +195,8 @@ class queueControl(object):
                             task[key] = ' '.join(task[key])
                         elif key == 'unique_id':
                             task[key] = int(task[key])
+                        elif key== 'pre_scan_action':
+                            task[key] = str(task[key])
                         queue_info_dict[key].append(task[key])
         return pd.DataFrame.from_dict(queue_info_dict)
     
@@ -256,37 +259,16 @@ class queueControl(object):
             self.statusUpdate(f'Failure to delete queue!')
 
     def add_task_from_ui(self):
-        task_from_widget = {'execution_id':self.lineEdit_exe_id.text(),
-                          'queue':self.lineEdit_queue_name.text(),
-                          'scan_command': self.lineEdit_cmd.text().rsplit(' '),
-                          'session': self.lineEdit_session.text(), 
-                          'state': self.lineEdit_state.text(), 
-                          'scan_info': self.lineEdit_scan_info.text()}
         
         task_from_widget = {'execution_id':self.lineEdit_exe_id.text(),
                           'queue':self.lineEdit_queue_name.text(),
                           'scan_command': self.lineEdit_cmd.text().rsplit(' '),
+                          'pre_scan_action': eval(self.lineEdit_pre_scan_action.text()),
                           'session': self.lineEdit_session.text(), 
                           'scan_info': self.lineEdit_scan_info.text()}
 
-        """
-        scan_cmd = task_from_widget['scan_command']
-        for i, each in enumerate(scan_cmd):
-            try:
-                if '.' in each:
-                    scan_cmd[i] = float(each)
-                else:
-                    scan_cmd[i] = int(each)
-            except:
-                pass
-        task_from_widget['scan_command'] = scan_cmd
-        """
-        # return
         self._append_task(task_from_widget)
         self.display_info_for_a_queue(show_last_item=True)
-        # show the added item (last) after adding task
-        #last = self.comboBox_queue_task.itemText(self.comboBox_queue_task.count()-1)
-        #self.comboBox_queue_task.setCurrentText(last)
 
     @Slot(str)
     def update_queue_viewer_type(self, viewer_type):
@@ -320,6 +302,7 @@ class queueControl(object):
         task_key_widget_setAPI_map = {'execution_id':self.lineEdit_exe_id.setText,
                           'queue':self.lineEdit_queue_name.setText,
                           'scan_command': self.lineEdit_cmd.setText,
+                          'pre_scan_action': self.lineEdit_pre_scan_action.setText,
                           'session': self.lineEdit_session.setText, 
                           'state': self.lineEdit_state.setText, 
                           'scan_info': self.lineEdit_scan_info.setText,
@@ -347,6 +330,7 @@ class queueControl(object):
             task_key_widget_setAPI_map = {'execution_id':self.lineEdit_exe_id.setText,
                             'queue':self.lineEdit_queue_name.setText,
                             'scan_command': self.lineEdit_cmd.setText,
+                            'pre_scan_action': self.lineEdit_pre_scan_action.setText,
                             'session': self.lineEdit_session.setText, 
                             'state': self.lineEdit_state.setText, 
                             'scan_info': self.lineEdit_scan_info.setText,
@@ -417,6 +401,7 @@ class queueControl(object):
         task_key_widget_map = {
                           'queue':self.lineEdit_queue_name.text(),
                           'scan_command': self.lineEdit_cmd.text(),
+                          'pre_scan_action': self.lineEdit_pre_scan_action.text(),
                           'session': self.lineEdit_session.text(), 
                           'state': self.lineEdit_state.text(), 
                           'scan_info': self.lineEdit_scan_info.text(),
@@ -432,6 +417,11 @@ class queueControl(object):
                 except:
                     task_key_widget_map_copy.pop(each, None)
         unique_id = int(task_key_widget_map_copy.pop('unique_id'))
+        prescan_action = eval(task_key_widget_map_copy['pre_scan_action'])
+        assert type(prescan_action) == list, 'pre_scan_action must be in a list format'
+        if len(prescan_action)!=0:
+            for each in prescan_action:
+                assert type(each)==list, 'each item inside the pre_scan_action must be a list'
         task_key_widget_map_copy['scan_command'] = task_key_widget_map_copy['scan_command'].rsplit(' ')
         if confirmation_dialogue('Are you sure to update this task?'):
             try:

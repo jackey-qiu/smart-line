@@ -3,6 +3,7 @@ from PyQt5.QtCore import Qt, pyqtSlot as Slot
 from PyQt5.QtGui import QFont
 from PyQt5 import QtCore
 import re
+import numpy as np
 from functools import partial
 from taurus.qt.qtgui.display import TaurusLabel
 from taurus import Attribute
@@ -17,6 +18,7 @@ class beamlineControl(object):
         self.group_names = self.settings_object["widgetMaps"]["beamlineControlGpNames"].rsplit(',')
         self.camara_pixel_size = 1
         self.stage_pos_at_prim_beam = [0, 0]
+        self.pstage_pos_at_prim_beam = [0, 0]
         self.crosshair_pos_at_prim_beam = [0, 0]
         self.saved_crosshair_pos = [0, 0]
         self.illum_pos_latest = {}
@@ -40,14 +42,23 @@ class beamlineControl(object):
     def update_stage_name_from_config(self):
         if 'SampleStageMotorNames' in self.settings_object:
             name_map = self.settings_object['SampleStageMotorNames']
+            if 'scanx' in name_map:
+                getattr(self, 'label_sample_pstage_x').setText(f"scanx:{name_map['scanx']}")
+                self.lineEdit_sample_stage_name_x.setText(name_map['scanx'])
+            if 'scany' in name_map:
+                getattr(self, 'label_sample_pstage_y').setText(f"scany:{name_map['scany']}")
+                self.lineEdit_sample_stage_name_y.setText(name_map['scany'])
+            if 'scanz' in name_map:
+                getattr(self, 'label_sample_pstage_z').setText(f"scanz:{name_map['scanz']}")
             if 'x' in name_map:
-                getattr(self, 'label_sample_stage_x').setText(name_map['x'])
-                self.lineEdit_sample_stage_name_x.setText(name_map['x'])
+                getattr(self, 'label_sample_stage_x').setText(f"samplex:{name_map['x']}")
+                # self.lineEdit_sample_stage_name_x.setText(name_map['x'])
             if 'y' in name_map:
-                getattr(self, 'label_sample_stage_y').setText(name_map['y'])
-                self.lineEdit_sample_stage_name_y.setText(name_map['y'])
+                getattr(self, 'label_sample_stage_y').setText(f"sampley:{name_map['y']}")
+                # self.lineEdit_sample_stage_name_y.setText(name_map['y'])
             if 'z' in name_map:
-                getattr(self, 'label_sample_stage_z').setText(name_map['z'])
+                getattr(self, 'label_sample_stage_z').setText(f"samplez:{name_map['z']}")
+                # self.lineEdit_sample_stage_name_y.setText(name_map['y'])
 
     def update_pixel_size(self):
         from taurus import Attribute
@@ -72,7 +83,8 @@ class beamlineControl(object):
             widget_model_dict = self.settings_object[each]
             for (key, value) in widget_model_dict.items():
                 if not value.endswith('{}'):#model name ends with {} is a dynamically changed model
-                    getattr(self, key).model = value
+                    if hasattr(self, key):
+                        getattr(self, key).model = value
         #get the num of illum devices
         # num_illum_devices = len(Attribute(self.settings_object["Mscope"]["comboBox_illum_types"]).read().value)
         illum_devices = list(Attribute(self.settings_object["Mscope"]["comboBox_illum_types"]).read().value)
@@ -112,10 +124,16 @@ class beamlineControl(object):
         self.setModel(self.settings_object['spockLogin']['msName'])
         self.onDoorChanged(self.settings_object['spockLogin']['doorName'])
 
-    def mv_stages_to_cursor_pos(self):
+    def mv_stages_to_cursor_pos_old(self):
         self.statusUpdate(f'moving sample stages to {self.last_cursor_pos_on_camera_viewer}')
         Attribute(self.settings_object['SampleStages']['x_stage_value']).write(self.last_cursor_pos_on_camera_viewer[0])
         Attribute(self.settings_object['SampleStages']['y_stage_value']).write(self.last_cursor_pos_on_camera_viewer[1])
+
+    def mv_stages_to_cursor_pos(self):
+        self.statusUpdate(f'moving sample stages to {self.last_cursor_pos_on_camera_viewer}')
+        pstage_offset = self.camara_widget._cal_pstage_offset_wrt_prim_beam()
+        Attribute(self.settings_object['SampleStages']['x_stage_value']).write(self.last_cursor_pos_on_camera_viewer[0] - pstage_offset[0])
+        Attribute(self.settings_object['SampleStages']['y_stage_value']).write(self.last_cursor_pos_on_camera_viewer[1] - pstage_offset[1])
 
     def populate_illum_widgets(self, rows = 0, first_row = 4):
         cols = ['label_illum','horizontalSlider_illum', 'label_illum_pos', 'pushButton_lighton','pushButton_lightoff']
@@ -167,7 +185,7 @@ class beamlineControl(object):
             self.illum_pos_latest[ix] = current_value
 
     def init_pandas_model_queue_camara_viewer(self, table_view_widget_name='tableView_scan_list_camera_viewer'):
-        data = pd.DataFrame.from_dict({'new_task_or_not': [],'session':[], 'queue':[],'scan_command':[], 'scan_info':[], 'geo_roi':[]})
+        data = pd.DataFrame.from_dict({'new_task_or_not': [],'session':[], 'queue':[],'pre_scan_action':[],'scan_command':[], 'scan_info':[], 'geo_roi':[]})
         #disable_all_tabs_but_one(self, tab_widget_name, tab_indx)
         self.pandas_model_queue_camara_viewer = PandasModel(data = data, tableviewer = getattr(self, table_view_widget_name), main_gui=self)
         getattr(self, table_view_widget_name).setModel(self.pandas_model_queue_camara_viewer)
@@ -176,7 +194,7 @@ class beamlineControl(object):
         getattr(self, table_view_widget_name).horizontalHeader().setStretchLastSection(True)
 
     def remove_all_tasks_from_table(self):
-        data = pd.DataFrame.from_dict({'new_task_or_not': [],'session':[], 'queue':[],'scan_command':[], 'scan_info':[], 'geo_roi':[]})
+        data = pd.DataFrame.from_dict({'new_task_or_not': [],'session':[], 'queue':[],'pre_scan_action':[],'scan_command':[], 'scan_info':[], 'geo_roi':[]})
         self.pandas_model_queue_camara_viewer._data = data
         self.pandas_model_queue_camara_viewer.update_view()
 
@@ -187,6 +205,7 @@ class beamlineControl(object):
                       True,
                       self.lineEdit_queue_section_name.text(),\
                       self.lineEdit_scan_queue_name.text(),\
+                      self.lineEdit_pre_scan_action_list.text(),\
                       self.lineEdit_full_macro_name.text(),\
                       'To be added',
                       f'[{roi.x()},{roi.y()},{roi.size()[0]},{roi.size()[1]}]'
@@ -211,13 +230,13 @@ class beamlineControl(object):
             pass
 
     def fetch_data_from_server(self):
-        columns = ['queue','scan_command','state']
+        columns = ['queue','pre_scan_action','scan_command','state']
         column_map = {'state':'scan_info'}
         other_info = {'session': self.lineEdit_queue_section_name.text(), 
                       'queue': self.lineEdit_scan_queue_name.text(),
                       'geo_roi': 'NA',
                       'new_task_or_not': False}
-        columns_ordered = ['new_task_or_not','session','queue','scan_command','scan_info','geo_roi']
+        columns_ordered = ['new_task_or_not','session','queue','pre_scan_action','scan_command','scan_info','geo_roi']
         df = self.pandas_model_queue._data[columns].copy().rename(columns=column_map).copy()
         for each, value in other_info.items():
             df[each] = value
@@ -229,9 +248,12 @@ class beamlineControl(object):
             self.camara_widget.img_viewer.vb.removeItem(each)
         for i in range(self.pandas_model_queue_camara_viewer._data.shape[0]):
             cmd = self.pandas_model_queue_camara_viewer._data.iloc[i,:]['scan_command']
+            scan_roi_ref = self._compute_scan_roi_ref_origin(eval(self.pandas_model_queue_camara_viewer._data.iloc[i,:]['pre_scan_action']))
+            scan_roi_ref_pix = self.camara_widget._convert_stage_coord_to_pix_unit(*scan_roi_ref)
             if cmd.startswith('pmesh'):
                 anchors_list = re.findall(r"(\[[-+]?(?:\d*\.*\d+) [-+]?(?:\d*\.*\d+)\])", self.pandas_model_queue_camara_viewer._data.iloc[i,:]['scan_command'])
                 anchors_list = [self.camara_widget._convert_stage_coord_to_pix_unit(*eval(each.replace(' ', ','))) for each in anchors_list]
+                anchors_list = [np.array(each)/1000+scan_roi_ref_pix for each in anchors_list]
                 pen = pg.mkPen((0, 200, 200), width=1)
                 roi = pg.PolyLineROI([],closed=True,movable=False)
                 roi.setPoints(anchors_list)
@@ -241,14 +263,14 @@ class beamlineControl(object):
                 self.camara_widget.rois.append(roi)
             elif cmd.startswith('mesh'):     
                 scan_cmd_list = cmd.rsplit(' ')
-                x_, y_ = float(scan_cmd_list[2]), float(scan_cmd_list[6])
-                x_end_, y_end_ = float(scan_cmd_list[3]), float(scan_cmd_list[7])
-                self.camara_widget.roi_scan_xy_stage = [x_, y_]
+                x_, y_ = float(scan_cmd_list[2])/1000, float(scan_cmd_list[6])/1000
+                x_end_, y_end_ = float(scan_cmd_list[3])/1000, float(scan_cmd_list[7])/1000
+                #self.camara_widget.roi_scan_xy_stage = [x_, y_]
                 x, y = self.camara_widget._convert_stage_coord_to_pix_unit(x_, y_)
                 x_end, y_end = self.camara_widget._convert_stage_coord_to_pix_unit(x_end_, y_end_)
                 w, h = abs(x - x_end), abs(y - y_end)                     
                 pen = pg.mkPen((0, 200, 200), width=1)
-                roi = pg.ROI([x, y], [w, h], pen=pen)
+                roi = pg.ROI(scan_roi_ref_pix, [w, h], pen=pen)
                 roi.setZValue(10000)
                 self.camara_widget.img_viewer.vb.addItem(roi)      
                 self.camara_widget.rois.append(roi)
@@ -262,14 +284,21 @@ class beamlineControl(object):
         row = modelindex.row()
         self.update_roi_at_row(row)
 
+    def _compute_scan_roi_ref_origin(self, pre_scan_action_list):
+        assert type(pre_scan_action_list)==list, 'pre scan action not in a list format'
+        assert len(pre_scan_action_list)==2, 'two items should be in pre scan action list'
+        return pre_scan_action_list[0][2], pre_scan_action_list[1][2]
+
     def update_roi_at_row(self, row):
         # roi = eval(self.pandas_model_queue_camara_viewer._data.iloc[row,:]['geo_roi'])
         #x, y, w, h = roi
         self.camara_widget.setPaused(True)
         scan_cmd_list = self.pandas_model_queue_camara_viewer._data.iloc[row,:]['scan_command'].rsplit(' ')
+        scan_roi_ref = self._compute_scan_roi_ref_origin(eval(self.pandas_model_queue_camara_viewer._data.iloc[row,:]['pre_scan_action']))
         if scan_cmd_list[0]=='pmesh':
             anchors_list = re.findall(r"(\[[-+]?(?:\d*\.*\d+) [-+]?(?:\d*\.*\d+)\])", self.pandas_model_queue_camara_viewer._data.iloc[row,:]['scan_command'])
             anchors_list = [self.camara_widget._convert_stage_coord_to_pix_unit(*eval(each.replace(' ', ','))) for each in anchors_list]
+            anchors_list = [np.array(each)/1000+self.camara_widget._convert_stage_coord_to_pix_unit(*scan_roi_ref) for each in anchors_list]
             # if type(self.camara_widget.roi_scan)==pg.PolyLineROI:
                 # self.camara_widget.roi_scan.setPos(0,0,update=False,finish=False)
                 # self.camara_widget.roi_scan.setPoints(anchors_list)
@@ -295,16 +324,17 @@ class beamlineControl(object):
         else:                
             x_, y_ = float(scan_cmd_list[2]), float(scan_cmd_list[6])
             x_end_, y_end_ = float(scan_cmd_list[3]), float(scan_cmd_list[7])
-            self.camara_widget.roi_scan_xy_stage = [x_, y_]
-            x, y = self.camara_widget._convert_stage_coord_to_pix_unit(x_, y_)
-            x_end, y_end = self.camara_widget._convert_stage_coord_to_pix_unit(x_end_, y_end_)
+            self.camara_widget.roi_scan_xy_stage = scan_roi_ref
+            x, y = self.camara_widget._convert_stage_coord_to_pix_unit(x_/1000, y_/1000)
+            x_ref, y_ref = self.camara_widget._convert_stage_coord_to_pix_unit(*scan_roi_ref)
+            x_end, y_end = self.camara_widget._convert_stage_coord_to_pix_unit(x_end_/1000, y_end_/1000)
             w, h = abs(x - x_end), abs(y - y_end)
             if type(self.camara_widget.roi_scan)==pg.PolyLineROI:
                 self.camara_widget.roi_type = 'rectangle'
-                self.camara_widget.set_reference_zone(x,y,w,h)
+                self.camara_widget.set_reference_zone(x_ref,y_ref,w,h)
             else:
                 # self.camara_widget.set_reference_zone(x,y,w,h)
-                self.camara_widget.roi_scan.setPos(x,y,update=False,finish=False)
+                self.camara_widget.roi_scan.setPos(x_ref,y_ref,update=False,finish=False)
                 #self.camara_widget.roi_scan.setX(x)
                 #self.camara_widget.roi_scan.setY(y)
                 self.camara_widget.roi_scan.setSize((w, h))
@@ -338,6 +368,7 @@ class beamlineControl(object):
                     jobs.append({
                         'queue': self.lineEdit_scan_queue_name.text(),
                         'session': self.lineEdit_queue_section_name.text(),
+                        'pre_scan_action': eval(self.pandas_model_queue_camara_viewer._data['pre_scan_action'].to_list()[i]),
                         'scan_command': self.pandas_model_queue_camara_viewer._data['scan_command'].to_list()[i].rsplit(' '),
                         'scan_info': self.pandas_model_queue_camara_viewer._data['scan_info'].to_list()[i]
                     })
