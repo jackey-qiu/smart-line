@@ -43,12 +43,12 @@ Mscope:
   comboBox_illum_types: tango://hasp029rack.desy.de:10000/p06/beamlinemicroscopeillumination/test.01/AvailableIlluminationTypes
   label_illum_pos: tango://hasp029rack.desy.de:10000/p06/beamlinemicroscopeillumination/test.01/intensity{}
 PrimBeamGeo:
-  img_x: -1421.5917418166514
-  img_y: -2421.394670165403
-  iso_h: -1326.2897182390475
-  iso_v: -454.5454545454544
-  stage_x: -4.796015624999999
-  stage_y: -24.3996875
+  img_x: -1208.686666505717
+  img_y: -2541.104828775742
+  iso_h: -1472.7549100156027
+  iso_v: -222.18217329545394
+  stage_x: -4.888007812499996
+  stage_y: -32.98921874999999
 QueueControl:
   ntp_host: haspp06deb10
   ntp_port: 13345
@@ -71,6 +71,8 @@ Visuals:
   boxLinewidth: 2
   showBox: 1
   showScalebar: 0
+ZoomDevice:
+  label_zoom_pos: tango://hasp029rack.desy.de:10000/p06/mscope/lab.01/zoom
 motor_alias_address_map:
   exp_mot03: tango://hasp029rack.desy.de:10000/p06/motor/exp.03
   samlx: tango://hasp029rack.desy.de:10000/motor/dummy_mot_ctrl/3
@@ -91,4 +93,6 @@ synopticViewer:
   - model: tango://hasp029rack:10000/sys/tg_test/1/short_image_ro
     type: 2D
 widgetMaps:
-  beamlineControlGpNames: SampleStages
+  beamlineControlGpNames:
+  - SampleStages
+  - ZoomDevice

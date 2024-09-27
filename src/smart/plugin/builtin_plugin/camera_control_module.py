@@ -94,7 +94,7 @@ class camera_control_panel(object):
         # self.camara_widget.setForcedReadPeriod(0.2)
 
     def set_zoom_level(self, level = 50):
-        Attribute(self.settings_object["SampleStages"]["label_zoom_pos"]).write(level)
+        Attribute(self.settings_object["ZoomDevice"]["label_zoom_pos"]).write(level)
 
     def stop_cam_stream(self):
         _, viewerWidgetName, *_ = self._extract_cam_info_from_config()
@@ -677,9 +677,6 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         main_gui = findMainWindow()
         self.update_stage_pos_at_prim_beam(self.isoLine_h, 'y')
         self.update_stage_pos_at_prim_beam(self.isoLine_v, 'x')
-        self.img_viewer.vb.autoRange()
-        return
-        '''
         x_pix, y_pix = main_gui.crosshair_pos_at_prim_beam
         x, y = x_pix * main_gui.camara_pixel_size, y_pix * main_gui.camara_pixel_size
         stage_x, stage_y = main_gui.stage_pos_at_prim_beam
@@ -706,7 +703,7 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         main_gui.crosshair_pos_at_prim_beam[0] = self.isoLine_v.value()
         main_gui.crosshair_pos_at_prim_beam[1] = self.isoLine_h.value()
         self.img_viewer.vb.autoRange()
-        '''
+
     def update_img_settings(self):
         main_gui = findMainWindow()
         main_gui.settings_object['PrimBeamGeo'] = {

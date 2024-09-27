@@ -15,7 +15,7 @@ from smart.plugin.user_plugin.queue_control import REQUIRED_KEYS
 class beamlineControl(object):
 
     def __init__(self, parent=None):
-        self.group_names = self.settings_object["widgetMaps"]["beamlineControlGpNames"].rsplit(',')
+        self.group_names = self.settings_object["widgetMaps"]["beamlineControlGpNames"]
         self.camara_pixel_size = 1
         self.stage_pos_at_prim_beam = [0, 0]
         self.pstage_pos_at_prim_beam = [0, 0]
