@@ -58,19 +58,22 @@ def get_stage_coords_from_tif_file_from_p06_desy(file_path):
     #Author: Jan Garrevoet
     #Note: The origin is by default located at top left site of the tif image.
     from PIL import Image
-    from PIL.TiffTags import TAGS
     with Image.open(file_path) as img:
         # Loading also the meaning from the tiff tags enum
-        # meta_dict = {TAGS[key] : img.tag[key] for key in img.tag}
         # just using the enum id
         meta_dict = {key : img.tag[key] for key in img.tag}
 
     # The origin and unit you get from
     description = meta_dict[270]
     desc_items = description[0].split("\n")
-    origin_x = float(desc_items[1].split("=")[1])
-    origin_y = float(desc_items[2].split("=")[1])
-    unit = desc_items[3].split("=")[1]
+
+    for item in desc_items:
+        if item.startswith("xorigin"):
+            origin_x = float(item.split("=")[1])
+        elif item.startswith("yorigin"):
+            origin_y = float(item.split("=")[1])
+        elif item.startswith("unit"):
+            unit = item.split("=")[1]
 
     # The pixel size
     pixel_size_x = meta_dict[282][0][1] / meta_dict[282][0][0]

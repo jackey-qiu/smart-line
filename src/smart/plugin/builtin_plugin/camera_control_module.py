@@ -438,6 +438,18 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         #set the img to origin (0,0)
         self._mv_img_to_pos(0, 0)
 
+    def _setup_mono_viewer(self):
+        self.img_mono = pg.ImageItem()
+        self.img_viewer.addItem(self.img_mono)
+
+        self.hist_mono = pg.HistogramLUTItem(levelMode='mono')
+        self.hist_mono.vb.setMouseEnabled(y=True) # makes user interaction a little easier
+        self.addItem(self.hist_mono, row = 2, col = 0, rowspan = 5, colspan = 1)
+        self.hist_mono.setImageItem(self.img_mono)
+
+        #set the img to origin (0,0)
+        # self._mv_img_to_pos(0, 0)    
+
     def _execute_stage_move_upon_mouseclick(self):
         door = tango.DeviceProxy(findMainWindow().settings_object['spockLogin']['doorName'])
         run = (door.state() == dev_state.RUNNING)
@@ -702,7 +714,7 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self.isoLine_v.setValue(self.isoLine_v.value()+dx)
         main_gui.crosshair_pos_at_prim_beam[0] = self.isoLine_v.value()
         main_gui.crosshair_pos_at_prim_beam[1] = self.isoLine_h.value()
-        self.img_viewer.vb.autoRange()
+        # self.img_viewer.vb.autoRange()
 
     def update_img_settings(self):
         main_gui = findMainWindow()

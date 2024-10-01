@@ -380,7 +380,8 @@ class beamlineControl(object):
                 jobs.append({
                     'queue': self.lineEdit_queue_name_imgreg.text(),
                     'session': self.lineEdit_session_name.text(),
-                    'scan_command': self.pandas_model_scan_list._data['scan macro'].to_list()[i].rsplit(' ')
+                    'scan_command': self.pandas_model_scan_list._data['scan macro'].to_list()[i].rsplit(' '),
+                    'pre_scan_action': self.pandas_model_scan_list._data['prescan action'].to_list()[i]
                 })
             return jobs            
         try:
@@ -389,6 +390,8 @@ class beamlineControl(object):
                 self.pandas_model_queue_camara_viewer._data.loc[self.pandas_model_queue_camara_viewer._data['new_task_or_not'] == True,'new_task_or_not'] = False
             elif viewer == 'img_reg':
                 self.queue_comm.send_receive_message(['add', _make_job_list_img_reg()])
+            else:
+                return
             self.statusUpdate('Jobs are submitted to queue server.')
         except Exception as e:
             self.statusUpdate('Fail to submit the jobs.'+str(e))

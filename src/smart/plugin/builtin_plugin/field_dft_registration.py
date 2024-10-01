@@ -160,7 +160,7 @@ class MdiFieldImreg_Wrapper(object):
         # self.connect_slots()
 
     def init_scan_list(self,table_view_widget_name='tableView_scan_list'):
-        data = pd.DataFrame.from_dict({'roi_pos_x':np.array([]),'roi_pos_y':np.array([]),'roi_width':np.array([]),'roi_height':np.array([]),'scan macro':[]}, dtype='str')
+        data = pd.DataFrame.from_dict({'prescan action':[],'scan macro':[],'roi_pos_x':np.array([]),'roi_pos_y':np.array([]),'roi_width':np.array([]),'roi_height':np.array([])}, dtype='str')
         #data = data.astype({'roi_pos_x':'float', 'roi_pos_y': 'float', 'roi_width':'float', 'roi_height':'float','scan macro':'str'})
         self.pandas_model_scan_list = PandasModel(data, tableviewer = getattr(self, table_view_widget_name), main_gui=self)
         getattr(self, table_view_widget_name).setModel(self.pandas_model_scan_list)
@@ -178,7 +178,7 @@ class MdiFieldImreg_Wrapper(object):
             ref_img_width = pix_size[0]*pix_num[0]/1000
             ref_img_height = pix_size[1]*pix_num[1]/1000
             origin = list(np.array(origin)/1000)
-        elif unit == 'mm':
+        elif unit in ['mm','millimetre']:
             ref_img_width = pix_size[0]*pix_num[0]
             ref_img_height = pix_size[1]*pix_num[1]
         else:
@@ -191,6 +191,13 @@ class MdiFieldImreg_Wrapper(object):
             self.lineEdit_beampos_motors.setText(str(list(origin)))
             self.lineEdit_motor_range_along_width.setText(str(hor_width))
             self.lineEdit_motor_range_along_height.setText(str(ver_width))
+            self.comboBox_ref_frame_pos.setCurrentText('top left')
+            try:
+                self.add_reference()
+            except:
+                return
+            self.update_beam_pos_vp()
+            self.cal_scaling_factors()
 
     def cal_scaling_factors(self):
         frame_vp = [self.reference_image.width, self.reference_image.height]
@@ -230,8 +237,8 @@ class MdiFieldImreg_Wrapper(object):
         #return scaling_ft_along_width, scaling_ft_along_height
 
     def generate_scan_macro(self):
-        mot_name_along_width = self.settings_object['SampleStageMotorNames']['x']
-        mot_name_along_height = self.settings_object['SampleStageMotorNames']['y']
+        mot_name_along_width = self.settings_object['SampleStageMotorNames']['scanx']
+        mot_name_along_height = self.settings_object['SampleStageMotorNames']['scany']
         macro_name = self.lineEdit_macro_name.text()
         roi_width, roi_height = self.roi_dft.size()
         roi_x, roi_y = self.roi_dft.pos()
@@ -245,9 +252,11 @@ class MdiFieldImreg_Wrapper(object):
         mot_end_pos_along_width = round(mot_start_pos_along_width + roi_width * self.scaling_ft_along_width,4)
         mot_end_pos_along_height = round(mot_start_pos_along_height + roi_height * self.scaling_ft_along_height, 4)
         steps_along_width = int(abs(mot_end_pos_along_width - mot_start_pos_along_width)/(pix_size[0]/1000))
-        steps_along_height = int(abs(mot_end_pos_along_height - mot_start_pos_along_height)/(pix_size[0]/1000))
-        macro_string = f"{macro_name} {mot_name_along_width} {mot_start_pos_along_width} {mot_end_pos_along_width} {steps_along_width} {mot_name_along_height} {mot_start_pos_along_height} {mot_end_pos_along_height} {steps_along_height} {dwell_time}"
-        new_row_in_table = [str(roi_x), str(roi_y), str(roi_width), str(roi_height), macro_string]
+        steps_along_height = int(abs(mot_end_pos_along_height - mot_start_pos_along_height)/(pix_size[1]/1000))
+        macro_string = f"{macro_name} {mot_name_along_width} {mot_start_pos_along_width} {mot_end_pos_along_width} {pix_size[0]} {mot_name_along_height} {mot_start_pos_along_height} {mot_end_pos_along_height} {pix_size[1]} {dwell_time}"
+        prescan_action = self.lineEdit_prescan_action.text()
+        assert prescan_action.startswith('[') and prescan_action.endswith(']'), 'The prescan str must be like []'
+        new_row_in_table = [eval(prescan_action), macro_string, str(roi_x), str(roi_y), str(roi_width), str(roi_height)]
         self.pandas_model_scan_list._data.loc[len(self.pandas_model_scan_list._data)] = new_row_in_table
         self.pandas_model_scan_list.update_view()
 
@@ -320,7 +329,7 @@ class MdiFieldImreg_Wrapper(object):
         self.dft_reg_instance.sig_dft_finished.connect(self.dft_imreg2)
         self.comboBox_ref_frame_pos.currentIndexChanged.connect(self.update_beam_pos_vp)
         self.pushButton_cal_sf.clicked.connect(self.cal_scaling_factors)
-        self.pushButton_fill_stage_info.clicked.connect(self.fill_stage_info)
+        self.pushButton_fill_stage_info.clicked.connect(lambda: self.fill_stage_info('P06'))
         self.pushButton_add_row.clicked.connect(self.generate_scan_macro)
         self.pushButton_remove_row.clicked.connect(self.drop_selected_row)
         self.tableView_scan_list.clicked.connect(self.update_dft_roi_on_click_table_row)
