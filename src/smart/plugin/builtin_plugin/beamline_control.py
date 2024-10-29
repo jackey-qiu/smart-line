@@ -38,6 +38,9 @@ class beamlineControl(object):
         self.pushButton_show_rois.clicked.connect(self.show_all_rois)
         self.pushButton_rm_rois.clicked.connect(self.delete_rois)
         self.pushButton_fetch_jobs.clicked.connect(self.fetch_data_from_server)
+        #parameter tree buttons
+        self.pushButton_load_config.clicked.connect(self.widget_pars.load_config)
+        self.pushButton_apply_change.clicked.connect(self.widget_pars.apply_config)
 
     def update_stage_name_from_config(self):
         if 'SampleStageMotorNames' in self.settings_object:

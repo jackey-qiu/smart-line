@@ -23,6 +23,7 @@ from ..plugin.builtin_plugin.field_fiducial_markers_unit import (
     FiducialMarkerWidget_wrapper,
 )
 from smart import icon_path
+from smart.util.util import remove_multiple_tabs_from_tabWidget
 from ..plugin.builtin_plugin.camera_control_module import camera_control_panel
 from ..plugin.builtin_plugin.particle_tool import particle_widget_wrapper
 from ..plugin.builtin_plugin.beamline_control import beamlineControl
@@ -89,6 +90,21 @@ class smartGui(
         self.init_taurus()
         self.add_smart_toolbar()
         self._connect_device_at_startup()
+        self.widget_pars.init_pars(self.settings_object)
+        remove_multiple_tabs_from_tabWidget(self.settings_object.get('viewerTabWidgetVisibility',{}), self.tabWidget_viewer)
+
+    def _upon_settings_change(self):
+        self._connect_device_at_startup()
+        if (
+            "FileManager" in self.settings_object
+            and "restoreimagedb" in self.settings_object["FileManager"]
+        ):
+            self.img_backup_path = self.settings_object["FileManager"]["restoreimagedb"]
+
+        self.imageBuffer = ImageBufferInfo(self, self.img_backup_path)
+        self.tbl_render_order.imageBuffer = self.imageBuffer
+
+        self.imageBuffer.recallImgBackup()
 
     def _connect_device_at_startup(self):
         #connect tango model at startup?

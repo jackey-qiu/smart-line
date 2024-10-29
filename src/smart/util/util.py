@@ -5,6 +5,73 @@ from PyQt5.QtWidgets import QMainWindow, QApplication
 from PyQt5 import QtCore
 from threading import Event, Thread
 import time
+from copy import deepcopy
+
+def remove_multiple_tabs_from_tabWidget(ix_info:dict,tabWidget):
+    if len(ix_info)==0:
+        return
+    ix = []
+    for (_, value) in ix_info.items():
+        if not value['show']:
+            ix.append(int(value['index']))
+    ix_formated = sorted(ix)[::-1]
+    for each in ix_formated:
+        tabWidget.removeTab(each)
+
+def generate_pyqtgraph_par_tree_from_config(settings_object: dict={}):
+    type_map = {int:'int',float:'float',bool:'bool', str:'str', type(None):'str'}
+    pars = []
+    for (each, item) in settings_object.items():
+        pars.append({'name': each})
+        type_out1 = type(item)
+        if type_out1 == list:
+            type_out2 = type(item[0])
+            if type_out2 == dict:
+                pars[-1]['type'] = 'group'
+                pars[-1]['children'] = []
+                for i in range(len(item)):
+                    pars[-1]['children'].append({'name':f'case{i+1}','type':'group','children':[]})
+                    item1_dict = item1[i]
+                    for (each2, item2) in item1_dict.items():
+                        type_item2 = type(item2)
+                        if type_item2 not in [dict, list]:
+                            pars[-1]['children'][-1]['children'].append({'name':each2,'type':type_map[type_item2],'value':item2})
+                        else:
+                            pars[-1]['children'][-1]['children'].append({'name':each2,'type':'str','value':str(item2)})                            
+            else:#a list of normal type
+                pars[-1]['type'] = 'str'
+                pars[-1]['value'] = str(item)                
+                # pars_temp = {'name': each,'type': type_map[type_], 'value': item}
+        elif type_out1 == dict: #a dict
+            pars[-1]['type'] = 'group'
+            pars[-1]['children'] = []
+            for (each1, item1) in item.items():
+                type_item1 = type(item1)
+                if type_item1==dict:
+                    pars[-1]['children'].append({'name':each1,'type':'group','children':[]})
+                    for (each2, item2) in item1.items():
+                        type_item2 = type(item2)
+                        if type_item2 not in [dict, list, type(None)]:
+                            pars[-1]['children'][-1]['children'].append({'name':each2,'type':type_map[type_item2],'value':item2})
+                        else:
+                            pars[-1]['children'][-1]['children'].append({'name':each2,'type':'str','value':str(item2)})
+                elif type_item1==list:
+                    if type(item1[0])==dict:#list of dict
+                        pars[-1]['children'].append({'name':each1,'type':'group','children':[]})
+                        for i in range(len(item1)):
+                            pars[-1]['children'][-1]['children'].append({'name':f'case{i+1}','type':'group','children':[]})
+                            item1_dict = item1[i]
+                            for (each2, item2) in item1_dict.items():
+                                type_item2 = type(item2)
+                                if type_item2 not in [dict, list, type(None)]:
+                                    pars[-1]['children'][-1]['children'][-1]['children'].append({'name':each2,'type':type_map[type_item2],'value':item2})
+                                else:
+                                    pars[-1]['children'][-1]['children'][-1]['children'].append({'name':each2,'type':'str','value':str(item2)})                            
+                    else:#a list of normal type
+                        pars[-1]['children'].append({'name':each1,'type':'str','value':str(item1)})
+                else:
+                    pars[-1]['children'].append({'name':each1,'type':type_map[type_item1],'value':item1})
+    return pars
 
 class trigger(QtCore.QObject):
     def __init__(self, cb = lambda:None, timeout = 10, repeat = False):

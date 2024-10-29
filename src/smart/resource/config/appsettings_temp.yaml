@@ -1,6 +1,7 @@
 Camaras:
   camaraDataFormatCallbacks:
   - lambda data:np.rot90(data[0].reshape((2048,2048,3)),3)
+  - lmabda data:data
   camaraDevice: tango://hasp029rack.desy.de:10000/p06/tangovimba/test.01
   camaraExposure_mode:
     attr_name: ExposureAuto
@@ -10,7 +11,7 @@ Camaras:
     - Continuous
   camaraExposure_time:
     attr_name: ExposureTimeAbs
-    default_value: null
+    default_value: None
   camaraStreamModel: tango://hasp029rack.desy.de:10000/p06/tangovimba/test.01/imageRaw
   click_move_timeout: 120
   exported_image_folder: C://Users//qiucanro//Downloads
@@ -27,7 +28,7 @@ FileManager:
   currentimagedbDir: C:/Users/qiucanro/Downloads
   restoreimagedb: C:\\Users\\qiucanro\\apps\\imgReg\\imgReg\\ImageBackup.imagedb
 General:
-  ScaleColor: null
+  ScaleColor: ''
   ScaleFontSize: 10
   ScaleHeight: 90
   ScalePosition: Bottom Right
@@ -70,7 +71,7 @@ SampleStages:
 ScanType:
   two_set_of_stage: false
 Visuals:
-  boxColor: null
+  boxColor: ''
   boxLinewidth: 2
   showBox: 1
   showScalebar: 0

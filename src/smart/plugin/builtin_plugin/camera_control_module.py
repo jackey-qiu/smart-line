@@ -1,4 +1,4 @@
-import sys, copy, re
+import os, copy, re
 from taurus.qt.qtgui.base import TaurusBaseComponent
 from taurus.external.qt import Qt
 from pyqtgraph.Qt import QtCore, QtGui
@@ -7,6 +7,7 @@ from pyqtgraph import GraphicsLayoutWidget, ImageItem
 from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal
 from PyQt5 import QtWidgets
 import pyqtgraph as pg
+import pyqtgraph.exporters
 import tango
 from tango._tango import DevState as dev_state
 from taurus import Device, Attribute
@@ -212,8 +213,12 @@ class camera_control_panel(object):
         show_bound_roi = QAction(QIcon(str(icon_path / 'smart' / 'boundary.png')),'show the boundary according to current stage softlimits',self)
         show_bound_roi.setStatusTip('click to show or hide the boundary roi based on current stage softlimits.')
         show_bound_roi.triggered.connect(lambda: self.camara_widget.get_stage_bounds())
+        save_img = QAction(QIcon(str(icon_path / 'others' / 'save_img.png')),'export camera image',self)
+        save_img.setStatusTip('click to export camera image.')
+        save_img.triggered.connect(lambda: self.camara_widget.export_image())
         self.camToolBar.addAction(action_switch_on_camera)
         self.camToolBar.addAction(action_switch_off_camera)
+        self.camToolBar.addAction(save_img)
         self.camToolBar.addAction(autoscale)
         self.camToolBar.addAction(autoscaleoff)
         self.camToolBar.addAction(resumecrosshair)
@@ -469,6 +474,21 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self.set_reference_zone_pure(x0,y0,w,h)
         self._cal_scan_coordinates()
         
+    def export_image(self):
+        gui = findMainWindow()
+        try:
+            folder = gui.settings_object.get('Camaras').get('exported_image_folder')
+            exporter = pyqtgraph.exporters.ImageExporter(self.img_viewer)
+            exporter.export(os.path.join(folder,'exported_img_with_crosshair.png'))
+            self.isoLine_v.hide()
+            self.isoLine_h.hide()
+            exporter = pyqtgraph.exporters.ImageExporter(self.img_viewer)
+            exporter.export(os.path.join(folder,'exported_img_without_crosshair.png'))
+            self.isoLine_v.show()
+            self.isoLine_h.show()
+            gui.statusbar.showMessage(f'Success to export viewport image to folder: {folder}')
+        except Exception as err:
+            gui.statusbar.showMessage(f'Fail to export image due to {str(err)}')
 
     def set_reference_zone_pure(self, x0, y0, w, h):
         """
@@ -506,13 +526,21 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self.roi_scan.sigRegionChangeFinished.connect(lambda: self.setPaused(False))
 
     def _cal_scan_coordinates(self):
+        gui = findMainWindow()
+        #one set at the bottom for positioning and one set on top for scanning
+        if gui.settings_object['ScanType']['two_set_of_stage']:
+            self._cal_scan_coordinates_two_sets_of_stage()
+        else:
+            self._cal_scan_coordinates_one_set_of_stage()
+
+    def _cal_scan_coordinates_two_sets_of_stage(self):
         main_gui = findMainWindow()
         if self.roi_type=='rectangle':
             self.roi_scan_xy_stage = [None, None]
             scan_cmd = main_gui.lineEdit_scan_cmd.text()
             stage_x = main_gui.lineEdit_sample_stage_name_x.text()
             stage_y = main_gui.lineEdit_sample_stage_name_y.text()
-            step_size = eval(main_gui.lineEdit_step_size.text())
+            step_size = eval(f"({main_gui.lineEdit_step_size_h.text()},{main_gui.lineEdit_step_size_v.text()})")
             # steps_x = main_gui.spinBox_steps_hor.value()
             # steps_y = main_gui.spinBox_steps_ver.value()
             sample_x_stage_start_pos, sample_y_stage_start_pos = self._cal_scan_coordinates_from_pos(np.array(self.roi_scan.pos())*main_gui.camara_pixel_size)
@@ -535,14 +563,14 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
             stage_x = main_gui.lineEdit_sample_stage_name_x.text()
             stage_y = main_gui.lineEdit_sample_stage_name_y.text()
             exposure_time = float(main_gui.lineEdit_exposure_time.text())
-            step_size_x, step_size_y = np.array(eval(main_gui.lineEdit_step_size.text()))
+            step_size_x, step_size_y = np.array(eval(f"({main_gui.lineEdit_step_size_h.text()},{main_gui.lineEdit_step_size_v.text()})"))
             handles = self._generate_handle_pos_list_polylineroi()
             pstage_handles = [list((np.array(each) - handles[0])*1000) for each in handles]
             coords = str(pstage_handles).replace(',','')
             main_gui.lineEdit_full_macro_name.setText(f'{scan_cmd} {stage_x} {step_size_x} {stage_y} {step_size_y} {exposure_time} {coords}')
             self.save_current_roi_xy(handles[0])
 
-    def _cal_scan_coordinates_old(self):
+    def _cal_scan_coordinates_one_set_of_stage(self):
         main_gui = findMainWindow()
         if self.roi_type=='rectangle':
             self.roi_scan_xy_stage = [None, None]
@@ -550,7 +578,7 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
             scan_cmd = main_gui.lineEdit_scan_cmd.text()
             stage_x = main_gui.lineEdit_sample_stage_name_x.text()
             stage_y = main_gui.lineEdit_sample_stage_name_y.text()
-            step_size = eval(main_gui.lineEdit_step_size.text())
+            step_size = eval(f"({main_gui.lineEdit_step_size_h.text()},{main_gui.lineEdit_step_size_v.text()})")
             # steps_x = main_gui.spinBox_steps_hor.value()
             # steps_y = main_gui.spinBox_steps_ver.value()
             sample_x_stage_start_pos, sample_y_stage_start_pos = self._cal_scan_coordinates_from_pos(np.array(self.roi_scan.pos())*main_gui.camara_pixel_size)
@@ -573,7 +601,7 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
             stage_x = main_gui.lineEdit_sample_stage_name_x.text()
             stage_y = main_gui.lineEdit_sample_stage_name_y.text()
             exposure_time = float(main_gui.lineEdit_exposure_time.text())
-            step_size_x, step_size_y = np.array(eval(main_gui.lineEdit_step_size.text()))/1000
+            step_size_x, step_size_y = np.array(eval(f"({main_gui.lineEdit_step_size_h.text()},{main_gui.lineEdit_step_size_v.text()})"))/1000
             coords = str(self._generate_handle_pos_list_polylineroi()).replace(',','')
             main_gui.lineEdit_full_macro_name.setText(f'{scan_cmd} {stage_x} {step_size_x} {stage_y} {step_size_y} {exposure_time} {coords}')
             self.save_current_roi_xy()

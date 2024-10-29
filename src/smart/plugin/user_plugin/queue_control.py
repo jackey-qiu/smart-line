@@ -259,17 +259,18 @@ class queueControl(object):
             self.statusUpdate(f'Failure to delete queue!')
 
     def add_task_from_ui(self):
-        
+        self._append_task(self._get_task_from_widget())
+        self.display_info_for_a_queue(show_last_item=True)
+
+    def _get_task_from_widget(self):
         task_from_widget = {'execution_id':self.lineEdit_exe_id.text(),
                           'queue':self.lineEdit_queue_name.text(),
                           'scan_command': self.lineEdit_cmd.text().rsplit(' '),
                           'pre_scan_action': eval(self.lineEdit_pre_scan_action.text()),
                           'session': self.lineEdit_session.text(), 
                           'scan_info': self.lineEdit_scan_info.text()}
-
-        self._append_task(task_from_widget)
-        self.display_info_for_a_queue(show_last_item=True)
-
+        return task_from_widget
+    
     @Slot(str)
     def update_queue_viewer_type(self, viewer_type):
         if viewer_type=='tableViewer':
