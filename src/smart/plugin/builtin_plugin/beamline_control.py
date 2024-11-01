@@ -101,7 +101,9 @@ class beamlineControl(object):
         mode_attr = self.settings_object['Camaras']['camaraExposure_mode']['attr_name']
         exp_time_attr = self.settings_object['Camaras']['camaraExposure_time']['attr_name']
         self.comboBox_exposure_mode.setCurrentText(Attribute(f'{tg_dv}/{mode_attr}').read().value)
-        self.lineEdit_exposure_time_abs.setModel(f'{tg_dv}/{exp_time_attr}')
+        # self.lineEdit_exposure_time_abs.setModel(f'{tg_dv}/{exp_time_attr}')
+        self.lineEdit_exposure_time_abs.setModel(f'eval:{{{tg_dv}/{exp_time_attr}}}/1000')
+        self.lineEdit_exposure_time_abs.setStylesheet("color: white;  background-color: black")
         self.comboBox_exposure_mode.currentIndexChanged.connect(self._upon_exposure_mode_change)
 
     def _upon_exposure_mode_change(self):

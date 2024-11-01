@@ -96,6 +96,7 @@ class camera_control_panel(object):
 
     def set_zoom_level(self, level = 50):
         Attribute(self.settings_object["ZoomDevice"]["label_zoom_pos"]).write(level)
+        self.update_pixel_size()
 
     def stop_cam_stream(self):
         _, viewerWidgetName, *_ = self._extract_cam_info_from_config()
@@ -388,7 +389,7 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
                 pass
         x_stage = main_gui.settings_object['SampleStageMotorNames']['x']
         y_stage = main_gui.settings_object['SampleStageMotorNames']['y']
-        main_gui.lineEdit_pre_scan_action_list.setText(f"[['mv',{x_stage}, {self.roi_scan_xy_stage[0]}],['mv',{y_stage},{self.roi_scan_xy_stage[1]}]]")
+        main_gui.lineEdit_pre_scan_action_list.setText(f"[['mv','{x_stage}', {self.roi_scan_xy_stage[0]}],['mv','{y_stage}',{self.roi_scan_xy_stage[1]}]]")
 
     def update_autolevel(self, autolevel, action_object_pair):
         self.autolevel = autolevel
@@ -478,12 +479,15 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         gui = findMainWindow()
         try:
             folder = gui.settings_object.get('Camaras').get('exported_image_folder')
+            img_name, ok = QtWidgets.QInputDialog.getText(self, f'save image in {folder}', 'Input image file name:', text= 'exported_img') 
+            if not ok:
+                return
             exporter = pyqtgraph.exporters.ImageExporter(self.img_viewer)
-            exporter.export(os.path.join(folder,'exported_img_with_crosshair.png'))
+            exporter.export(os.path.join(folder,f'{img_name}_with_crosshair.png'))
             self.isoLine_v.hide()
             self.isoLine_h.hide()
             exporter = pyqtgraph.exporters.ImageExporter(self.img_viewer)
-            exporter.export(os.path.join(folder,'exported_img_without_crosshair.png'))
+            exporter.export(os.path.join(folder,f'{img_name}_without_crosshair.png'))
             self.isoLine_v.show()
             self.isoLine_h.show()
             gui.statusbar.showMessage(f'Success to export viewport image to folder: {folder}')

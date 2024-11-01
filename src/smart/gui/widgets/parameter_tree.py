@@ -155,7 +155,9 @@ class SmartParameters(ParameterTree):
     def apply_config(self):
         gui = findMainWindow()
         par = self.convert_par_tree_to_dict()
-        gui.settings_object = par
+        gui.camara_widget.update_img_settings()#update the file value of PrimBeamGeo
+        new_settings = dict([(key,value) for (key, value) in par.items() if key!='PrimBeamGeo'])
+        gui.settings_object.update(new_settings)
         gui._upon_settings_change()
 
     def load_config(self):
