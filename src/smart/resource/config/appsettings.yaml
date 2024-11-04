@@ -24,7 +24,7 @@ Camaras:
   viewerWidgetName: camara_widget
 FileManager:
   currentImageDatabaseDir: C:\\Users\\_admin\\Downloads\\monitor_test
-  currentimagedbDir: C:/Users/qiucanro/Downloads
+  currentimagedbDir: C://Users//qiucanro//Downloads
   restoreimagedb: C:\\Users\\qiucanro\\apps\\imgReg\\imgReg\\ImageBackup.imagedb
 General:
   ScaleColor: null
@@ -44,12 +44,12 @@ Mscope:
   comboBox_illum_types: tango://hasp029rack.desy.de:10000/p06/beamlinemicroscopeillumination/test.01/AvailableIlluminationTypes
   label_illum_pos: tango://hasp029rack.desy.de:10000/p06/beamlinemicroscopeillumination/test.01/intensity{}
 PrimBeamGeo:
-  img_x: -1208.686666505717
-  img_y: -2541.104828775742
-  iso_h: -1472.7549100156027
-  iso_v: -222.18217329545394
-  stage_x: -4.888007812499996
-  stage_y: -32.98921874999999
+  img_x: -753.0492375284451
+  img_y: -3073.0150825910537
+  iso_h: -1818.1818181818176
+  iso_v: 233.45525568181813
+  stage_x: 5.136015624999999
+  stage_y: -39.999999999999986
 QueueControl:
   ntp_host: haspp06deb10
   ntp_port: 13345

@@ -1,4 +1,5 @@
 import os, copy, re
+import matplotlib.image
 from taurus.qt.qtgui.base import TaurusBaseComponent
 from taurus.external.qt import Qt
 from pyqtgraph.Qt import QtCore, QtGui
@@ -494,6 +495,25 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         except Exception as err:
             gui.statusbar.showMessage(f'Fail to export image due to {str(err)}')
 
+    def export_and_load_image(self):
+        gui = findMainWindow()
+        try:
+            folder = gui.settings_object.get('Camaras').get('exported_image_folder')
+            img_full_path, ok = QtWidgets.QInputDialog.getText(self, f'Send image to ImgReg', 'Input full path of image file name:', text= os.path.join(folder, 'exported_img.png')) 
+            if not ok:
+                return
+            self.isoLine_v.hide()
+            self.isoLine_h.hide()
+            #exporter = pyqtgraph.exporters.ImageExporter(self.img)
+            #exporter.export(img_full_path)
+            matplotlib.image.imsave(img_full_path, gui.camara_widget.img.image.astype(np.uint8))
+            self.isoLine_v.show()
+            self.isoLine_h.show()
+            gui.import_image_from_disk([img_full_path], use_cam_geo = True)
+            gui.statusbar.showMessage(f'Success to export viewport image to folder: {folder}')
+        except Exception as err:
+            gui.statusbar.showMessage(f'Fail to export image due to {str(err)}')
+
     def set_reference_zone_pure(self, x0, y0, w, h):
         """
         Sets the coordinates of the rectangle selection within the reference zone
@@ -684,6 +704,23 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         sample_x_stage_start_pos, sample_y_stage_start_pos = current_stage_pos + crosshair_pos_offset_mm*[1,-1]
         return sample_x_stage_start_pos, sample_y_stage_start_pos
 
+    def _cal_scan_topleft_coordinates(self):
+        main_gui = findMainWindow()
+        geo_info = main_gui.settings_object['PrimBeamGeo']
+        img_dim = self.img.image.shape
+        top_left_coords_in_mm = np.array([geo_info['img_x'], geo_info['img_y']+img_dim[1]])*main_gui.camara_pixel_size
+        result = self._cal_scan_coordinates_from_pos(top_left_coords_in_mm)
+        result = [round(each, 3) for each in result]
+        if len(result)==2:
+            return str(list(result) + [0])
+        elif len(result)==3:
+            return str(result)
+
+    def _get_img_dim_in_mm(self):
+        main_gui = findMainWindow()
+        img_dim = list(np.array(self.img.image.shape)*main_gui.camara_pixel_size)
+        return img_dim[0:-1]
+
     def _convert_stage_coord_to_pix_unit_old(self, original_samx, original_samy):
         main_gui = findMainWindow()
         samx = Attribute(main_gui.settings_object["SampleStages"]["x_stage_value"]).read().value
@@ -746,6 +783,7 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self.isoLine_v.setValue(self.isoLine_v.value()+dx)
         main_gui.crosshair_pos_at_prim_beam[0] = self.isoLine_v.value()
         main_gui.crosshair_pos_at_prim_beam[1] = self.isoLine_h.value()
+        self.update_img_settings()
         # self.img_viewer.vb.autoRange()
 
     def update_img_settings(self):

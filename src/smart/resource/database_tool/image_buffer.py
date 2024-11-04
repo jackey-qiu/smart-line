@@ -86,8 +86,13 @@ class ImageBufferInfo(QtCore.QObject):
                     d["Center"][1] = abs(d["Outline"][3] - d["Outline"][2]) / 2.0 + d["Outline"][2]
                     d["Center"][2] = abs(d["Outline"][5] - d["Outline"][4]) / 2.0 + d["Outline"][4]
 
-            if ("Size" not in d.keys()) and ("Outline" not in d.keys()):
-                d["Size"] = (qi.size().width(), qi.size().height(), 1)
+            if ("Size" not in d.keys()):
+                if ("Outline" not in d.keys()):
+                    d["Size"] = (qi.size().width(), qi.size().height(), 1)
+                else:
+                    d["Size"] = (abs(d["Outline"][1] - d["Outline"][0]),\
+                                 abs(d["Outline"][3] - d["Outline"][2]),\
+                                 abs(d["Outline"][5] - d["Outline"][4]))
 
             if "Outline" not in d.keys():
                 if "Center" in d.keys() and "Size" in d.keys():
@@ -100,6 +105,10 @@ class ImageBufferInfo(QtCore.QObject):
                         d["Outline"][4] = d["Center"][2] - d["Size"][2] / 2
                         d["Outline"][5] = d["Center"][2] + d["Size"][2] / 2
 
+            if 'StageCoords_TL' not in d.keys():#top left stage coordinates
+                d['StageCoords_TL'] = (0,0,0)
+            else:
+                d['StageCoords_TL'] = eval(d['StageCoords_TL'])
             aspect_ratio = []
             aspect_ratio.append(d["Outline"][1] - d["Outline"][0])
             aspect_ratio.append(d["Outline"][3] - d["Outline"][2])

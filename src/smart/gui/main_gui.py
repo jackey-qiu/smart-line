@@ -639,6 +639,23 @@ class smartGui(
         self.bt_export_imagedb.setText("Save and export images")
         self.bt_export_imagedb.clicked.connect(self.saveImageBuffer)
 
+        self.bt_import_cam_image = QtWidgets.QPushButton(self)
+        action = QtWidgets.QWidgetAction(self.bt_imageMenu)
+        action.setDefaultWidget(self.bt_import_cam_image)
+        self.bt_imageMenu.menu().addAction(action)
+        icon1 = QtGui.QIcon()
+        icon1.addPixmap(
+            QtGui.QPixmap(
+                str(ui_file_folder / "icons" / "FileSystem" / "load_cam_img.png")
+            ),
+            QtGui.QIcon.Normal,
+            QtGui.QIcon.Off,
+        )
+        self.bt_import_cam_image.setIcon(icon1)
+        self.bt_import_cam_image.setText("Import camera image")
+        self.bt_import_cam_image.setIconSize(QtCore.QSize(32, 32))
+        self.bt_import_cam_image.clicked.connect(lambda: self.camara_widget.export_and_load_image())
+
         self.bt_import_image = QtWidgets.QPushButton(self)
         action = QtWidgets.QWidgetAction(self.bt_imageMenu)
         action.setDefaultWidget(self.bt_import_image)
@@ -652,7 +669,7 @@ class smartGui(
             QtGui.QIcon.Off,
         )
         self.bt_import_image.setIcon(icon1)
-        self.bt_import_image.setText("Import image")
+        self.bt_import_image.setText("Import local image ")
         self.bt_import_image.setIconSize(QtCore.QSize(32, 32))
         self.bt_import_image.clicked.connect(lambda: self.import_image_from_disk())
 
@@ -702,7 +719,7 @@ class smartGui(
             self.update_field_current = self.field_img[self.field_list.index(loc)]
             self._show_border()
 
-    def import_image_from_disk(self, source_path_list=[]):
+    def import_image_from_disk(self, source_path_list=[], use_cam_geo = False):
         # // open up an image for importing data
         import os
 
@@ -736,6 +753,10 @@ class smartGui(
                 d["Parent"] = ""
                 d["DTYPE"] = "RGBA"
                 d["BaseFolder"] = os.path.dirname(filePath)
+                if use_cam_geo:
+                    d['StageCoords_TL'] = self.camara_widget._cal_scan_topleft_coordinates()
+                    width, height = self.camara_widget._get_img_dim_in_mm()
+                    d["Outline"] = [50000-width/2, 50000+width/2, 50000-height/2,50000+height/2,-0.5,0.5]
                 # // check for .align file
                 if os.path.exists(os.path.splitext(filePath)[0] + ".Align"):
                     xml_path = os.path.splitext(filePath)[0] + ".Align"

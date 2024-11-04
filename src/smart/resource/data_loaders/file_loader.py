@@ -222,6 +222,8 @@ def load_im_xml(xml_path, exclude_file, progressbar=''):
                     if 'Particle' in tag_list:
                         for jj, child_par in enumerate(root[i].find('Particle')):
                             attrs[child_par.tag] = child_par.text
+                    if 'StageCoords_TL' in tag_list:
+                        attrs['StageCoords_TL'] = root[i].find("StageCoords_TL").text
                     c = attrs['Center']
                     s = attrs['Size']
                     #z is not used

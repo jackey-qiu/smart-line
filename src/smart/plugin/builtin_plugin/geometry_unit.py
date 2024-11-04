@@ -130,6 +130,7 @@ class geometry_widget_wrapper(object):
             pixc = [int(self.lineEdit_pxc_x.text()), int(self.lineEdit_pxc_y.text()), int(self.lineEdit_pxc_z.text())]
             rot = float(self.lineEdit_rot_angle.text())
             return pixdim, center, pixc, rot
+        self.attrs_geo['StageCoords_TL'] = eval(f'({self.lineEdit_stage_x.text()},{self.lineEdit_stage_y.text()},{self.lineEdit_stage_z.text()})')
         pixdim, center, pixc, rot = _extract_input_box()
         width, height = pixdim[0]*pixc[0], pixdim[1]*pixc[1]
         self.move_box.setAngle(0,center=[0.5,0.5])
@@ -269,6 +270,11 @@ class geometry_widget_wrapper(object):
         self.lineEdit_pxc_y.setText(f"{int(self.shape_geo[1])}")
         self.lineEdit_pxc_z.setText(f"{int(self.shape_geo[2])}")
         self.lineEdit_rot_angle.setText(str(rot))
+
+        x, y, z = self.attrs_geo['StageCoords_TL']
+        self.lineEdit_stage_x.setText(str(x))
+        self.lineEdit_stage_y.setText(str(y))
+        self.lineEdit_stage_z.setText(str(z))
 
     #recal meta info from outline values
     def _recalc_values(self, outl):

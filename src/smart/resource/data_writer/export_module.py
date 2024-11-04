@@ -99,6 +99,7 @@ def write_im_xml(xml_path, attrList, distributed=False):
         d["Center"][0] = d["Size"][0] / 2 + d["Outline"][0]
         d["Center"][1] = d["Size"][1] / 2 + d["Outline"][2]
         d['Focus'] = d["Outline"][4]
+        stage_pos = ET.SubElement(imageitem, "StageCoords_TL")
         Center = ET.SubElement(imageitem, "Center")
         Size = ET.SubElement(imageitem, "Size")
         Focus = ET.SubElement(imageitem, "Focus")
@@ -115,7 +116,7 @@ def write_im_xml(xml_path, attrList, distributed=False):
         Center.text = str(d['Center'][0]) + ',' + str(d['Center'][1])
         Size.text = str(d['Size'][0]) + ',' + str(d['Size'][1])
         Focus.text = str(d['Focus'])
-
+        stage_pos.text = str(d['StageCoords_TL'])
     dataitem = ET.SubElement(data, "Data")
     imagecount = ET.SubElement(dataitem, "ImageCount")
     imagecount.text = str(len(attrList))
