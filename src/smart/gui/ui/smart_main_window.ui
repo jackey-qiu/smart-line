@@ -51,7 +51,7 @@
            <item>
             <widget class="QTabWidget" name="tabWidget_viewer">
              <property name="currentIndex">
-              <number>7</number>
+              <number>0</number>
              </property>
              <widget class="QWidget" name="tab_10">
               <attribute name="title">
@@ -1236,7 +1236,7 @@
               </font>
              </property>
              <property name="currentIndex">
-              <number>2</number>
+              <number>0</number>
              </property>
              <widget class="QWidget" name="tab_7">
               <attribute name="title">
@@ -1361,7 +1361,7 @@
                        <item row="0" column="4">
                         <widget class="QLabel" name="label_25">
                          <property name="text">
-                          <string>ms</string>
+                          <string>micro second</string>
                          </property>
                         </widget>
                        </item>

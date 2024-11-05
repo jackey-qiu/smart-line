@@ -10,7 +10,7 @@ Camaras:
     - Continuous
   camaraExposure_time:
     attr_name: ExposureTimeAbs
-    default_value: null
+    default_value: None
   camaraStreamModel: tango://hasp029rack.desy.de:10000/p06/tangovimba/test.01/imageRaw
   click_move_timeout: 120
   exported_image_folder: C://Users//qiucanro//Downloads
@@ -27,13 +27,14 @@ FileManager:
   currentimagedbDir: C://Users//qiucanro//Downloads
   restoreimagedb: C:\\Users\\qiucanro\\apps\\imgReg\\imgReg\\ImageBackup.imagedb
 General:
-  ScaleColor: null
+  ScaleColor: ''
   ScaleFontSize: 10
   ScaleHeight: 90
   ScalePosition: Bottom Right
   ScaleSize: 1000
   beamlinePCHostName: hasm5570cq
   connect_model_startup: true
+  darkstyle: false
   db: tango://hasp029rack.desy.de:10000
 Motors:
   exp_mot03: tango://hasp029rack.desy.de:10000/p06/motor/exp.03
@@ -44,9 +45,9 @@ Mscope:
   comboBox_illum_types: tango://hasp029rack.desy.de:10000/p06/beamlinemicroscopeillumination/test.01/AvailableIlluminationTypes
   label_illum_pos: tango://hasp029rack.desy.de:10000/p06/beamlinemicroscopeillumination/test.01/intensity{}
 PrimBeamGeo:
-  img_x: -753.0492375284451
-  img_y: -3073.0150825910537
-  iso_h: -1818.1818181818176
+  img_x: -1044.1246528023066
+  img_y: -2943.0728393546087
+  iso_h: -1818.1818181818178
   iso_v: 233.45525568181813
   stage_x: 5.136015624999999
   stage_y: -39.999999999999986
@@ -70,7 +71,7 @@ SampleStages:
 ScanType:
   two_set_of_stage: false
 Visuals:
-  boxColor: null
+  boxColor: (200, 200, 0)
   boxLinewidth: 2
   showBox: 1
   showScalebar: 0

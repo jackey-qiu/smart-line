@@ -97,7 +97,8 @@ class camera_control_panel(object):
 
     def set_zoom_level(self, level = 50):
         Attribute(self.settings_object["ZoomDevice"]["label_zoom_pos"]).write(level)
-        self.update_pixel_size()
+        # self.update_pixel_size()
+        self.camara_widget.reset_geo_after_zoom_level_change()
 
     def stop_cam_stream(self):
         _, viewerWidgetName, *_ = self._extract_cam_info_from_config()
@@ -290,6 +291,38 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self.sigScanRoiAdded.connect(self.set_reference_zone)
         self.fake_img = np.random.rand(2048,2048,3) * 255
         # self.setModel('sys/tg_test/1/long64_image_ro')
+
+    def reset_geo_after_zoom_level_change(self):
+        main_gui = findMainWindow()
+        #calculate the scaling factor, zoom in if sf<1, zoom out if sf>1
+        sf = Attribute(main_gui.settings_object["Camaras"]["pixel_size"]).read().value/main_gui.camara_pixel_size
+        #calculate the dist between the image center and crosshair pos in both x and y direct
+        cen = [self.img.x() + self.img.width()/2, self.img.y() + self.img.height()/2]
+        l_cp_to_cen = (self.isoLine_v.value() - cen[0])/sf
+        h_cp_to_cen = (self.isoLine_h.value() - cen[1])/sf
+        #first disconnect the slot
+        self.isoLine_v.sigPositionChanged.disconnect()
+        self.isoLine_h.sigPositionChanged.disconnect()
+        #cal the new position in the current scale
+        main_gui.crosshair_pos_at_prim_beam = list(np.array(main_gui.stage_pos_at_prim_beam)/Attribute(main_gui.settings_object["Camaras"]["pixel_size"]).read().value)
+        #now let's cal the new position of the image center
+        cen_new = np.array(main_gui.crosshair_pos_at_prim_beam) - [l_cp_to_cen, h_cp_to_cen]
+        img_new_pos = cen_new - [self.img.width()/2,self.img.height()/2]
+        #now move crosshair and img
+        self.isoLine_h.setValue(main_gui.crosshair_pos_at_prim_beam[1])
+        self.isoLine_v.setValue(main_gui.crosshair_pos_at_prim_beam[0])
+        #move img to new pos
+        self.img.setX(img_new_pos[0])
+        self.img.setY(img_new_pos[1])
+        #update the pix size
+        main_gui.camara_pixel_size = Attribute(main_gui.settings_object["Camaras"]["pixel_size"]).read().value
+        #reconnect the slot
+        self.isoLine_h.sigPositionChanged.connect(main_gui._calibrate_pos)
+        self.isoLine_v.sigPositionChanged.connect(main_gui._calibrate_pos)
+        #update img settings
+        self.update_img_settings()
+        #change the axis scale finally
+        main_gui.update_pixel_size()
 
     def get_stage_bounds(self):
         #this is fragile, and should be changed whenever you change the model key

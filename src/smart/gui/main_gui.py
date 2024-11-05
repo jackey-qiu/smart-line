@@ -703,7 +703,7 @@ class smartGui(
     def _show_border(self):
         if check_true(self.settings_object["Visuals"]["showBox"]):
             border_pen = fn.mkPen(
-                color=self.settings_object["Visuals"]["boxColor"],
+                color=eval(self.settings_object["Visuals"]["boxColor"]),
                 width=int(self.settings_object["Visuals"]["boxLinewidth"]),
             )
             self.update_field_current.setBorder(border_pen)

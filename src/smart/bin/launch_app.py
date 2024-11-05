@@ -5,6 +5,7 @@ from PyQt5 import QtGui
 from taurus.qt.qtgui.container import TaurusMainWindow
 from smart.gui.main_gui import smartGui
 import click
+import pyqtgraph
 
 @click.command()
 @click.option('--config', default='default',
@@ -60,7 +61,13 @@ def main(config):
     myWin.setWindowIcon(QtGui.QIcon(str(Path(__file__).parent / 'smart_logo.png')))
     myWin.setWindowTitle("SMART")
     myWin.showMaximized() 
-    app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
+    if myWin.settings_object['General'].get('darkstyle',True):
+        app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
+        myWin.camara_widget.setBackground('k')
+        myWin.graphicsView_field.setBackground('k')
+    else:
+        myWin.camara_widget.setBackground('w')
+        myWin.graphicsView_field.setBackground('w')
     myWin.show()
     sys.exit(app.exec_())
 
