@@ -7,6 +7,8 @@ from pyqtgraph.Point import Point
 from pyqtgraph import GraphicsLayoutWidget, ImageItem
 from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal
 from PyQt5 import QtWidgets
+from PyQt5.QtWidgets import QWidget
+from PyQt5 import uic
 import pyqtgraph as pg
 import pyqtgraph.exporters
 import tango
@@ -18,7 +20,7 @@ from taurus.qt.qtgui.tpg import ForcedReadTool
 from functools import partial
 import numpy as np
 from smart import icon_path
-from ...util.util import findMainWindow, trigger, trigger2
+from ...util.util import findMainWindow, trigger, get_folder
 
 # timer_trigger = trigger(timeout=0.1)
 
@@ -219,6 +221,9 @@ class camera_control_panel(object):
         save_img = QAction(QIcon(str(icon_path / 'others' / 'save_img.png')),'export camera image',self)
         save_img.setStatusTip('click to export camera image.')
         save_img.triggered.connect(lambda: self.camara_widget.export_image())
+        crosshair_controller = QAction(QIcon(str(icon_path / 'smart' / 'crosshair_controller.png')),'crosshair position controller',self)
+        crosshair_controller.setStatusTip('click to pop up dialog to control crosshair position.')
+        crosshair_controller.triggered.connect(lambda: self.camara_widget.launch_crosshair_controller())
         self.camToolBar.addAction(action_switch_on_camera)
         self.camToolBar.addAction(action_switch_off_camera)
         self.camToolBar.addAction(save_img)
@@ -234,6 +239,7 @@ class camera_control_panel(object):
         self.camToolBar.addAction(click_move)
         self.camToolBar.addAction(stop_click_move)
         self.camToolBar.addAction(show_bound_roi)
+        self.camToolBar.addAction(crosshair_controller)
         self.addToolBar(Qt.LeftToolBarArea, self.camToolBar)
 
 class CumForcedReadTool(ForcedReadTool):
@@ -291,6 +297,10 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self.sigScanRoiAdded.connect(self.set_reference_zone)
         self.fake_img = np.random.rand(2048,2048,3) * 255
         # self.setModel('sys/tg_test/1/long64_image_ro')
+
+    def launch_crosshair_controller(self):
+        panel = crosshairPosController(self)
+        panel.exec()
 
     def reset_geo_after_zoom_level_change(self):
         main_gui = findMainWindow()
@@ -1039,3 +1049,23 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
             return s, t, v
         else:
             return None            
+
+class crosshairPosController(QtWidgets.QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        # Load the dialog's GUI
+        self.parent = parent
+        uic.loadUi(str(get_folder(topic='ui') / 'crosshair_position_controller_qdialog.ui'), self)
+        self.connect_slots()
+
+    def connect_slots(self):
+        self.pushButton_up.clicked.connect(lambda: self.move_ver(sign=1))
+        self.pushButton_down.clicked.connect(lambda: self.move_ver(sign=-1))
+        self.pushButton_left.clicked.connect(lambda: self.move_hor(sign=-1))
+        self.pushButton_right.clicked.connect(lambda: self.move_hor(sign=1))
+
+    def move_ver(self, sign):
+        self.parent.isoLine_h.setValue(self.parent.isoLine_h.value() + sign*self.doubleSpinBox.value())
+
+    def move_hor(self, sign):
+        self.parent.isoLine_v.setValue(self.parent.isoLine_v.value() + sign*self.doubleSpinBox.value())

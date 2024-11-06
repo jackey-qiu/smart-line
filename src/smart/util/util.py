@@ -6,6 +6,13 @@ from PyQt5 import QtCore
 from threading import Event, Thread
 import time
 from copy import deepcopy
+from pathlib import Path
+
+def get_folder(topic):
+    if topic=='ui':
+        folder = Path(__file__).parent.parent / "gui" /"ui"
+
+    return folder
 
 def remove_multiple_tabs_from_tabWidget(ix_info:dict,tabWidget):
     if len(ix_info)==0:

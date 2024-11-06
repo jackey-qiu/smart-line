@@ -338,7 +338,7 @@ class beamlineControl(object):
             # self.camara_widget.roi_scan.sigRegionChanged.connect(self.camara_widget._cal_scan_coordinates)
             # self.camara_widget.roi_scan.sigRegionChangeStarted.connect(lambda: self.camara_widget.setPaused(True))
             self.camara_widget._cal_scan_coordinates()
-        else:                
+        elif scan_cmd_list[0]=='mesh':              
             x_, y_ = float(scan_cmd_list[2]), float(scan_cmd_list[6])
             x_end_, y_end_ = float(scan_cmd_list[3]), float(scan_cmd_list[7])
             self.camara_widget.roi_scan_xy_stage = scan_roi_ref
@@ -357,6 +357,8 @@ class beamlineControl(object):
                 #self.camara_widget.roi_scan.setX(x)
                 #self.camara_widget.roi_scan.setY(y)
                 self.camara_widget.roi_scan.setSize((w, h))
+        else:
+            pass
         self.camara_widget.setPaused(False)
 
     #not used anymore
