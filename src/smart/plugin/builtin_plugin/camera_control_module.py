@@ -822,12 +822,12 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
     def update_img_settings(self):
         main_gui = findMainWindow()
         main_gui.settings_object['PrimBeamGeo'] = {
-            'img_x': self.img.x(),
-            'img_y': self.img.y(),
-            'iso_h': self.isoLine_h.value(),
-            'iso_v': self.isoLine_v.value(),
-            'stage_x': main_gui.stage_pos_at_prim_beam[0],
-            'stage_y': main_gui.stage_pos_at_prim_beam[1]
+            'img_x': float(self.img.x()),
+            'img_y': float(self.img.y()),
+            'iso_h': float(self.isoLine_h.value()),
+            'iso_v': float(self.isoLine_v.value()),
+            'stage_x': float(main_gui.stage_pos_at_prim_beam[0]),
+            'stage_y': float(main_gui.stage_pos_at_prim_beam[1])
         }
 
     def mv_stage_to_prim_beam(self):

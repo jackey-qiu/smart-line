@@ -258,7 +258,12 @@ class beamlineControl(object):
             if cmd.startswith('pmesh'):
                 anchors_list = re.findall(r"(\[[-+]?(?:\d*\.*\d+) [-+]?(?:\d*\.*\d+)\])", self.pandas_model_queue_camara_viewer._data.iloc[i,:]['scan_command'])
                 anchors_list = [self.camara_widget._convert_stage_coord_to_pix_unit(*eval(each.replace(' ', ','))) for each in anchors_list]
-                anchors_list = [np.array(each)/1000+scan_roi_ref_pix for each in anchors_list]
+                # anchors_list = [np.array(each)/1000+scan_roi_ref_pix for each in anchors_list]
+                if self.settings_object['ScanType']['two_set_of_stage']:
+                    anchors_list = [np.array(each)+self.camara_widget._convert_stage_coord_to_pix_unit(*scan_roi_ref) for each in anchors_list]
+                else:
+                    pass
+                #anchors_list = [np.array(each)+scan_roi_ref_pix for each in anchors_list]
                 pen = pg.mkPen((0, 200, 200), width=1)
                 roi = pg.PolyLineROI([],closed=True,movable=False)
                 roi.setPoints(anchors_list)
@@ -268,8 +273,10 @@ class beamlineControl(object):
                 self.camara_widget.rois.append(roi)
             elif cmd.startswith('mesh'):     
                 scan_cmd_list = cmd.rsplit(' ')
-                x_, y_ = float(scan_cmd_list[2])/1000, float(scan_cmd_list[6])/1000
-                x_end_, y_end_ = float(scan_cmd_list[3])/1000, float(scan_cmd_list[7])/1000
+                # x_, y_ = float(scan_cmd_list[2])/1000, float(scan_cmd_list[6])/1000
+                # x_end_, y_end_ = float(scan_cmd_list[3])/1000, float(scan_cmd_list[7])/1000
+                x_, y_ = float(scan_cmd_list[2]), float(scan_cmd_list[6])
+                x_end_, y_end_ = float(scan_cmd_list[3]), float(scan_cmd_list[7])
                 #self.camara_widget.roi_scan_xy_stage = [x_, y_]
                 x, y = self.camara_widget._convert_stage_coord_to_pix_unit(x_, y_)
                 x_end, y_end = self.camara_widget._convert_stage_coord_to_pix_unit(x_end_, y_end_)
@@ -303,7 +310,12 @@ class beamlineControl(object):
         if scan_cmd_list[0]=='pmesh':
             anchors_list = re.findall(r"(\[[-+]?(?:\d*\.*\d+) [-+]?(?:\d*\.*\d+)\])", self.pandas_model_queue_camara_viewer._data.iloc[row,:]['scan_command'])
             anchors_list = [self.camara_widget._convert_stage_coord_to_pix_unit(*eval(each.replace(' ', ','))) for each in anchors_list]
-            anchors_list = [np.array(each)/1000+self.camara_widget._convert_stage_coord_to_pix_unit(*scan_roi_ref) for each in anchors_list]
+            #scan_roi_ref_ = scan_roi_ref if self.settings_object['ScanType']['two_set_of_stage'] else [0,0]
+            if self.settings_object['ScanType']['two_set_of_stage']:
+                anchors_list = [np.array(each)+self.camara_widget._convert_stage_coord_to_pix_unit(*scan_roi_ref) for each in anchors_list]
+            else:
+                pass
+            # anchors_list = [np.array(each)/1000+self.camara_widget._convert_stage_coord_to_pix_unit(*scan_roi_ref) for each in anchors_list]
             # if type(self.camara_widget.roi_scan)==pg.PolyLineROI:
                 # self.camara_widget.roi_scan.setPos(0,0,update=False,finish=False)
                 # self.camara_widget.roi_scan.setPoints(anchors_list)
@@ -330,9 +342,11 @@ class beamlineControl(object):
             x_, y_ = float(scan_cmd_list[2]), float(scan_cmd_list[6])
             x_end_, y_end_ = float(scan_cmd_list[3]), float(scan_cmd_list[7])
             self.camara_widget.roi_scan_xy_stage = scan_roi_ref
-            x, y = self.camara_widget._convert_stage_coord_to_pix_unit(x_/1000, y_/1000)
+            # x, y = self.camara_widget._convert_stage_coord_to_pix_unit(x_/1000, y_/1000)
+            x, y = self.camara_widget._convert_stage_coord_to_pix_unit(x_, y_)
             x_ref, y_ref = self.camara_widget._convert_stage_coord_to_pix_unit(*scan_roi_ref)
-            x_end, y_end = self.camara_widget._convert_stage_coord_to_pix_unit(x_end_/1000, y_end_/1000)
+            # x_end, y_end = self.camara_widget._convert_stage_coord_to_pix_unit(x_end_/1000, y_end_/1000)
+            x_end, y_end = self.camara_widget._convert_stage_coord_to_pix_unit(x_end_, y_end_)
             w, h = abs(x - x_end), abs(y - y_end)
             if type(self.camara_widget.roi_scan)==pg.PolyLineROI:
                 self.camara_widget.roi_type = 'rectangle'
