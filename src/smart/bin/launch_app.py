@@ -66,10 +66,14 @@ def main(config):
         myWin.camara_widget.setBackground('k')
         myWin.graphicsView_field.setBackground('k')
         myWin.graphicsView_field_color_bar.setBackground('k')
+        myWin.widget_taurus_plot.setBackground('k')
+        myWin.widget_taurus_2d_plot.setBackground('k')
     else:
         myWin.camara_widget.setBackground('w')
         myWin.graphicsView_field.setBackground('w')
         myWin.graphicsView_field_color_bar.setBackground('w')
+        myWin.widget_taurus_plot.setBackground('w')
+        myWin.widget_taurus_2d_plot.setBackground('w')
     myWin.show()
     sys.exit(app.exec_())
 

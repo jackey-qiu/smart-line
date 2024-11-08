@@ -1,4 +1,4 @@
-import os, copy, re
+import os, copy, re, time
 import matplotlib.image
 from taurus.qt.qtgui.base import TaurusBaseComponent
 from taurus.external.qt import Qt
@@ -12,6 +12,7 @@ from PyQt5 import uic
 import pyqtgraph as pg
 import pyqtgraph.exporters
 import tango
+from tango import DevState
 from tango._tango import DevState as dev_state
 from taurus import Device, Attribute
 from taurus.core import TaurusEventType, TaurusTimeVal
@@ -86,6 +87,9 @@ class camera_control_panel(object):
         else:
             self.camera_is_on = False
             self.camara_widget.img.setImage(self.camara_widget.fake_img)
+            self.camara_widget.img_center.setData(x=[(self.camara_widget.img.x()+self.camara_widget.img.width()/2)],
+                                                  y=[(self.camara_widget.img.y()+self.camara_widget.img.height()/2)],
+                                                  symbol = '+',pen=pyqtgraph.mkPen(color = 'r', width=2))
             self.camara_widget.hist.imageChanged(self.camara_widget.autolevel, self.camara_widget.autolevel)
             getattr(self, viewerWidgetName).setModel(None)
             self.statusbar.showMessage(f'Fail to start cam streaming with state of {_device.state.name}')
@@ -304,8 +308,13 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
 
     def reset_geo_after_zoom_level_change(self):
         main_gui = findMainWindow()
+        pix_attribute = Attribute(main_gui.settings_object["Camaras"]["pixel_size"])
+        while True:
+            if pix_attribute.getAttributeProxy().state()==DevState.ON:
+                break
+            time.sleep(0.5)
         #calculate the scaling factor, zoom in if sf<1, zoom out if sf>1
-        sf = Attribute(main_gui.settings_object["Camaras"]["pixel_size"]).read().value/main_gui.camara_pixel_size
+        sf = pix_attribute.read().value/main_gui.camara_pixel_size
         #calculate the dist between the image center and crosshair pos in both x and y direct
         cen = [self.img.x() + self.img.width()/2, self.img.y() + self.img.height()/2]
         l_cp_to_cen = (self.isoLine_v.value() - cen[0])/sf
@@ -325,7 +334,7 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self.img.setX(img_new_pos[0])
         self.img.setY(img_new_pos[1])
         #update the pix size
-        main_gui.camara_pixel_size = Attribute(main_gui.settings_object["Camaras"]["pixel_size"]).read().value
+        main_gui.camara_pixel_size = pix_attribute.read().value
         #reconnect the slot
         self.isoLine_h.sigPositionChanged.connect(main_gui._calibrate_pos)
         self.isoLine_v.sigPositionChanged.connect(main_gui._calibrate_pos)
@@ -333,6 +342,7 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self.update_img_settings()
         #change the axis scale finally
         main_gui.update_pixel_size()
+        self.img_viewer.vb.autoRange()
 
     def get_stage_bounds(self):
         #this is fragile, and should be changed whenever you change the model key
@@ -470,6 +480,8 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self.img_viewer.setAspectLocked()
         self.img = pg.ImageItem()
         self.img_viewer.addItem(self.img)
+        self.img_center = pg.ScatterPlotItem()
+        self.img_viewer.addItem(self.img_center)
 
         self.img_viewer.addItem(self.isoLine_v, ignoreBounds = True)
         self.img_viewer.addItem(self.isoLine_h, ignoreBounds = True)
@@ -827,7 +839,12 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         main_gui.crosshair_pos_at_prim_beam[0] = self.isoLine_v.value()
         main_gui.crosshair_pos_at_prim_beam[1] = self.isoLine_h.value()
         self.update_img_settings()
-        # self.img_viewer.vb.autoRange()
+        #update img center
+        self.img_center.setData(x=[(self.img.x()+self.img.width()/2)],
+                                y=[(self.img.y()+self.img.height()/2)],
+                                symbol = '+',pen=pyqtgraph.mkPen(color = 'r', width=2))
+        #auto range the vb
+        self.img_viewer.vb.autoRange()
 
     def update_img_settings(self):
         main_gui = findMainWindow()
@@ -867,6 +884,8 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self.isoLine_v.setValue(iso_v)
         self.img.setX(img_x)
         self.img.setY(img_y)
+        self.img_center.setData(x=[(self.img.x()+self.img.width()/2)],
+                                y=[(self.img.y()+self.img.height()/2)],symbol = '+',pen=pyqtgraph.mkPen(color = 'r', width=2))
 
     def reposition_scan_roi(self):
         if self.roi_scan_xy_stage[0]!=None:
@@ -907,6 +926,7 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
 
     def handleEvent(self, evt_src, evt_type, evt_val_list):
         """Reimplemented from :class:`TaurusImageItem`"""
+        main_gui = findMainWindow()
         if type(evt_val_list) is list:
             evt_val, key = evt_val_list
         else:
@@ -936,6 +956,8 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
                     #data = np.clip(data, 0, 255).astype(np.ubyte)
 
                 self.img.setImage(data)
+                self.img_center.setData(x=[(self.img.x()+self.img.width()/2)],
+                                        y=[(self.img.y()+self.img.height()/2)],symbol = '+',pen=pyqtgraph.mkPen(color = 'r', width=2))
                 self.hist.imageChanged(self.autolevel, self.autolevel)
             elif key in ['samx','samy','scanx','scany']:
                 self.reposition_scan_roi()

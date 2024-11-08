@@ -867,6 +867,26 @@
                </item>
               </layout>
              </widget>
+             <widget class="QWidget" name="tab_2">
+              <attribute name="title">
+               <string>taurus 1D data viewer</string>
+              </attribute>
+              <layout class="QHBoxLayout" name="horizontalLayout_19">
+               <item>
+                <widget class="TaurusPlot" name="widget_taurus_plot" native="true"/>
+               </item>
+              </layout>
+             </widget>
+             <widget class="QWidget" name="tab_3">
+              <attribute name="title">
+               <string>taurus 2D data viewer</string>
+              </attribute>
+              <layout class="QHBoxLayout" name="horizontalLayout_20">
+               <item>
+                <widget class="Taurus2DImageItem" name="widget_taurus_2d_plot" native="true"/>
+               </item>
+              </layout>
+             </widget>
              <widget class="QWidget" name="tab_9">
               <attribute name="title">
                <string>ImageReg</string>
@@ -3124,6 +3144,12 @@
    <class>SmartParameters</class>
    <extends>QWidget</extends>
    <header>smart.gui.widgets.parameter_tree.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>TaurusPlot</class>
+   <extends>QWidget</extends>
+   <header>taurus.qt.qtgui.tpg.plot.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

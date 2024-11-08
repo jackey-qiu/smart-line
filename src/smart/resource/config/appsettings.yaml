@@ -34,7 +34,7 @@ General:
   ScaleSize: 1000
   beamlinePCHostName: hasm5570cq
   connect_model_startup: true
-  darkstyle: true
+  darkstyle: false
   db: tango://hasp029rack.desy.de:10000
 Motors:
   exp_mot03: tango://hasp029rack.desy.de:10000/p06/motor/exp.03
@@ -45,10 +45,10 @@ Mscope:
   comboBox_illum_types: tango://hasp029rack.desy.de:10000/p06/beamlinemicroscopeillumination/test.01/AvailableIlluminationTypes
   label_illum_pos: tango://hasp029rack.desy.de:10000/p06/beamlinemicroscopeillumination/test.01/intensity{}
 PrimBeamGeo:
-  img_x: -888.9068769735566
-  img_y: -2996.0383400996798
+  img_x: -793.757802984389
+  img_y: -2843.1710814823723
   iso_h: -1818.1818181818178
-  iso_v: 233.45525568181816
+  iso_v: 233.4552556818184
   stage_x: 5.136015624999999
   stage_y: -39.999999999999986
 QueueControl:
@@ -104,10 +104,10 @@ viewerTabWidgetVisibility:
     index: 1
     show: false
   configEditor:
-    index: 7
+    index: 9
     show: true
   imageReg:
-    index: 6
+    index: 8
     show: true
   motorViewer:
     index: 4
@@ -121,6 +121,12 @@ viewerTabWidgetVisibility:
   synopticViewer:
     index: 5
     show: false
+  taurus1DPlot:
+    index: 6
+    show: true
+  taurus2DPlot:
+    index: 7
+    show: true
 widgetMaps:
   beamlineControlGpNames:
   - SampleStages

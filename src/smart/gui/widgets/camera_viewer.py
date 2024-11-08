@@ -4,15 +4,17 @@ from taurus.external.qt import Qt
 from pyqtgraph import GraphicsLayoutWidget
 from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal
 import pyqtgraph as pg
-from taurus.core import TaurusEventType, TaurusTimeVal
+from taurus.core import TaurusEventType, TaurusTimeVal,TaurusElementType
 from smart.gui.widgets.context_menu_actions import  VisuaTool
-from taurus.qt.qtgui.tpg import ForcedReadTool
+from taurus.qt.qtgui.tpg import ForcedReadTool,TaurusImgModelChooserTool
+from taurus.qt.qtgui.panel import TaurusModelChooser
 from functools import partial
 import numpy as np
 from smart import icon_path
 from ...util.util import findMainWindow
 
 class Taurus2DImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
+# class Taurus2DImageItem(GraphicsLayoutWidget, TaurusImageItem):
     """
     Displays 2Dimage data
     """
@@ -22,6 +24,7 @@ class Taurus2DImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
     def __init__(self, parent = None, *args, **kwargs):
         GraphicsLayoutWidget.__init__(self, *args, **kwargs)
         TaurusBaseComponent.__init__(self, "Taurus2DImageItem")
+        # TaurusImageItem.__init__(self, *args, **kwargs)
         self._timer = Qt.QTimer()
         self._timer.timeout.connect(self._forceRead)
         self._parent = parent
@@ -45,6 +48,9 @@ class Taurus2DImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self.fr = CumForcedReadTool(self, period=0)
         self.fr.attachToPlotItem(self.img_viewer)
         self.vt._onTriggered()
+        self.mpicker = TaurusImgModelChooserTool(self)
+        self.mpicker._onTriggered = self._onTriggered_model_chooser
+        self.mpicker.attachToPlotItem(self.img_viewer)
         # self.resume_prim_action = resumePrim(self)
         # self.resume_prim_action.attachToPlotItem(self.img_viewer)
         # self.cam_switch = camSwitch(self._parent)
@@ -59,6 +65,26 @@ class Taurus2DImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         # self.resumecrosshair.attachToPlotItem(self.img_viewer) 
         # self.setPosRef = setRef(self)
         # self.setPosRef.attachToPlotItem(self.img_viewer) 
+
+    def _onTriggered_model_chooser(self):
+
+        modelName = self.getFullModelName()
+        if modelName is None:
+            listedModels = []
+        else:
+            listedModels = [modelName]
+
+        res, ok = TaurusModelChooser.modelChooserDlg(
+            selectables=[TaurusElementType.Attribute],
+            singleModel=True,
+            listedModels=listedModels,
+        )
+        if ok:
+            if res:
+                model = res[0]
+            else:
+                model = None
+            self.setModel(model)
 
     def _setup_one_channel_viewer(self):
         #for horizontal profile
