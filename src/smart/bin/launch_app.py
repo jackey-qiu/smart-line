@@ -61,6 +61,8 @@ def main(config):
     myWin.setWindowIcon(QtGui.QIcon(str(Path(__file__).parent / 'smart_logo.png')))
     myWin.setWindowTitle("SMART")
     myWin.showMaximized() 
+    setattr(myWin, 'app', app)
+    '''
     if myWin.settings_object['General'].get('darkstyle',True):
         app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
         myWin.camara_widget.setBackground('k')
@@ -74,6 +76,7 @@ def main(config):
         myWin.graphicsView_field_color_bar.setBackground('w')
         myWin.widget_taurus_plot.setBackground('w')
         myWin.widget_taurus_2d_plot.setBackground('w')
+    '''
     myWin.show()
     sys.exit(app.exec_())
 

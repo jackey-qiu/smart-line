@@ -120,7 +120,7 @@ viewerTabWidgetVisibility:
     show: true
   synopticViewer:
     index: 5
-    show: false
+    show: true
   taurus1DPlot:
     index: 6
     show: true

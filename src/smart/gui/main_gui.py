@@ -7,6 +7,7 @@ import sys, socket
 import yaml
 from pathlib import Path
 import numpy as np
+import qdarkstyle
 import pyqtgraph as pg
 import pyqtgraph.functions as fn
 from PyQt5 import QtGui, QtCore, QtWidgets, uic
@@ -252,6 +253,25 @@ class smartGui(
         self.imageBuffer.recallImgBackup()
         self.highlightFirstImg()
 
+    def change_stylesheet(self, on_or_off, action_icons):
+        app = self.app
+        if on_or_off:
+            app.setStyleSheet('')
+        else:
+            app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
+        str_mode = ['k','w'][int(on_or_off)]
+        self.camara_widget.setBackground(str_mode)
+        self.graphicsView_field.setBackground(str_mode)
+        self.graphicsView_field_color_bar.setBackground(str_mode)
+        self.widget_taurus_plot.setBackground(str_mode)
+        self.widget_taurus_2d_plot.setBackground(str_mode)
+        if on_or_off:
+            action_icons[0].setVisible(False)
+            action_icons[1].setVisible(True)
+        else:
+            action_icons[1].setVisible(False)
+            action_icons[0].setVisible(True)
+
     def add_smart_toolbar(self):
         tb = QToolBar("SMART Toolbar")
         tb.setObjectName("SMART Toolbar")
@@ -266,9 +286,20 @@ class smartGui(
         stop = QAction(QIcon(str(icon_path / 'smart' / 'stop_macro.png')),'abort macro run',self)
         stop.setStatusTip('Stop currently running macro.')
         stop.triggered.connect(lambda: Device(self.settings_object['spockLogin']['doorName']).AbortMacro())
+        lighton = QAction(QIcon(str(icon_path / 'smart' / 'lighton.png')),'turn on light',self)
+        lighton.setStatusTip('Change the GUI stylesheet to light mode.')
+        lighton.setVisible(False)
+        lightoff = QAction(QIcon(str(icon_path / 'smart' / 'lightoff.png')),'turn off light',self)
+        lightoff.setStatusTip('Change the GUI stylesheet to dark mode.')
+        lighton.triggered.connect(lambda: self.change_stylesheet(True,[lighton,lightoff]))        
+        lightoff.triggered.connect(lambda: self.change_stylesheet(False,[lighton,lightoff]))  
+        self.change_stylesheet(True,[lighton,lightoff])
+        lightoff.setVisible(True)
         tb.addAction(connect)
         tb.addAction(save)
         tb.addAction(stop)
+        tb.addAction(lighton)
+        tb.addAction(lightoff)
         self.smart_toolbar = tb
         self.addToolBar(self.smart_toolbar)
 
