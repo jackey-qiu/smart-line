@@ -254,11 +254,12 @@ class smartGui(
         self.highlightFirstImg()
 
     def change_stylesheet(self, on_or_off, action_icons):
-        app = self.app
-        if on_or_off:
-            app.setStyleSheet('')
-        else:
-            app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
+        if hasattr(self, 'app'):
+            app = self.app
+            if on_or_off:
+                app.setStyleSheet('')
+            else:
+                app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
         str_mode = ['k','w'][int(on_or_off)]
         self.camara_widget.setBackground(str_mode)
         self.graphicsView_field.setBackground(str_mode)
