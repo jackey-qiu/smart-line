@@ -802,10 +802,10 @@ class rectangle(baseShape):
         ox, oy, w, h = np.array(self.dim_pars)
         pos_ = rotate_multiple_points(
             [(x, y)],
-            np.array(self.rot_center) + np.array(self.transformation["translate"] + self.transformation["translate_offset"]),
+            np.array(self.rot_center) + np.array(self.transformation["translate"]) + np.array(self.transformation["translate_offset"]),
             -self.transformation["rotate"],
         )
-        pos_ = np.array(pos_) - (np.array(self.transformation["translate"] + self.transformation["translate_offset"]))
+        pos_ = np.array(pos_) - np.array(self.transformation["translate"]) - np.array(self.transformation["translate_offset"])
         x_, y_ = pos_
         if (ox <= x_ <= ox + w) and (oy <= y_ <= oy + h):
             return True
@@ -1246,10 +1246,10 @@ class isocelesTriangle(baseShape):
         p1, p2, p3 = self._cal_corner_point_coordinates(False)
         pos_ = rotate_multiple_points(
             [(x, y)],
-            np.array(self.rot_center) + np.array(self.transformation["translate"] + self.transformation["translate_offset"]),
+            np.array(self.rot_center) + np.array(self.transformation["translate"]) + np.array(self.transformation["translate_offset"]),
             -self.transformation["rotate"],
         )
-        pos_ = np.array(pos_) - (np.array(self.transformation["translate"] + self.transformation["translate_offset"]))
+        pos_ = np.array(pos_) - np.array(self.transformation["translate"]) + np.array(self.transformation["translate_offset"])
         x_, y_ = pos_
         if (p2[0] <= x_ <= p3[0]) and (p1[1] <= y_ <= p2[1]):
             return True

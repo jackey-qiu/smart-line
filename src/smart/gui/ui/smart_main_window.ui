@@ -51,7 +51,7 @@
            <item>
             <widget class="QTabWidget" name="tabWidget_viewer">
              <property name="currentIndex">
-              <number>7</number>
+              <number>0</number>
              </property>
              <widget class="QWidget" name="tab_10">
               <attribute name="title">
@@ -867,6 +867,28 @@
                </item>
               </layout>
              </widget>
+             <widget class="QWidget" name="tab_5">
+              <attribute name="title">
+               <string>taurus motor veiwer</string>
+              </attribute>
+              <layout class="QVBoxLayout" name="verticalLayout_23">
+               <item>
+                <widget class="QFrame" name="frame_12">
+                 <property name="frameShape">
+                  <enum>QFrame::StyledPanel</enum>
+                 </property>
+                 <property name="frameShadow">
+                  <enum>QFrame::Raised</enum>
+                 </property>
+                 <layout class="QVBoxLayout" name="verticalLayout_24">
+                  <item>
+                   <layout class="QVBoxLayout" name="verticalLayout_motor_list"/>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+              </layout>
+             </widget>
              <widget class="QWidget" name="tab_2">
               <attribute name="title">
                <string>taurus 1D data viewer</string>
@@ -1404,49 +1426,7 @@
                     <layout class="QVBoxLayout" name="verticalLayout_15">
                      <item>
                       <layout class="QGridLayout" name="gridLayout_9">
-                       <item row="5" column="2">
-                        <widget class="QLabel" name="label_101">
-                         <property name="text">
-                          <string>um</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="4" column="1">
-                        <widget class="TaurusLabel" name="x_pstage_value">
-                         <property name="text">
-                          <string/>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="6" column="2">
-                        <widget class="QLabel" name="label_102">
-                         <property name="text">
-                          <string>um</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="5" column="1">
-                        <widget class="TaurusLabel" name="y_pstage_value">
-                         <property name="text">
-                          <string/>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="4" column="2">
-                        <widget class="QLabel" name="label_100">
-                         <property name="text">
-                          <string>um</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="6" column="1">
-                        <widget class="TaurusLabel" name="z_pstage_value">
-                         <property name="text">
-                          <string/>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="0" column="1">
+                       <item row="0" column="2">
                         <widget class="TaurusLabel" name="x_stage_value">
                          <property name="minimumSize">
                           <size>
@@ -1459,7 +1439,70 @@
                          </property>
                         </widget>
                        </item>
+                       <item row="4" column="2">
+                        <widget class="TaurusLabel" name="x_pstage_value">
+                         <property name="text">
+                          <string/>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="5" column="3">
+                        <widget class="QLabel" name="label_101">
+                         <property name="text">
+                          <string>um</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="5" column="2">
+                        <widget class="TaurusLabel" name="y_pstage_value">
+                         <property name="text">
+                          <string/>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="6" column="2">
+                        <widget class="TaurusLabel" name="z_pstage_value">
+                         <property name="text">
+                          <string/>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="4" column="3">
+                        <widget class="QLabel" name="label_100">
+                         <property name="text">
+                          <string>um</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="6" column="3">
+                        <widget class="QLabel" name="label_102">
+                         <property name="text">
+                          <string>um</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="0" column="1">
+                        <widget class="QLabel" name="label_sample_stage_x">
+                         <property name="text">
+                          <string>sampleX</string>
+                         </property>
+                        </widget>
+                       </item>
                        <item row="1" column="1">
+                        <widget class="QLabel" name="label_sample_stage_y">
+                         <property name="text">
+                          <string>sampleY</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="2" column="1">
+                        <widget class="QLabel" name="label_sample_stage_z">
+                         <property name="text">
+                          <string>sampleZ</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="1" column="2">
                         <widget class="TaurusLabel" name="y_stage_value">
                          <property name="minimumSize">
                           <size>
@@ -1472,41 +1515,33 @@
                          </property>
                         </widget>
                        </item>
-                       <item row="0" column="0">
-                        <widget class="QLabel" name="label_sample_stage_x">
+                       <item row="2" column="3">
+                        <widget class="QLabel" name="label_30">
+                         <property name="sizePolicy">
+                          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                           <horstretch>0</horstretch>
+                           <verstretch>0</verstretch>
+                          </sizepolicy>
+                         </property>
                          <property name="text">
-                          <string>sampleX</string>
+                          <string>mm</string>
                          </property>
                         </widget>
                        </item>
-                       <item row="2" column="0">
-                        <widget class="QLabel" name="label_sample_stage_z">
+                       <item row="0" column="3">
+                        <widget class="QLabel" name="label_43">
+                         <property name="sizePolicy">
+                          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                           <horstretch>0</horstretch>
+                           <verstretch>0</verstretch>
+                          </sizepolicy>
+                         </property>
                          <property name="text">
-                          <string>sampleZ</string>
+                          <string>mm</string>
                          </property>
                         </widget>
                        </item>
-                       <item row="1" column="0">
-                        <widget class="QLabel" name="label_sample_stage_y">
-                         <property name="text">
-                          <string>sampleY</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="2" column="1">
-                        <widget class="TaurusLabel" name="z_stage_value">
-                         <property name="minimumSize">
-                          <size>
-                           <width>100</width>
-                           <height>0</height>
-                          </size>
-                         </property>
-                         <property name="text">
-                          <string/>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="1" column="2">
+                       <item row="1" column="3">
                         <widget class="QLabel" name="label_45">
                          <property name="sizePolicy">
                           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
@@ -1520,58 +1555,70 @@
                         </widget>
                        </item>
                        <item row="2" column="2">
-                        <widget class="QLabel" name="label_30">
-                         <property name="sizePolicy">
-                          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                           <horstretch>0</horstretch>
-                           <verstretch>0</verstretch>
-                          </sizepolicy>
+                        <widget class="TaurusLabel" name="z_stage_value">
+                         <property name="minimumSize">
+                          <size>
+                           <width>100</width>
+                           <height>0</height>
+                          </size>
                          </property>
                          <property name="text">
-                          <string>mm</string>
+                          <string/>
                          </property>
                         </widget>
                        </item>
-                       <item row="0" column="2">
-                        <widget class="QLabel" name="label_43">
-                         <property name="sizePolicy">
-                          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                           <horstretch>0</horstretch>
-                           <verstretch>0</verstretch>
-                          </sizepolicy>
-                         </property>
-                         <property name="text">
-                          <string>mm</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="4" column="0">
-                        <widget class="QLabel" name="label_sample_pstage_x">
-                         <property name="text">
-                          <string>scanX</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item row="5" column="0">
+                       <item row="5" column="1">
                         <widget class="QLabel" name="label_sample_pstage_y">
                          <property name="text">
                           <string>scanY</string>
                          </property>
                         </widget>
                        </item>
-                       <item row="6" column="0">
+                       <item row="4" column="1">
+                        <widget class="QLabel" name="label_sample_pstage_x">
+                         <property name="text">
+                          <string>scanX</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="3" column="1" colspan="3">
+                        <widget class="Line" name="line">
+                         <property name="orientation">
+                          <enum>Qt::Horizontal</enum>
+                         </property>
+                        </widget>
+                       </item>
+                       <item row="6" column="1">
                         <widget class="QLabel" name="label_sample_pstage_z">
                          <property name="text">
                           <string>scanZ</string>
                          </property>
                         </widget>
                        </item>
-                       <item row="3" column="0" colspan="3">
-                        <widget class="Line" name="line">
-                         <property name="orientation">
-                          <enum>Qt::Horizontal</enum>
+                       <item row="0" column="0">
+                        <widget class="TaurusLed" name="x_stage_state" native="true">
+                         <property name="sizePolicy">
+                          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+                           <horstretch>0</horstretch>
+                           <verstretch>0</verstretch>
+                          </sizepolicy>
                          </property>
                         </widget>
+                       </item>
+                       <item row="1" column="0">
+                        <widget class="TaurusLed" name="y_stage_state" native="true"/>
+                       </item>
+                       <item row="2" column="0">
+                        <widget class="TaurusLed" name="z_stage_state" native="true"/>
+                       </item>
+                       <item row="6" column="0">
+                        <widget class="TaurusLed" name="z_pstage_state" native="true"/>
+                       </item>
+                       <item row="5" column="0">
+                        <widget class="TaurusLed" name="y_pstage_state" native="true"/>
+                       </item>
+                       <item row="4" column="0">
+                        <widget class="TaurusLed" name="x_pstage_state" native="true"/>
                        </item>
                       </layout>
                      </item>
@@ -3150,6 +3197,12 @@
    <class>TaurusPlot</class>
    <extends>QWidget</extends>
    <header>taurus.qt.qtgui.tpg.plot.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>TaurusLed</class>
+   <extends>QWidget</extends>
+   <header>taurus.qt.qtgui.display.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

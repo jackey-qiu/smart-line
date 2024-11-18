@@ -5,9 +5,9 @@ from taurus.external.qt import Qt
 from pyqtgraph.Qt import QtCore, QtGui
 from pyqtgraph.Point import Point
 from pyqtgraph import GraphicsLayoutWidget, ImageItem
-from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal
+from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal, QTimer
 from PyQt5 import QtWidgets
-from PyQt5.QtWidgets import QWidget
+from PyQt5.QtWidgets import QWidget, QColorDialog
 from PyQt5 import uic
 import pyqtgraph as pg
 import pyqtgraph.exporters
@@ -219,6 +219,9 @@ class camera_control_panel(object):
         click_move.triggered.connect(lambda: self.camara_widget.enable_mouse_click_move_stage([click_move, stop_click_move])) 
         stop_click_move.triggered.connect(lambda: self.camara_widget.disable_click_move_stage([stop_click_move, click_move])) 
         stop_click_move.setVisible(False)
+        self.click_move = click_move
+        self.stop_click_move = stop_click_move
+
         show_bound_roi = QAction(QIcon(str(icon_path / 'smart' / 'boundary.png')),'show the boundary according to current stage softlimits',self)
         show_bound_roi.setStatusTip('click to show or hide the boundary roi based on current stage softlimits.')
         show_bound_roi.triggered.connect(lambda: self.camara_widget.get_stage_bounds())
@@ -228,6 +231,11 @@ class camera_control_panel(object):
         crosshair_controller = QAction(QIcon(str(icon_path / 'smart' / 'crosshair_controller.png')),'crosshair position controller',self)
         crosshair_controller.setStatusTip('click to pop up dialog to control crosshair position.')
         crosshair_controller.triggered.connect(lambda: self.camara_widget.launch_crosshair_controller())
+
+        pick_roi_color = QAction(QIcon(str(icon_path / 'smart' / 'color_picker.png')),'select roi color',self)
+        pick_roi_color.setStatusTip('click to show color dialog to select roi color.')
+        pick_roi_color.triggered.connect(lambda: self.camara_widget.set_roi_color())
+
         self.camToolBar.addAction(action_switch_on_camera)
         self.camToolBar.addAction(action_switch_off_camera)
         self.camToolBar.addAction(save_img)
@@ -240,6 +248,7 @@ class camera_control_panel(object):
         self.camToolBar.addAction(unlock)
         self.camToolBar.addAction(roi_rect)
         self.camToolBar.addAction(roi_polyline)
+        self.camToolBar.addAction(pick_roi_color)
         self.camToolBar.addAction(click_move)
         self.camToolBar.addAction(stop_click_move)
         self.camToolBar.addAction(show_bound_roi)
@@ -375,6 +384,7 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         assert len(action_object_pair)==2, 'two action objects are needed here'
         action_object_pair[0].setVisible(False)
         action_object_pair[1].setVisible(True)
+        QTimer.singleShot(30000, lambda: self.disable_click_move_stage(action_object_pair[::-1]))
 
     def set_mouse_click_move_stage(self, enabled):
         self.mouse_click_move_stage_enabled = enabled
@@ -396,6 +406,11 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         action_object_pair[0].setVisible(False)
         action_object_pair[1].setVisible(True)
         # findMainWindow().click_move.setEnabled(True)
+
+    def set_roi_color(self):
+        color = QColorDialog.getColor()
+        if self.roi_scan!=None:
+            self.roi_scan.setPen(pg.mkPen(color, width = 2))
 
     def set_roi_type(self, roi_type, action_object_pair):
         if roi_type in ['rectangle','polyline']:

@@ -487,7 +487,7 @@ composite_shapes:
         change_value: 1      
     models: 
       index: [4,7,8]
-      model: tango://hasp029rack.desy.de:10000/p06/motor/exp.02/position
+      model: tango://hasp029rack.desy.de:10000/p06/motor/exp.01/position
     callbacks_upon_model_change:
       4: ['callback_model_change_with_transformation', 'mv_dir', 'x', 'sign', '+', 'max_translation_range', '[-60,0]']
       7: ['callback_model_change_with_transformation', 'mv_dir', 'x', 'sign', '+', 'max_translation_range', '[-60,0]']

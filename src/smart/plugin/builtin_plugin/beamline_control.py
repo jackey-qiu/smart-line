@@ -1,11 +1,12 @@
-from PyQt5.QtWidgets import QLabel, QPushButton, QSlider, QAbstractItemView, QMessageBox
+from PyQt5.QtWidgets import QLabel, QPushButton, QSlider, QAbstractItemView, QMessageBox, QHBoxLayout, QSpacerItem, QSizePolicy
 from PyQt5.QtCore import Qt, pyqtSlot as Slot
 from PyQt5.QtGui import QFont
 from PyQt5 import QtCore
 import re
 import numpy as np
 from functools import partial
-from taurus.qt.qtgui.display import TaurusLabel
+from taurus.qt.qtgui.display import TaurusLabel, TaurusLed
+from taurus.qt.qtgui.input import TaurusWheelEdit, TaurusValueLineEdit
 from taurus import Attribute
 import pandas as pd
 import pyqtgraph as pg
@@ -41,6 +42,45 @@ class beamlineControl(object):
         #parameter tree buttons
         self.pushButton_load_config.clicked.connect(self.widget_pars.load_config)
         self.pushButton_apply_change.clicked.connect(self.widget_pars.apply_config)
+
+    def populate_taurus_motor_widgets(self):
+        settings = self.settings_object.get('TaurusMotors', None)
+        if settings==None:
+            return
+        style = settings.get('use_style')
+        possible_styles = settings.get('possible_styles')
+        if style not in possible_styles:
+            raise Exception(f'{style} is Not the right stlye, choose one from {possible_styles}')
+        for (key, stages) in settings.items():
+            if key in ['use_style','possible_styles']:
+                continue
+            self.verticalLayout_motor_list.addWidget(QLabel(key))
+            for (name, tg_address) in stages.items():
+                tmp_Hlayout = QHBoxLayout()
+                state = TaurusLed()
+                state.setModel('/'.join([tg_address,'state']))
+                name_ = QLabel(name)
+                read_value = TaurusLabel()
+                read_value.setModel('/'.join([tg_address,'position']))
+                read_value.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+                if style == 'write':
+                    write_value = TaurusValueLineEdit()
+                    write_value.setModel('/'.join([tg_address,'position']))
+                else:
+                    write_value = None
+                unit = TaurusLabel()
+                unit.setModel('/'.join([tg_address,'position#rvalue.units']))
+                unit.bgRole = ''
+                tmp_Hlayout.addWidget(state)
+                tmp_Hlayout.addWidget(name_)
+                tmp_Hlayout.addWidget(read_value)
+                if write_value!=None:
+                    write_value.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+                    tmp_Hlayout.addWidget(write_value)
+                tmp_Hlayout.addWidget(unit)
+                # tmp_Hlayout.addItem(QSpacerItem(1, 1, QSizePolicy.Expanding,QSizePolicy.Fixed))
+                self.verticalLayout_motor_list.addLayout(tmp_Hlayout)
+        self.verticalLayout_motor_list.addItem(QSpacerItem(1, 1, QSizePolicy.Minimum, QSizePolicy.Expanding))
 
     def update_stage_name_from_config(self):
         if 'SampleStageMotorNames' in self.settings_object:
@@ -79,6 +119,7 @@ class beamlineControl(object):
         self.camara_widget.img_viewer.axes['bottom']['item'].setLabel(f'{x_label} ({x_unit})')
 
     def set_models(self):
+        self.populate_taurus_motor_widgets()
         self.update_pixel_size()
         allkeys = self.settings_object.keys()
         selected_keys = [key for key in allkeys if key in self.group_names]
@@ -88,6 +129,10 @@ class beamlineControl(object):
                 if not value.endswith('{}'):#model name ends with {} is a dynamically changed model
                     if hasattr(self, key):
                         getattr(self, key).model = value
+                        if key in ['x_pstage_value','x_stage_value',
+                                   'y_pstage_value','y_stage_value',
+                                   'z_pstage_value','z_stage_value',]:
+                            getattr(self, key.replace('value','state')).model = value.replace('/position','/state')
         #get the num of illum devices
         # num_illum_devices = len(Attribute(self.settings_object["Mscope"]["comboBox_illum_types"]).read().value)
         illum_devices = list(Attribute(self.settings_object["Mscope"]["comboBox_illum_types"]).read().value)

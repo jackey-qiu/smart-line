@@ -70,6 +70,17 @@ SampleStages:
   z_stage_value: tango://hasp029rack.desy.de:10000/motor/dummy_mot_ctrl/3/position
 ScanType:
   two_set_of_stage: false
+TaurusMotors:
+  piezo_stage:
+    piezo_stage_x: tango://hasp029rack.desy.de:10000/p06/motor/exp.02
+    piezo_stage_y: tango://hasp029rack.desy.de:10000/p06/motor/exp.01
+  possible_styles:
+  - read
+  - write
+  sample_stage1:
+    sample_stage_x: tango://hasp029rack.desy.de:10000/p06/motor/exp.02
+    sample_stage_y: tango://hasp029rack.desy.de:10000/p06/motor/exp.01
+  use_style: read
 Visuals:
   boxColor: (200, 200, 0)
   boxLinewidth: 2
