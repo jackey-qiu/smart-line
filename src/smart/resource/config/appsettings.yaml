@@ -115,10 +115,10 @@ viewerTabWidgetVisibility:
     index: 1
     show: false
   configEditor:
-    index: 9
+    index: 10
     show: true
   imageReg:
-    index: 8
+    index: 9
     show: true
   motorViewer:
     index: 4
@@ -132,11 +132,14 @@ viewerTabWidgetVisibility:
   synopticViewer:
     index: 5
     show: true
-  taurus1DPlot:
+  taurusMotorViewer:
     index: 6
+    show: false
+  taurus1DPlot:
+    index: 7
     show: true
   taurus2DPlot:
-    index: 7
+    index: 8
     show: true
 widgetMaps:
   beamlineControlGpNames:
