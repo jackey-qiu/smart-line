@@ -6,6 +6,7 @@ from pyqtgraph.Qt import QtCore, QtGui
 from pyqtgraph.Point import Point
 from pyqtgraph import GraphicsLayoutWidget, ImageItem
 from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal, QTimer
+import PyQt5.QtCore 
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QWidget, QColorDialog
 from PyQt5 import uic
@@ -527,7 +528,10 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         #set the img to origin (0,0)
         # self._mv_img_to_pos(0, 0)    
 
-    def _execute_stage_move_upon_mouseclick(self):
+    def _execute_stage_move_upon_mouseclick(self, ev):
+        #only accept left click button
+        if ev.button() != PyQt5.QtCore.Qt.LeftButton:
+            return
         door = tango.DeviceProxy(findMainWindow().settings_object['spockLogin']['doorName'])
         run = (door.state() == dev_state.RUNNING)
         if self.mouse_click_move_stage_enabled and (not run):

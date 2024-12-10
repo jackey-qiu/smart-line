@@ -45,12 +45,12 @@ Mscope:
   comboBox_illum_types: tango://hasp029rack.desy.de:10000/p06/beamlinemicroscopeillumination/test.01/AvailableIlluminationTypes
   label_illum_pos: tango://hasp029rack.desy.de:10000/p06/beamlinemicroscopeillumination/test.01/intensity{}
 PrimBeamGeo:
-  img_x: -793.757802984389
-  img_y: -2843.1710814823723
-  iso_h: -1818.1818181818178
-  iso_v: 233.4552556818184
+  img_x: -793.7578029843893
+  img_y: -1518.9188027885748
+  iso_h: -340.44012063889625
+  iso_v: 233.45525568181813
   stage_x: 5.136015624999999
-  stage_y: -39.999999999999986
+  stage_y: -11.000156249999975
 QueueControl:
   ntp_host: haspp06deb10
   ntp_port: 13345
@@ -80,7 +80,7 @@ TaurusMotors:
   sample_stage1:
     sample_stage_x: tango://hasp029rack.desy.de:10000/p06/motor/exp.02
     sample_stage_y: tango://hasp029rack.desy.de:10000/p06/motor/exp.01
-  use_style: read
+  use_style: write
 Visuals:
   boxColor: (200, 200, 0)
   boxLinewidth: 2
@@ -132,14 +132,14 @@ viewerTabWidgetVisibility:
   synopticViewer:
     index: 5
     show: true
-  taurusMotorViewer:
-    index: 6
-    show: false
   taurus1DPlot:
     index: 7
     show: true
   taurus2DPlot:
     index: 8
+    show: true
+  taurusMotorViewer:
+    index: 6
     show: true
 widgetMaps:
   beamlineControlGpNames:
