@@ -187,7 +187,7 @@ class camera_control_panel(object):
         unlock.setStatusTip('You can unfreeze the crosshair lines.')
         lock.triggered.connect(lambda: self._lock_crosshair_lines([lock, unlock]))            
         unlock.triggered.connect(lambda: self._unlock_crosshair_lines([unlock, lock]))               
-        unlock.setVisible(False)
+        lock.setVisible(False)
         resumecrosshair = QAction(QIcon(str(icon_path / 'smart' / 'resume_crosshair.png')),'resume crosshair pos',self)
         resumecrosshair.setStatusTip('Resume the crosshair line positions to previous saved pars for prim beam.')
         resumecrosshair.triggered.connect(self._resume_prim_beam_pos)
@@ -492,6 +492,8 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self.isoLine_v.setZValue(100000) # bring iso line above contrast controls
         self.isoLine_h.setValue(0)
         self.isoLine_h.setZValue(100000) # bring iso line above contrast controls
+        self.isoLine_h.setMovable(False)
+        self.isoLine_v.setMovable(False)
         self.img_viewer = self.addPlot(row = 2, col = 1, rowspan = 5, colspan = 10)
         self.img_viewer.setAspectLocked()
         self.img = pg.ImageItem()
