@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1501</width>
-    <height>980</height>
+    <height>862</height>
    </rect>
   </property>
   <property name="font">
@@ -51,7 +51,7 @@
            <item>
             <widget class="QTabWidget" name="tabWidget_viewer">
              <property name="currentIndex">
-              <number>0</number>
+              <number>10</number>
              </property>
              <widget class="QWidget" name="tab_10">
               <attribute name="title">
@@ -880,9 +880,19 @@
                  <property name="frameShadow">
                   <enum>QFrame::Raised</enum>
                  </property>
-                 <layout class="QVBoxLayout" name="verticalLayout_24">
+                 <layout class="QVBoxLayout" name="verticalLayout_25">
                   <item>
                    <layout class="QVBoxLayout" name="verticalLayout_motor_list"/>
+                  </item>
+                  <item>
+                   <layout class="QVBoxLayout" name="verticalLayout_magic_gui"/>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="pushButton_magic">
+                    <property name="text">
+                     <string>PushButton</string>
+                    </property>
+                   </widget>
                   </item>
                  </layout>
                 </widget>
@@ -1245,6 +1255,9 @@
                      </widget>
                     </item>
                    </layout>
+                  </item>
+                  <item>
+                   <layout class="QVBoxLayout" name="verticalLayout_24"/>
                   </item>
                  </layout>
                 </widget>

@@ -407,3 +407,165 @@ class PandasModel(QtCore.QAbstractTableModel):
         self.dataChanged.emit(self.createIndex(0, 0), self.createIndex(self.rowCount(0), self.columnCount(0)))
         self.layoutChanged.emit()
         # self._data.drop(columns='sort_me', inplace=True)
+
+def test_magic_gui(parent):
+    from typing import Annotated, Literal
+
+    from magicgui import magicgui
+
+    @magicgui
+    def my_function(
+        param_a: int,
+        param_b: Annotated[int, {'widget_type': "Slider", 'max': 100}] = 42,
+        param_c: Literal["First", "Second", "Third"] = "Second"
+    ):
+        print("param_a:", param_a)
+        print("param_b:", param_b)
+        print("param_c:", param_c)
+
+    @magicgui
+    def my_function2():
+        print("param_a:", my_function.param_a)
+
+    parent.maggui = my_function
+    parent.frame_12.layout().addWidget(parent.maggui.native)
+    parent.frame_12.layout().addWidget(my_function2.native)
+
+def conc_cb(**kwargs):
+    *keys,lastkey = list(kwargs.keys())
+    kwargs[lastkey].value = ' '.join([str(kwargs[each].value) for each in keys])
+
+def use_str_cb(**kwargs):
+    *keys,lastkey = list(kwargs.keys())
+    kwargs[lastkey].value = ' '.join([kwargs[each].value for each in keys if type(kwargs[each].value)==str])
+
+par_dict_test = {'par1': 1, 'par2': 'Hello', 'par3': 'world', 'result': '1 Hello world'}
+button_dict = {'conc': conc_cb, 'use_str': use_str_cb}
+
+def test_container_customized_way(parent, par_dict = par_dict_test, button_dict = button_dict):
+    from magicgui import widgets
+    from magicgui.widgets import create_widget, Container, PushButton
+    
+    button_list = []
+    for button, _ in button_dict.items():
+        button_list.append(PushButton(text = button))
+
+    widget_list = []
+    for par_name, par_value in par_dict.items():
+        widget_list.append(create_widget(par_value, name = par_name))
+
+    for button, cb in zip(button_list, list(button_dict.values())):
+        kwargs = dict(zip(list(par_dict.keys()),widget_list))
+        button.clicked.connect(lambda state, a=kwargs, cb=cb:cb(**a))
+        button.clicked.connect(lambda :cb(**kwargs))
+
+    container = Container(widgets = widget_list + button_list)
+    parent.frame_12.layout().addWidget(container.native)
+
+def test_container(parent, db = 'p25_orders_1', collection='product_info'):
+    import yaml
+    from magicgui import widgets
+    from magicgui.widgets import create_widget, Container, PushButton
+
+    def parse_template(config_dict, key_template):
+        result = {}
+        def _parse_str_key(key):        
+            result = config_dict['doc_property_template'][key]
+            inner_key_template = result.get('template',None)
+            if inner_key_template!=None:
+                if type(inner_key_template)==str:
+                    result.update(config_dict['doc_property_template'][inner_key_template])
+                elif type(inner_key_template)==list:
+                    for each_inner_key in inner_key_template:
+                        result.update(config_dict['doc_property_template'][each_inner_key])
+                return result
+            else:
+                return result
+        if type(key_template)==str:
+            result.update(_parse_str_key(key_template))
+        elif type(key_template)==list:
+            for each in key_template:
+                result.update(_parse_str_key(each))
+        return result
+
+    def get_gui_dict(config_dict, db_key, collection_key, doc_key, return_content = 'all'):
+        #return_content in ['all','magicgui','tableviewer]
+        DB_properties = ['doc_name_format', 'unique', 'mandatory']
+        template_tag = ['template']
+        full = get_full_dict(config_dict, db_key, collection_key, doc_key)
+        result = dict([(each, full[each]) for each in full if (each not in DB_properties + template_tag)])
+        if ('label' in result) and result['label']=='default':
+            result['label'] = doc_key
+        if ('name' in result) and result['name']=='default':
+            result['name'] = doc_key
+        if return_content=='all':
+            return result
+        elif return_content=='magicgui':
+            mggui_args = {}
+            #remove key for table viewer first
+            for each in ['show_in_table_viewer']:
+                result.pop(each)
+            #collect kwargs
+            for each in ['value', 'name', 'label','widget_type']:
+                mggui_args[each] = result.pop(each)
+            mggui_args['options'] = result
+            return mggui_args
+        elif return_content=='tableviewer':
+            return dict([(each, result[each]) for each in ['show_in_table_viewer']])
+        return result
+
+    def get_full_dict(config_dict, db_key, collection_key, doc_key):
+        result = config_dict[db_key][collection_key][doc_key]
+        template_key = result.get('template',None)
+        if template_key!=None:
+            result_template = parse_template(config_dict, template_key)
+            result_template.update(result)
+            return result_template
+        else:
+            return result
+
+    def get_db_dict(config_dict, db_key, collection_key, doc_key):
+        DB_properties = ['doc_name_format', 'unique', 'mandatory']
+        full = get_full_dict(config_dict, db_key, collection_key, doc_key)
+        return dict([(each, full[each]) for each in DB_properties if each in full])
+
+    def make_magic_gui_container(magic_gui_dict, gui_host):
+        main_gui = findMainWindow()
+        widget_list = []
+        for par_name, par_value in magic_gui_dict.items():
+            if par_value['value']==None:
+                par_value.pop('value')
+            widget_list.append(create_widget(**par_value))
+        container = Container(widgets = widget_list)
+        delete_widgets_from_layout(getattr(main_gui, gui_host))
+        getattr(main_gui, gui_host).addWidget(container.native)
+        for each in widget_list:
+            setattr(main_gui, each.name, each)
+        return container 
+
+    def delete_widgets_from_layout(layout):
+        for i in reversed(range(layout.count())): 
+            layout.itemAt(i).widget().setParent(None)
+
+    def connect_pushbutton_slots(button, cb, mg_container):
+        #first disconnect slot if any
+        try:
+            button.clicked.disconnect()
+        except:
+            pass
+        button.clicked.connect(lambda state, a=mg_container, cb=cb:cb(a) )
+
+    def callback(mg_container):
+        kwargs = dict([(each.name, each.value) for each in mg_container])
+        print(kwargs)
+
+    with open('C:\\Users\\qiucanro\\apps\\mongoqt\\src\\gui\\resource\\config\\app_config.yml','r') as f:
+        result = yaml.safe_load(f)
+        doc_keys = list(result[db][collection].keys())
+        magic_gui_dict = {}
+        for each in doc_keys:
+            magic_gui_dict[each] = get_gui_dict(result, db,collection,each,'magicgui')
+        # container_ = make_magic_gui_container(magic_gui_dict, 'verticalLayout_magic_gui')
+        container_ = make_magic_gui_container(magic_gui_dict, 'verticalLayout_24')
+        connect_pushbutton_slots(parent.pushButton_magic, callback, container_)
+        

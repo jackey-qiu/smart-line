@@ -104,7 +104,6 @@ class camera_control_panel(object):
 
     def set_zoom_level(self, level = 50):
         Attribute(self.settings_object["ZoomDevice"]["label_zoom_pos"]).write(level)
-        # self.update_pixel_size()
         self.camara_widget.reset_geo_after_zoom_level_change()
 
     def stop_cam_stream(self):
@@ -352,6 +351,7 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self.update_img_settings()
         #change the axis scale finally
         main_gui.update_pixel_size()
+        #for unknown reason, this line does not work (not do auto scaling)
         self.img_viewer.vb.autoRange()
 
     def get_stage_bounds(self):
@@ -484,6 +484,13 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
             self.mvMotors.attachToPlotItem(self.img_viewer) 
 
     def _setup_rgb_viewer(self):
+        if not self.rgb_viewer:
+            #for horizontal profile
+            self.prof_hoz = self.addPlot(col = 1, colspan = 5, rowspan = 2)
+            #for vertical profile
+            self.prof_ver = self.addPlot(col = 6, colspan = 5, rowspan = 2)
+            self.nextRow()
+
         self.isoLine_v = pg.InfiniteLine(angle=90, movable=True, pen=pg.mkPen('green', width=4))
         self.isoLine_h = pg.InfiniteLine(angle=0, movable=True, pen=pg.mkPen('green', width=4))
         # self.isoLine_h.sigPositionChanged.connect(main_gui._calibrate_pos)
@@ -506,7 +513,7 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         if self.rgb_viewer:
             self.hist = pg.HistogramLUTItem(levelMode='rgba')
         else:
-            self.hist = pg.HistogramLUTItem(levelMode='mono')
+            self.hist = pg.HistogramLUTItem()
         self.hist.vb.setMouseEnabled(y=True) # makes user interaction a little easier
         self.addItem(self.hist, row = 2, col = 0, rowspan = 5, colspan = 1)
         self.hist.setImageItem(self.img)
@@ -518,17 +525,55 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         #set the img to origin (0,0)
         self._mv_img_to_pos(0, 0)
 
+        if not self.rgb_viewer:
+            #cuts on image
+            self.region_cut_hor = pg.LinearRegionItem(orientation=pg.LinearRegionItem.Horizontal)
+            self.region_cut_ver = pg.LinearRegionItem(orientation=pg.LinearRegionItem.Vertical)
+            self.region_cut_hor.setRegion([120,150])
+            self.region_cut_ver.setRegion([120,150])
+            self.img_viewer.addItem(self.region_cut_hor, ignoreBounds = True)
+            self.img_viewer.addItem(self.region_cut_ver, ignoreBounds = True)
+
     def _setup_mono_viewer(self):
-        self.img_mono = pg.ImageItem()
-        self.img_viewer.addItem(self.img_mono)
+        # self.img_mono = pg.ImageItem()
+        # self.img_viewer.addItem(self.img_mono)
 
-        self.hist_mono = pg.HistogramLUTItem(levelMode='mono')
-        self.hist_mono.vb.setMouseEnabled(y=True) # makes user interaction a little easier
-        self.addItem(self.hist_mono, row = 2, col = 0, rowspan = 5, colspan = 1)
-        self.hist_mono.setImageItem(self.img_mono)
+        # self.hist_mono = pg.HistogramLUTItem(levelMode='mono')
+        # self.hist_mono.vb.setMouseEnabled(y=True) # makes user interaction a little easier
+        # self.addItem(self.hist_mono, row = 2, col = 0, rowspan = 5, colspan = 1)
+        # self.hist_mono.setImageItem(self.img_mono)
 
-        #set the img to origin (0,0)
-        # self._mv_img_to_pos(0, 0)    
+        #for horizontal profile
+        self.prof_hoz = self.addPlot(col = 1, colspan = 5, rowspan = 2)
+        #for vertical profile
+        self.prof_ver = self.addPlot(col = 6, colspan = 5, rowspan = 2)
+        self.nextRow()
+        self.hist = pg.HistogramLUTItem()
+        self.isoLine = pg.InfiniteLine(angle=0, movable=True, pen='g')
+        self.hist.vb.addItem(self.isoLine)
+        self.hist.vb.setMouseEnabled(y=True) # makes user interaction a little easier
+        self.isoLine.setValue(0.8)
+        self.isoLine.setZValue(100000) # bring iso line above contrast controls
+        # self.addItem(self.hist, row = 2, col = 0, rowspan = 5, colspan = 1)
+        self.addItem(self.hist, row = 2, col = 0, rowspan = 5, colspan = 1)
+        #for image
+        self.img_viewer = self.addPlot(row = 2, col = 1, rowspan = 5, colspan = 10)
+        self.img_viewer.setAspectLocked()
+        self.img = pg.ImageItem()
+        self.img_viewer.addItem(self.img)
+        self.hist.setImageItem(self.img)
+        #isocurve for image
+        self.iso = pg.IsocurveItem(level = 0.8, pen = 'g')
+        self.iso.setParentItem(self.img)
+
+        #cuts on image
+        self.region_cut_hor = pg.LinearRegionItem(orientation=pg.LinearRegionItem.Horizontal)
+        self.region_cut_ver = pg.LinearRegionItem(orientation=pg.LinearRegionItem.Vertical)
+        self.region_cut_hor.setRegion([120,150])
+        self.region_cut_ver.setRegion([120,150])
+        self.img_viewer.addItem(self.region_cut_hor, ignoreBounds = True)
+        self.img_viewer.addItem(self.region_cut_ver, ignoreBounds = True)
+
 
     def _execute_stage_move_upon_mouseclick(self, ev):
         #only accept left click button
@@ -905,8 +950,11 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self.isoLine_v.setValue(iso_v)
         self.img.setX(img_x)
         self.img.setY(img_y)
-        self.img_center.setData(x=[(self.img.x()+self.img.width()/2)],
-                                y=[(self.img.y()+self.img.height()/2)],symbol = '+',pen=pyqtgraph.mkPen(color = 'r', width=2))
+        try:
+            self.img_center.setData(x=[(self.img.x()+self.img.width()/2)],
+                                    y=[(self.img.y()+self.img.height()/2)],symbol = '+',pen=pyqtgraph.mkPen(color = 'r', width=2))
+        except:
+            pass
 
     def reposition_scan_roi(self):
         if self.roi_scan_xy_stage[0]!=None:
@@ -980,6 +1028,13 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
                 self.img_center.setData(x=[(self.img.x()+self.img.width()/2)],
                                         y=[(self.img.y()+self.img.height()/2)],symbol = '+',pen=pyqtgraph.mkPen(color = 'r', width=2))
                 self.hist.imageChanged(self.autolevel, self.autolevel)
+                if not self.rgb_viewer:
+                    hor_region_down,  hor_region_up= self.region_cut_hor.getRegion()
+                    ver_region_l, ver_region_r = self.region_cut_ver.getRegion()
+                    hor_region_down,  hor_region_up = int(hor_region_down),  int(hor_region_up)
+                    ver_region_l, ver_region_r = int(ver_region_l), int(ver_region_r)
+                    self.prof_ver.plot(data[ver_region_l:ver_region_r,:].sum(axis=0),pen='g',clear=True)
+                    self.prof_hoz.plot(data[:,hor_region_down:hor_region_up].sum(axis=1), pen='r',clear = True)
             elif key in ['samx','samy','scanx','scany']:
                 self.reposition_scan_roi()
                 if key in ['scanx','scany']:
