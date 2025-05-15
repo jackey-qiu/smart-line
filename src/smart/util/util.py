@@ -559,7 +559,7 @@ def test_container(parent, db = 'p25_orders_1', collection='product_info'):
         kwargs = dict([(each.name, each.value) for each in mg_container])
         print(kwargs)
 
-    with open('C:\\Users\\qiucanro\\apps\\mongoqt\\src\\gui\\resource\\config\\app_config.yml','r') as f:
+    with open('C:\\Users\\qiucanro\\apps\\mongoqt\\mongoqt\\gui\\resource\\config\\app_config.yml','r') as f:
         result = yaml.safe_load(f)
         doc_keys = list(result[db][collection].keys())
         magic_gui_dict = {}

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1501</width>
-    <height>862</height>
+    <height>863</height>
    </rect>
   </property>
   <property name="font">
@@ -51,7 +51,7 @@
            <item>
             <widget class="QTabWidget" name="tabWidget_viewer">
              <property name="currentIndex">
-              <number>10</number>
+              <number>8</number>
              </property>
              <widget class="QWidget" name="tab_10">
               <attribute name="title">
@@ -911,11 +911,117 @@
              </widget>
              <widget class="QWidget" name="tab_3">
               <attribute name="title">
-               <string>taurus 2D data viewer</string>
+               <string>XRF image viewer</string>
               </attribute>
-              <layout class="QHBoxLayout" name="horizontalLayout_20">
+              <layout class="QVBoxLayout" name="verticalLayout_37">
+               <item>
+                <layout class="QHBoxLayout" name="horizontalLayout_20">
+                 <item>
+                  <widget class="QPushButton" name="pushButton_connect_zmq">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="text">
+                    <string>connect zmq</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QLabel" name="label_99">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="text">
+                    <string>datasources</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QComboBox" name="comboBox_datasources"/>
+                 </item>
+                 <item>
+                  <widget class="QPushButton" name="pushButton_start_zmq_thread">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="text">
+                    <string>start</string>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </item>
                <item>
                 <widget class="Taurus2DImageItem" name="widget_taurus_2d_plot" native="true"/>
+               </item>
+               <item>
+                <widget class="QGroupBox" name="groupBox_6">
+                 <property name="title">
+                  <string>meta info</string>
+                 </property>
+                 <layout class="QHBoxLayout" name="horizontalLayout_22">
+                  <item>
+                   <layout class="QGridLayout" name="gridLayout_3">
+                    <item row="0" column="0">
+                     <widget class="QLabel" name="label_103">
+                      <property name="text">
+                       <string>origin</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="0" column="1">
+                     <widget class="QLineEdit" name="lineEdit_origin"/>
+                    </item>
+                    <item row="0" column="2">
+                     <widget class="QLabel" name="label_104">
+                      <property name="text">
+                       <string>pixel_size</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="0" column="7">
+                     <widget class="QLineEdit" name="lineEdit_shape"/>
+                    </item>
+                    <item row="0" column="6">
+                     <widget class="QLabel" name="label_106">
+                      <property name="text">
+                       <string>shape</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="0" column="4">
+                     <widget class="QLabel" name="label_105">
+                      <property name="text">
+                       <string>unit</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="0" column="3">
+                     <widget class="QLineEdit" name="lineEdit_pixel_size"/>
+                    </item>
+                    <item row="0" column="5">
+                     <widget class="QLineEdit" name="lineEdit_unit"/>
+                    </item>
+                    <item row="0" column="8">
+                     <widget class="QPushButton" name="pushButton_apply_roi">
+                      <property name="text">
+                       <string>apply roi</string>
+                      </property>
+                     </widget>
+                    </item>
+                   </layout>
+                  </item>
+                 </layout>
+                </widget>
                </item>
               </layout>
              </widget>
@@ -1718,7 +1824,7 @@
                        <item row="0" column="1">
                         <widget class="QLineEdit" name="lineEdit_scan_cmd">
                          <property name="text">
-                          <string>mesh</string>
+                          <string>cmesh</string>
                          </property>
                          <property name="placeholderText">
                           <string>meshc</string>
@@ -1917,7 +2023,7 @@
                <item>
                 <widget class="QTabWidget" name="tabWidget_2">
                  <property name="currentIndex">
-                  <number>1</number>
+                  <number>3</number>
                  </property>
                  <widget class="QWidget" name="tab_18">
                   <attribute name="title">
@@ -3115,6 +3221,31 @@
               <layout class="QVBoxLayout" name="verticalLayout">
                <item>
                 <widget class="TerminalWidget" name="widget_terminal" native="true"/>
+               </item>
+              </layout>
+             </widget>
+             <widget class="QWidget" name="tab_6">
+              <attribute name="title">
+               <string>database test page</string>
+              </attribute>
+              <layout class="QVBoxLayout" name="verticalLayout_31">
+               <item>
+                <widget class="QTableView" name="tableView"/>
+               </item>
+               <item>
+                <widget class="QFrame" name="frame_14">
+                 <property name="frameShape">
+                  <enum>QFrame::StyledPanel</enum>
+                 </property>
+                 <property name="frameShadow">
+                  <enum>QFrame::Raised</enum>
+                 </property>
+                 <layout class="QHBoxLayout" name="horizontalLayout_21">
+                  <item>
+                   <layout class="QFormLayout" name="formLayout"/>
+                  </item>
+                 </layout>
+                </widget>
                </item>
               </layout>
              </widget>

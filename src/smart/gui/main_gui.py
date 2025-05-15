@@ -26,6 +26,7 @@ from ..plugin.builtin_plugin.field_fiducial_markers_unit import (
 from smart import icon_path
 from smart.util.util import remove_multiple_tabs_from_tabWidget
 from ..plugin.builtin_plugin.camera_control_module import camera_control_panel
+from ..plugin.builtin_plugin.zmq_control import zmq_control_panel
 from ..plugin.builtin_plugin.particle_tool import particle_widget_wrapper
 from ..plugin.builtin_plugin.beamline_control import beamlineControl
 from ..plugin.builtin_plugin.synoptic_viewer_contol import synopticViewerControl
@@ -62,6 +63,7 @@ class smartGui(
     FiducialMarkerWidget_wrapper,
     particle_widget_wrapper,
     camera_control_panel,
+    zmq_control_panel,
     beamlineControl,
     synopticViewerControl,
     queueControl,
@@ -152,6 +154,7 @@ class smartGui(
         FiducialMarkerWidget_wrapper.__init__(self)
         particle_widget_wrapper.__init__(self)
         camera_control_panel.__init__(self)
+        zmq_control_panel.__init__(self)
         beamlineControl.__init__(self)
         synopticViewerControl.__init__(self)
         queueControl.__init__(self)
@@ -598,6 +601,8 @@ class smartGui(
         self.connect_slots_synoptic_viewer_control()
         # queue control slots
         self.connect_slots_queue_control()
+        # zmq control slots
+        self.zmq_connect_slots()
         # widget events
         self.bt_removeMenu.setMenu(QtWidgets.QMenu(self.bt_removeMenu))
         self.bt_removeMenu.clicked.connect(self.bt_removeMenu.showMenu)
@@ -1075,6 +1080,8 @@ class smartGui(
             else:
                 event.accept()
             self.camara_widget.thread_period_timer_forceRead.quit()
+            self._disconnect_zmq_server()
+            self.zmq_listener_thread.quit()
             if hasattr(self, 'widget_spock'):
                 self.widget_spock.shutdown_kernel()
         elif reply == QMessageBox.No:

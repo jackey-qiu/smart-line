@@ -30,7 +30,7 @@ class beamlineControl(object):
         self.init_pandas_model_queue_camara_viewer()
         # self.update_pixel_size()
         # self.pushButton_connect_model.clicked.connect(self.set_models)
-        self.pushButton_append_job.clicked.connect(self.add_one_task_to_scan_viewer)
+        self.pushButton_append_job.clicked.connect(lambda:self.add_one_task_to_scan_viewer(self.camara_widget.roi_scan))
         self.pushButton_remove_all.clicked.connect(self.remove_all_tasks_from_table)
         self.pushButton_duplicate_one.clicked.connect(self.duplicate_currently_selected_row)
         self.tableView_scan_list_camera_viewer.clicked.connect(self.update_roi_upon_click_tableview_camera_widget)
@@ -248,9 +248,9 @@ class beamlineControl(object):
         self.pandas_model_queue_camara_viewer._data = data
         self.pandas_model_queue_camara_viewer.update_view()
 
-    def add_one_task_to_scan_viewer(self):
+    def add_one_task_to_scan_viewer(self, roi = None):
         num_of_existing_task = self.pandas_model_queue_camara_viewer._data.shape[0]
-        roi = self.camara_widget.roi_scan
+        #roi = self.camara_widget.roi_scan
         value_list = [
                       True,
                       self.lineEdit_queue_section_name.text(),\

@@ -36,6 +36,91 @@ General:
   connect_model_startup: true
   darkstyle: false
   db: tango://hasp029rack.desy.de:10000
+MongoDB:
+  db_info:
+    db_type:
+    - device
+    - order
+    - queue
+    - tango
+    db_use: scan_queue_1
+  doc_property_template:
+    db-common:
+      doc_name_format: null
+      mandatory: true
+      unique: false
+    gui-common:
+      label: default
+      name: default
+      show_in_table_viewer: true
+      value: null
+    gui-lineedit:
+      label: default
+      name: default
+      show_in_table_viewer: true
+      template: gui-common
+      value: null
+      widget_type: LineEdit
+    gui-rangeedit:
+      max: 1000
+      min: 0
+      step: 1
+      template: gui-common
+      widget_type: RangeEdit
+    gui-spinbox:
+      label: default
+      max: 1000
+      min: 0
+      name: default
+      show_in_table_viewer: true
+      template: gui-common
+      value: null
+      widget_type: SpinBox
+    gui-textedit:
+      label: default
+      name: default
+      show_in_table_viewer: true
+      template: gui-common
+      value: null
+      widget_type: TextEdit
+  gui_info:
+    magic_gui_widget_host: formLayout
+  mongoLogin:
+    login:
+      decode: sys-env
+      password: MONGODBPASSWORD
+      userName: MONGODBUSERNAME
+    url: mongodb+srv://{}:{}@cluster0.sjw9m.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+  scan_queue_1:
+    db_info:
+      db_description_file: database_info_p25_orders_1.txt
+      db_type: queue
+      key_name: task_key
+    queue_info:
+      prescan_action:
+        template:
+        - db-common
+        - gui-lineedit
+      scan_info:
+        template:
+        - db-common
+        - gui-textedit
+        value: scan meta info goes here
+      scan_macro:
+        template:
+        - db-common
+        - gui-lineedit
+      scan_state:
+        template:
+        - db-common
+        - gui-lineedit
+        value: queued
+      task_key:
+        label: scan_id (>0)
+        template:
+        - db-common
+        - gui-spinbox
+        unique: true
 Motors:
   exp_mot03: tango://hasp029rack.desy.de:10000/p06/motor/exp.03
   exp_mot04: tango://hasp029rack.desy.de:10000/p06/motor/exp.04
@@ -54,6 +139,9 @@ PrimBeamGeo:
 QueueControl:
   ntp_host: hasep25lab01
   ntp_port: 13345
+zmq:
+  host_name: max-p3a016.desy.de
+  port: 44391
 SampleStageMotorNames:
   scanx: samly
   scany: samlz

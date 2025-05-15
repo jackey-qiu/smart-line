@@ -596,6 +596,7 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
     def set_reference_zone(self, x0, y0, w, h):
         self.set_reference_zone_pure(x0,y0,w,h)
         self._cal_scan_coordinates()
+        self._set_scanroi_size_to_roundup()
         
     def export_image(self):
         gui = findMainWindow()
@@ -670,6 +671,29 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self.roi_scan.sigRegionChanged.connect(self._cal_scan_coordinates)
         self.roi_scan.sigRegionChangeFinished.connect(lambda: self.setPaused(False))
 
+    def _set_scanroi_size_to_roundup(self):
+        main_gui = findMainWindow()
+        cmd_items = main_gui.lineEdit_full_macro_name.text().rsplit(' ')
+        if len(cmd_items)!=10:
+            return
+        stage_h_start = float(cmd_items[2])
+        steps_h = float(cmd_items[4])
+        step_size_h = float(main_gui.lineEdit_step_size_h.text())/1000.
+        stage_h_end_cal = stage_h_start + step_size_h * steps_h
+
+        stage_v_start = float(cmd_items[6])
+        steps_v = float(cmd_items[8])
+        step_size_v = float(main_gui.lineEdit_step_size_v.text())/1000.
+        stage_v_end_cal = stage_v_start + step_size_v * steps_v
+
+        roi_size = ((stage_h_end_cal - stage_h_start)/main_gui.camara_pixel_size,
+                    (stage_v_end_cal - stage_v_start)/main_gui.camara_pixel_size)
+        
+        self.roi_scan.setSize(roi_size)
+
+        return roi_size
+
+        
     def _cal_scan_coordinates(self):
         gui = findMainWindow()
         #one set at the bottom for positioning and one set on top for scanning
@@ -731,6 +755,12 @@ class TaurusImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
             # if main_gui.checkBox_use_step_size.isChecked():
             steps_x = int(width/step_size[0]*1000)
             steps_y = int(height/step_size[1]*1000)
+            #refine the roi size
+            # new_size = np.array([steps_x*step_size[0]/1000.,steps_y*step_size[1]/1000.])/main_gui.camara_pixel_size
+            # print('old size',width, height)
+            # print('new size',new_size)
+            # self.roi_scan.setSize(new_size)
+            # width, height = abs(np.array(self.roi_scan.size()))*main_gui.camara_pixel_size
             exposure_time = float(main_gui.lineEdit_exposure_time.text())
             scan_cmd_str = f'{scan_cmd} {stage_x}' + \
                         f' {round(sample_x_stage_start_pos,4)} {round(sample_x_stage_start_pos+width,4)} {steps_x}' + \
