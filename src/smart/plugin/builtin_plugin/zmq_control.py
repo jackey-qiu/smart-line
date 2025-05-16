@@ -3,6 +3,7 @@ import _pickle
 import numpy as np
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSlot as Slot
+from pyqtgraph.Qt import QtGui
 import time
 import pyqtgraph as pg
 from functools import partial
@@ -39,7 +40,8 @@ class zmqListener(QtCore.QObject):
         # self.listening = True
         while self.listening:
             if self.receive_data_stream_one_shot():
-                self.zmq_event.emit(np.fliplr(np.rot90(self.data,2)), self.meta_data)
+                self.zmq_event.emit(np.rot90(self.data,2), self.meta_data)
+                # self.zmq_event.emit(self.data, self.meta_data)
             else:
                 continue
 
@@ -104,7 +106,10 @@ class zmq_control_panel(object):
         self.zmq_listener_thread.started.connect(self.zmq_listener.listening_loop)
         self.xrf_roi = None
         #set invert Y axis
-        self.widget_taurus_2d_plot.img.getViewBox().invertY(True)
+        vb = self.widget_taurus_2d_plot.img.getViewBox()
+        # self.widget_taurus_2d_plot.setCentralItem(vb)
+        vb.invertY(True)
+        vb.setAspectLocked()
 
     def _disconnect_zmq_server(self):
         self.zmq_listener._disconnect_server()
@@ -119,15 +124,13 @@ class zmq_control_panel(object):
             self.statusbar.showMessage('zmq port info is not existing in the config file')
             return False
         return True
-
-    def _add_roi(self, p1, p2):
+    
+    @Slot(float,float,float,float)
+    def _add_roi(self, x0, y0, w, h):
         if self.xrf_roi != None:
             self.widget_taurus_2d_plot.img_viewer.vb.removeItem(self.xrf_roi)
-        w = abs(p2.x() - p1.x())
-        l = abs(p2.y() - p1.y())
-        origin = p1.x() + 0.042, p1.y()
         pen = pg.mkPen((0, 200, 200), width=1)
-        self.xrf_roi = pg.ROI(origin,[w,l],pen=pen)
+        self.xrf_roi = pg.ROI([x0,y0],[w,h],pen=pen)
         self.xrf_roi.handleSize = 10
         self.xrf_roi.handlePen = pg.mkPen("#FFFFFF")
         self.xrf_roi.addScaleHandle([0, 0.5], [0.5, 0.5])
@@ -135,6 +138,7 @@ class zmq_control_panel(object):
         self.widget_taurus_2d_plot.img_viewer.vb.addItem(self.xrf_roi)
 
     def _formulate_scan_cmd(self):
+            pix_x, pix_y = self.zmq_listener.pixel_size
             main_gui = self
             scan_cmd = main_gui.lineEdit_scan_cmd.text()
             stage_x = main_gui.lineEdit_sample_stage_name_x.text()
@@ -143,16 +147,16 @@ class zmq_control_panel(object):
             # steps_x = main_gui.spinBox_steps_hor.value()
             # steps_y = main_gui.spinBox_steps_ver.value()
             width, height = self.xrf_roi.size()
-            steps_x = int(width/step_size[0]*1000)
-            steps_y = int(height/step_size[1]*1000)
-            sample_x_stage_start_pos, sample_y_stage_start_pos = self.xrf_roi.pos()
+            steps_x = int(width*pix_x/step_size[0]*1000)
+            steps_y = int(height*pix_y/step_size[1]*1000)
+            sample_x_stage_start_pos, sample_y_stage_start_pos = self.xrf_roi.pos()*np.array([pix_x,pix_y])
             exposure_time = float(main_gui.lineEdit_exposure_time.text())
             scan_cmd_str = f'{scan_cmd} {stage_x}' + \
                         f' {round(sample_x_stage_start_pos,4)} {round(sample_x_stage_start_pos+steps_x*step_size[0]/1000,4)} {steps_x}' + \
                         f' {stage_y} {round(sample_y_stage_start_pos,4)} {round(sample_y_stage_start_pos+steps_y*step_size[1]/1000,4)} {steps_y}'+\
                         f' {exposure_time}'
             main_gui.lineEdit_full_macro_name.setText(scan_cmd_str)
-            main_gui.lineEdit_pre_scan_action_list.setText(f"[['mv',{stage_x}, {round(sample_x_stage_start_pos,4)}],['mv',{stage_y}, {round(sample_y_stage_start_pos,4)}]]")
+            main_gui.lineEdit_pre_scan_action_list.setText(f"[['mv','{stage_x}', {round(sample_x_stage_start_pos,4)}],['mv','{stage_y}', {round(sample_y_stage_start_pos,4)}]]")
             main_gui.add_one_task_to_scan_viewer(self.xrf_roi)
 
     def update_meta_info(self, meta_data):
@@ -168,16 +172,21 @@ class zmq_control_panel(object):
         origin_str = self.lineEdit_origin.text()
         shape_str = self.lineEdit_shape.text()
         try:
-            pixel_size = eval(pixel_size_str)[0]
+            pixel_size_x, pixel_size_y = eval(pixel_size_str)
             origin = eval(origin_str)
             shape = eval(shape_str)
-            self.widget_taurus_2d_plot.img.setScale(pixel_size)
-            self.widget_taurus_2d_plot.img.setX(origin[0])
-            self.widget_taurus_2d_plot.img.setY(origin[1])
+            # self.widget_taurus_2d_plot.img.setScale(pixel_size)
+            # tr = QtGui.QTransform()
+            # tr.translate(origin[0], origin[1])
+            # tr.scale(pixel_size, pixel_size)
+            # self.widget_taurus_2d_plot.img.setTransform(tr)
+            self.widget_taurus_2d_plot.img_viewer.axes['left']['item'].setScale(pixel_size_y)
+            self.widget_taurus_2d_plot.img_viewer.axes['bottom']['item'].setScale(pixel_size_x)
+            self.widget_taurus_2d_plot.img.setX(origin[0]/pixel_size_x)
+            self.widget_taurus_2d_plot.img.setY(origin[1]/pixel_size_y)
             # self.widget_taurus_2d_plot.img.setY(origin[1]-shape[1]*pixel_size)
-            # self.test_add_roi(origin, pixel_size*10, pixel_size*10)
-        except:
-            pass
+        except Exception as err:
+            print(err)
 
     def connect_zmq_server(self):
         #if not self.zmq_listener_thread.isRunning():
@@ -239,38 +248,15 @@ class zmq_control_panel(object):
         self.update_meta_info(meta_data)
 
     def update_coordinate(self, evt):
+        pix_x, pix_y = self.zmq_listener.pixel_size
         coor = self.widget_taurus_2d_plot.img.getViewBox().mapSceneToView(evt)
-        x, y = coor.x(), coor.y()
+        x, y = coor.x()*pix_x, coor.y()*pix_y
         self.statusbar.showMessage(f'cursor pos: [{x},{y}]')
-
-    def _mouseDragEvent(self, ev):
-        source_object = self.widget_taurus_2d_plot.img.getViewBox()
-        # ev = source_object.mapSceneToView(ev)
-        ev.accept() 
-        if ev.button() == QtCore.Qt.LeftButton:
-            if ev.isFinish():
-
-                x0, x1, y0, y1 = ev.buttonDownPos().x(), ev.pos().x(),  ev.buttonDownPos().y(),  ev.pos().y()
-                #print(x0,y0,x1,y1)
-                if x0 > x1:
-                    x0, x1 = x1, x0
-                if y0 < y1:
-                    y0, y1 = y1, y0
-                # if x0 < 0:
-                    # x0 = 0
-
-                p1 = source_object.mapSceneToView(QtCore.QPointF(x0,y0))
-                p2 = source_object.mapSceneToView(QtCore.QPointF(x1,y1))
-                self._add_roi(p1,p2)      
-                #self.statusbar.showMessage(f'selected area: {p1},{p2}')
-            else:
-                x0, y0= ev.pos().x(), ev.pos().y()
-                self.statusbar.showMessage(f'{x0},{y0},{source_object.mapSceneToView(QtCore.QPointF(x0,y0))}')
 
     def zmq_connect_slots(self):
         self.pushButton_connect_zmq.clicked.connect(self.connect_zmq_server)
         self.pushButton_start_zmq_thread.clicked.connect(self._start_thread)
         self.zmq_listener.zmq_event.connect(self.update_image_data_from_zmq_server)
         self.widget_taurus_2d_plot.img.getViewBox().scene().sigMouseMoved.connect(self.update_coordinate)
-        self.widget_taurus_2d_plot.img.getViewBox().mouseDragEvent = self._mouseDragEvent
+        self.widget_taurus_2d_plot.sigScanRoiAdded.connect(self._add_roi)
         self.pushButton_apply_roi.clicked.connect(self._formulate_scan_cmd)

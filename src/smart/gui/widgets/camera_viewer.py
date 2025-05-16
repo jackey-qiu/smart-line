@@ -3,6 +3,7 @@ from taurus.qt.qtgui.base import TaurusBaseComponent
 from taurus.external.qt import Qt
 from pyqtgraph import GraphicsLayoutWidget
 from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal
+from pyqtgraph.Qt import QtCore
 import pyqtgraph as pg
 from taurus.core import TaurusEventType, TaurusTimeVal,TaurusElementType
 from smart.gui.widgets.context_menu_actions import  VisuaTool
@@ -18,6 +19,7 @@ class Taurus2DImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
     """
     Displays 2Dimage data
     """
+    sigScanRoiAdded = Signal(float, float, float, float)
     modelKeys = ['img']
     # modelKeys = [TaurusBaseComponent.MLIST]
     # TODO: clear image if .setModel(None)
@@ -116,6 +118,9 @@ class Taurus2DImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
         self.region_cut_ver.setRegion([120,150])
         self.img_viewer.addItem(self.region_cut_hor, ignoreBounds = True)
         self.img_viewer.addItem(self.region_cut_ver, ignoreBounds = True)
+        self.region_cut_hor.hide()
+        self.region_cut_ver.hide()
+        self.img_viewer.vb.mouseDragEvent = partial(self._mouseDragEvent, self.img_viewer.vb)
         # self.vt = VisuaTool(self, properties = ['prof_hoz','prof_ver'])
         # self.vt.attachToPlotItem(self.img_viewer)
 
@@ -150,6 +155,27 @@ class Taurus2DImageItem(GraphicsLayoutWidget, TaurusBaseComponent):
 
         self.img_viewer.vb.scene().sigMouseMoved.connect(self._connect_mouse_move_event)
         self.img_viewer.vb.mouseDragEvent = partial(self._mouseDragEvent, self.img_viewer.vb)
+
+    def _mouseDragEvent(self,vb, ev):
+        main_gui = findMainWindow()
+        ev.accept() 
+        if ev.button() == QtCore.Qt.LeftButton:
+            if ev.isFinish():
+                x0, x1, y0, y1 = ev.buttonDownScenePos().x(), ev.lastScenePos().x(),  ev.buttonDownScenePos().y(),  ev.lastScenePos().y()
+                # x0, x1, y0, y1 = ev.buttonDownPos().x(), ev.pos().x(),  ev.buttonDownPos().y(),  ev.pos().y()
+                if x0 > x1:
+                    x0, x1 = x1, x0
+                if y0 > y1:
+                    y0, y1 = y1, y0
+
+                p1 = vb.mapSceneToView(QtCore.QPointF(x0,y0))
+                p2 = vb.mapSceneToView(QtCore.QPointF(x1,y1))
+                self.sigScanRoiAdded.emit(p1.x(), p1.y(), abs(p2.x()-p1.x()), abs(p2.y()-p1.y()))
+                #self._add_roi(p1,p2)      
+                #self.statusbar.showMessage(f'selected area: {p1},{p2}')
+            else:
+                x0, y0= ev.pos().x(), ev.pos().y()
+                main_gui.statusbar.showMessage(f'{x0},{y0},{vb.mapSceneToView(QtCore.QPointF(x0,y0))}')
 
     def handleEvent(self, evt_src, evt_type, evt_val_list):
         """Reimplemented from :class:`TaurusImageItem`"""
