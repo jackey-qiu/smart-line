@@ -1080,7 +1080,7 @@ class smartGui(
             else:
                 event.accept()
             self.camara_widget.thread_period_timer_forceRead.quit()
-            self._disconnect_zmq_server()
+            # self._disconnect_zmq_server()
             self.zmq_listener_thread.quit()
             if hasattr(self, 'widget_spock'):
                 self.widget_spock.shutdown_kernel()

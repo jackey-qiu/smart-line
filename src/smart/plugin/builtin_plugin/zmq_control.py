@@ -7,6 +7,7 @@ from pyqtgraph.Qt import QtGui
 import time
 import pyqtgraph as pg
 from functools import partial
+from ..user_plugin import p06io
 
 #host ='max-p3a016.desy.de'
 #port = 44391
@@ -18,6 +19,8 @@ class zmqListener(QtCore.QObject):
         super().__init__()
         self.parent = parent
         self.host_name = ''
+        self.host_name_old = ''
+        self.port_old = 0
         self.port = 0
         #self.datasources = []
         self.selected_datasource = ''
@@ -32,16 +35,23 @@ class zmqListener(QtCore.QObject):
         self.meta_data = {}
 
     def update_host_and_port(self, host, port):
+        self.host_name_old = self.host_name
+        self.port_old = self.port
         self.host_name = host
         self.port = port
 
     def listening_loop(self):
         # self.connect_zmq_server()
         # self.listening = True
-        while self.listening:
-            if self.receive_data_stream_one_shot():
-                self.zmq_event.emit(np.rot90(self.data,2), self.meta_data)
-                # self.zmq_event.emit(self.data, self.meta_data)
+        while True: 
+            if self.listening:
+                if self.receive_data_stream_one_shot():
+                    #sleep for a bit before sending out the data
+                    time.sleep(0.2)
+                    self.zmq_event.emit(np.rot90(self.data,2), self.meta_data)
+                    # self.parent.statusbar.showMessage(f'listening new source: {self.selected_datasource}')
+
+                    # self.zmq_event.emit(self.data, self.meta_data)
             else:
                 continue
 
@@ -60,29 +70,42 @@ class zmqListener(QtCore.QObject):
             except Exception as err:
                 self.parent.statusbar.showMessage(f'Fail to connect due to: {err}')
         else:
-            return
+            self._disconnect_server()
+            self.connected = False
+            try:
+                self.socket.connect(f"tcp://{self.host_name}:{self.port}")
+                self.connected = True
+                print('succed to connect to socket')
+            except Exception as err:
+                self.parent.statusbar.showMessage(f'Fail to connect due to: {err}')
 
     def _subscribe_to_topic(self, topic):
         #topic='' to subscribe all sources
-        if topic!=self.selected_datasource:
+        if self.connected:
             self.socket.unbind(f"tcp://{self.host_name}:{self.port}")
             self.socket.setsockopt(zmq.UNSUBSCRIBE, bytes(self.selected_datasource,'utf8'))
             self.socket.setsockopt(zmq.UNSUBSCRIBE, bytes('','utf8'))
-            self.socket.setsockopt(zmq.SUBSCRIBE, bytes(topic,'utf8'))
-            self.socket.connect(f"tcp://{self.host_name}:{self.port}")
-            self.selected_datasource = topic
-        else:
-            self.socket.setsockopt(zmq.SUBSCRIBE, bytes(topic,'utf8'))
+
+        self.socket.setsockopt(zmq.SUBSCRIBE, bytes(topic,'utf8'))
+        self.socket.connect(f"tcp://{self.host_name}:{self.port}")
+        self.selected_datasource = topic
     
     def _disconnect_server(self):
-        self.socket.unbind(f"tcp://{self.host_name}:{self.port}")
+        self.socket.unbind(f"tcp://{self.host_name_old}:{self.port_old}")
         self.socket.setsockopt(zmq.UNSUBSCRIBE, bytes(self.selected_datasource,'utf8'))
         self.stop_listen_server()
+        self.connected = False
+
+    def _upon_exit(self):
+        self.stop_listen_server()
+        self.socket.unbind(f"tcp://{self.host_name}:{self.port}")
+        self.socket.setsockopt(zmq.UNSUBSCRIBE, bytes(self.selected_datasource,'utf8'))
 
     def receive_data_stream_one_shot(self):
         try:
             message = self.socket.recv_multipart(flags=zmq.NOBLOCK)
-        except:
+        except Exception as err:
+            # self.parent.statusbar.showMessage(str(err))
             return False
         md_dict = _pickle.loads(message[2])
         md_dict.pop('datasources')
@@ -111,8 +134,54 @@ class zmq_control_panel(object):
         vb.invertY(True)
         vb.setAspectLocked()
 
+    def get_host_address_list(self):
+        try:
+            ntp_host = self.settings_object['QueueControl']['ntp_host']
+            ntp_port = self.settings_object['QueueControl']['ntp_port']
+        except Exception as err:
+            self.statusbar.showMessage(str(err))
+            return
+        try:
+            ntp = p06io.zeromq.ClientReq(ntp_host, ntp_port)
+            info=ntp.send_receive_message(["info", ""])
+        except Exception as err:
+            self.statusbar.showMessage(str(err))
+            return
+        names = []
+        address = []
+
+        for family in info:
+            if family.endswith("lavue_publisher"):
+                if len(info[family]) > 1:
+                    print(f"Too many devices for {family}.")
+                try:
+                    for dev in info[family]:
+                        name = info[family][dev]["id"]
+                        name = name.replace("lavue_publisher_", "")
+                        name = "_".join(name.split("_")[0:-1])
+
+                        if name == "":
+                            continue
+
+                        names.append(name)
+                        host = info[family][dev]["connections"]["publisher"]["host"]
+                        port = info[family][dev]["connections"]["publisher"]["port"]
+                        address.append(f"{host}:{port}")
+                except:
+                    pass
+
+        address_list = ['|'.join(list(each)) for each in zip(names,address)]
+
+        self.comboBox_zmq_address.clear()
+        self.comboBox_zmq_address.addItems(address_list)
+        self.comboBox_zmq_address.currentIndexChanged.connect(self._upon_datasource_change)
+
     def _disconnect_zmq_server(self):
-        self.zmq_listener._disconnect_server()
+        self.zmq_listener._upon_exit()
+
+    def _update_zmq_settings(self):
+        self.host_name, self.port = self.comboBox_zmq_address.currentText().rsplit('|')[1].rsplit(':')
+        return True
 
     def _read_zmq_settings(self):
         self.host_name = self.settings_object.get('zmq',{}).get('host_name','')
@@ -159,40 +228,18 @@ class zmq_control_panel(object):
             main_gui.lineEdit_pre_scan_action_list.setText(f"[['mv','{stage_x}', {round(sample_x_stage_start_pos,4)}],['mv','{stage_y}', {round(sample_y_stage_start_pos,4)}]]")
             main_gui.add_one_task_to_scan_viewer(self.xrf_roi)
 
-    def update_meta_info(self, meta_data):
-        #meta_data = {'origin':self.zmq_listener.origin,
-        #             'pixel_size': self.zmq_listener.pixel_size,
-        #             'unit': self.zmq_listener.unit,
-        #             'shape': self.zmq_listener.shape}
-        self.lineEdit_origin.setText(str(meta_data.get('origin','')))
-        self.lineEdit_pixel_size.setText(str(meta_data.get('pixel_size','')))
-        self.lineEdit_unit.setText(str(meta_data.get('unit','')))
-        self.lineEdit_shape.setText(str(meta_data.get('shape','')))
-        pixel_size_str = self.lineEdit_pixel_size.text()
-        origin_str = self.lineEdit_origin.text()
-        shape_str = self.lineEdit_shape.text()
-        try:
-            pixel_size_x, pixel_size_y = eval(pixel_size_str)
-            origin = eval(origin_str)
-            shape = eval(shape_str)
-            # self.widget_taurus_2d_plot.img.setScale(pixel_size)
-            # tr = QtGui.QTransform()
-            # tr.translate(origin[0], origin[1])
-            # tr.scale(pixel_size, pixel_size)
-            # self.widget_taurus_2d_plot.img.setTransform(tr)
-            self.widget_taurus_2d_plot.img_viewer.axes['left']['item'].setScale(pixel_size_y)
-            self.widget_taurus_2d_plot.img_viewer.axes['bottom']['item'].setScale(pixel_size_x)
-            self.widget_taurus_2d_plot.img.setX(origin[0]/pixel_size_x)
-            self.widget_taurus_2d_plot.img.setY(origin[1]/pixel_size_y)
-            # self.widget_taurus_2d_plot.img.setY(origin[1]-shape[1]*pixel_size)
-        except Exception as err:
-            print(err)
+    def update_meta_info(self):
+        self.lineEdit_origin.setText(str(self.zmq_listener.origin))
+        self.lineEdit_pixel_size.setText(str(self.zmq_listener.pixel_size))
+        self.lineEdit_unit.setText(str(self.zmq_listener.unit))
+        self.lineEdit_shape.setText(str(self.zmq_listener.shape))
 
     def connect_zmq_server(self):
         #if not self.zmq_listener_thread.isRunning():
         #    print('start thread for zmq listening')
         #    if not self.zmq_listener_thread.isRunning():
-        if self._read_zmq_settings():
+        # if self._read_zmq_settings():
+        if self._update_zmq_settings():
             print('update host and port')
             self.zmq_listener.update_host_and_port(self.host_name, self.port)
             print('connect zmq')
@@ -204,15 +251,16 @@ class zmq_control_panel(object):
                 self.comboBox_datasources.addItems(list_sources)
                 self.comboBox_datasources.currentIndexChanged.connect(self._upon_datasource_change)
                 self._upon_datasource_change()
-            # self.zmq_listener_thread.start()
 
     def _start_thread(self):
-        print('start thread upon clicking')
+        if self.zmq_listener_thread.isRunning():
+            return
         self.zmq_listener_thread.start()
+        self.pushButton_start_zmq_thread.setEnabled(False)
 
     def _upon_datasource_change(self):
-        topic = self.comboBox_datasources.currentText()
         self.zmq_listener.stop_listen_server()
+        topic = self.comboBox_datasources.currentText()
         self.zmq_listener._subscribe_to_topic(topic)
         self.zmq_listener.start_listen_server()
         # time.sleep(0.5)
@@ -245,7 +293,13 @@ class zmq_control_panel(object):
     @Slot(object, object)
     def update_image_data_from_zmq_server(self, data, meta_data):
         self.widget_taurus_2d_plot.img.setImage(data)
-        self.update_meta_info(meta_data)
+        pixel_size_x, pixel_size_y = self.zmq_listener.pixel_size
+        x, y = np.array(self.zmq_listener.origin)/[pixel_size_x, pixel_size_y]
+        self.widget_taurus_2d_plot.img_viewer.axes['left']['item'].setScale(pixel_size_y)
+        self.widget_taurus_2d_plot.img_viewer.axes['bottom']['item'].setScale(pixel_size_x)
+        self.widget_taurus_2d_plot.img.setX(x)
+        self.widget_taurus_2d_plot.img.setY(y)
+        #self.update_meta_info(meta_data)
 
     def update_coordinate(self, evt):
         pix_x, pix_y = self.zmq_listener.pixel_size
@@ -260,3 +314,5 @@ class zmq_control_panel(object):
         self.widget_taurus_2d_plot.img.getViewBox().scene().sigMouseMoved.connect(self.update_coordinate)
         self.widget_taurus_2d_plot.sigScanRoiAdded.connect(self._add_roi)
         self.pushButton_apply_roi.clicked.connect(self._formulate_scan_cmd)
+        self.pushButton_get_zmq_list.clicked.connect(self.get_host_address_list)
+        self.pushButton_fill_meta_info.clicked.connect(self.update_meta_info)

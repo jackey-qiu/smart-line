@@ -917,6 +917,22 @@
                <item>
                 <layout class="QHBoxLayout" name="horizontalLayout_20">
                  <item>
+                  <widget class="QPushButton" name="pushButton_get_zmq_list">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="text">
+                    <string>get zmq hosts</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QComboBox" name="comboBox_zmq_address"/>
+                 </item>
+                 <item>
                   <widget class="QPushButton" name="pushButton_connect_zmq">
                    <property name="sizePolicy">
                     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -954,7 +970,20 @@
                     </sizepolicy>
                    </property>
                    <property name="text">
-                    <string>start</string>
+                    <string>start thread</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QPushButton" name="pushButton_apply_roi">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="text">
+                    <string>apply roi</string>
                    </property>
                   </widget>
                  </item>
@@ -971,25 +1000,18 @@
                  <layout class="QHBoxLayout" name="horizontalLayout_22">
                   <item>
                    <layout class="QGridLayout" name="gridLayout_3">
+                    <item row="0" column="1">
+                     <widget class="QLineEdit" name="lineEdit_origin"/>
+                    </item>
+                    <item row="0" column="7">
+                     <widget class="QLineEdit" name="lineEdit_shape"/>
+                    </item>
                     <item row="0" column="0">
                      <widget class="QLabel" name="label_103">
                       <property name="text">
                        <string>origin</string>
                       </property>
                      </widget>
-                    </item>
-                    <item row="0" column="1">
-                     <widget class="QLineEdit" name="lineEdit_origin"/>
-                    </item>
-                    <item row="0" column="2">
-                     <widget class="QLabel" name="label_104">
-                      <property name="text">
-                       <string>pixel_size</string>
-                      </property>
-                     </widget>
-                    </item>
-                    <item row="0" column="7">
-                     <widget class="QLineEdit" name="lineEdit_shape"/>
                     </item>
                     <item row="0" column="6">
                      <widget class="QLabel" name="label_106">
@@ -998,6 +1020,16 @@
                       </property>
                      </widget>
                     </item>
+                    <item row="0" column="2">
+                     <widget class="QLabel" name="label_104">
+                      <property name="text">
+                       <string>pixel_size</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item row="0" column="3">
+                     <widget class="QLineEdit" name="lineEdit_pixel_size"/>
+                    </item>
                     <item row="0" column="4">
                      <widget class="QLabel" name="label_105">
                       <property name="text">
@@ -1005,16 +1037,13 @@
                       </property>
                      </widget>
                     </item>
-                    <item row="0" column="3">
-                     <widget class="QLineEdit" name="lineEdit_pixel_size"/>
-                    </item>
                     <item row="0" column="5">
                      <widget class="QLineEdit" name="lineEdit_unit"/>
                     </item>
                     <item row="0" column="8">
-                     <widget class="QPushButton" name="pushButton_apply_roi">
+                     <widget class="QPushButton" name="pushButton_fill_meta_info">
                       <property name="text">
-                       <string>apply roi</string>
+                       <string>fill meta info</string>
                       </property>
                      </widget>
                     </item>
