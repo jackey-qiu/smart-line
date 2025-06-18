@@ -137,11 +137,12 @@ PrimBeamGeo:
   stage_x: 5.136015624999999
   stage_y: -11.000156249999975
 QueueControl:
+  brcast_port:
+  - 5556
+  - 5557
   ntp_host: hasep25lab01
-  ntp_port: 13345
-zmq:
-  host_name: max-p3a016.desy.de
-  port: 44391
+  ntp_port: 5555
+  standard: p25
 SampleStageMotorNames:
   scanx: samly
   scany: samlz
@@ -233,3 +234,6 @@ widgetMaps:
   beamlineControlGpNames:
   - SampleStages
   - ZoomDevice
+zmq:
+  host_name: max-p3a016.desy.de
+  port: 44391

@@ -42,6 +42,7 @@ class queueSynopticView(QWidget):
         self.last_clicked_shape = None
         self.lines_bw_composite = []
         self.triangle_ends = []
+        self.run_id = None
 
     def set_data(self, data):
         if len(data[data["state"] == "running"]) == 0:
@@ -167,6 +168,8 @@ class queueSynopticView(QWidget):
         ]
 
     def build_shapes(self):
+        if 'running' not in self._data['state']:
+            self.run_id = None
         self.composite_shape_container = {}
         if len(self._data) == 0:
             self.shapes = []
@@ -174,65 +177,123 @@ class queueSynopticView(QWidget):
         size_col = max([self._calculate_col_num_blocks(),1])
         for i in range(len(self._data)):
             which_col = int((i + 1) / size_col)
-            shape = rectangle(
-                dim=[
-                    self.padding_hor
-                    + which_col * (self.block_width + self.padding_hor),
-                    self.padding_vertical,
-                    self.block_width,
-                    self.block_height,
-                ],
-                rotation_center=None,
-                transformation={
-                    "rotate": 0,
-                    "translate": np.array([0, 0]),
-                    "scale": 1,
-                    "translate_offset": np.array([0, 0]),
-                },
-            )
-            shape.set_clickable(True)
             state = self._data.iloc[i, :]["state"]
             unique_id = self._data.iloc[i, :]["unique_id"]
             cmd = self._data.iloc[i, :]["scan_command"]
             if len(cmd) > 20:
                 cmd = cmd[0:20] + "..."
-            if state == "queued":
-                shape.decoration = self.FILL_QUEUED
-                shape.decoration_cursor_off = self.FILL_QUEUED
-                shape.decoration_cursor_on = self.FILL_QUEUED
-            elif state == "running":
-                shape.decoration = self.FILL_RUN
-                shape.decoration_cursor_off = self.FILL_RUN
-                shape.decoration_cursor_on = self.FILL_RUN
-                shape.text_decoration = {"text_color": (0, 0, 0)}
-            elif state == "failed":
-                shape.decoration = self.FILL_FAILED
-                shape.decoration_cursor_off = self.FILL_FAILED
-                shape.decoration_cursor_on = self.FILL_FAILED
-            elif state == "paused":
-                shape.decoration = self.FILL_PAUSED
-                shape.decoration_cursor_off = self.FILL_PAUSED
-                shape.decoration_cursor_on = self.FILL_PAUSED
-            elif state == "disabled":
-                shape.decoration = self.FILL_DISABLED
-                shape.decoration_cursor_off = self.FILL_DISABLED
-                shape.decoration_cursor_on = self.FILL_DISABLED
-            elif state == "finished":
-                shape.decoration = self.FILL_FINISHED
-                shape.decoration_cursor_off = self.FILL_FINISHED
-                shape.decoration_cursor_on = self.FILL_FINISHED
-                shape.text_decoration = {"text_color": (0, 0, 0)}
-            shape.labels = {
-                "text": [f"{cmd}"],
-                "anchor": ["center"],
-                "orientation": ["horizontal"],
-            }
-            setattr(shape, "unique_id", unique_id)
-            if which_col not in self.composite_shape_container:
-                self.composite_shape_container[which_col] = []
-                self.composite_shape_container[which_col].append(shape)
+            if state=='running':
+                shape_l = rectangle(
+                    dim=[
+                        self.padding_hor
+                        + which_col * (self.block_width + self.padding_hor),
+                        self.padding_vertical,
+                        self.block_width * min([self.parent.run_progress+0.02,1]),
+                        self.block_height,
+                    ],
+                    rotation_center=None,
+                    transformation={
+                        "rotate": 0,
+                        "translate": np.array([0, 0]),
+                        "scale": 1,
+                        "translate_offset": np.array([0, 0]),
+                    },
+                )
+                shape_r = rectangle(
+                    dim=[
+                        self.padding_hor
+                        + which_col * (self.block_width + self.padding_hor),
+                        self.padding_vertical,
+                        self.block_width * (abs(1-self.parent.run_progress)+0.01),
+                        self.block_height,
+                    ],
+                    rotation_center=None,
+                    transformation={
+                        "rotate": 0,
+                        "translate": np.array([0, 0]),
+                        "scale": 1,
+                        "translate_offset": np.array([0, 0]),
+                    },
+                )
+                shape_l.decoration = self.FILL_RUN
+                shape_l.decoration_cursor_off = self.FILL_RUN
+                shape_l.decoration_cursor_on = self.FILL_RUN
+                shape_l.text_decoration = {"text_color": (0, 0, 0)}    
+                shape_l.labels = {
+                    "text": [f"{cmd[0:int(len(cmd)*self.parent.run_progress)]}"],
+                    "anchor": ["center"],
+                    "orientation": ["horizontal"],
+                }
+                shape_r.decoration = self.FILL_FINISHED
+                shape_r.decoration_cursor_off = self.FILL_FINISHED
+                shape_r.decoration_cursor_on = self.FILL_FINISHED
+                shape_r.text_decoration = {"text_color": (0, 0, 0)}    
+                shape_r.labels = {
+                    "text": [f"{cmd[int(len(cmd)*self.parent.run_progress):]}"],
+                    "anchor": ["center"],
+                    "orientation": ["horizontal"],
+                }
+                setattr(shape_l, "unique_id", int(unique_id))
+                setattr(shape_r, "unique_id", int(unique_id)+0.5)
+                self.run_id = i
+                if which_col not in self.composite_shape_container:
+                    self.composite_shape_container[which_col] = []
+                    self.composite_shape_container[which_col].append(shape_l)
+                    self.composite_shape_container[which_col].append(shape_r)
+                else:
+                    self.composite_shape_container[which_col].append(shape_l)
+                    self.composite_shape_container[which_col].append(shape_r)
             else:
-                self.composite_shape_container[which_col].append(shape)
+                shape = rectangle(
+                    dim=[
+                        self.padding_hor
+                        + which_col * (self.block_width + self.padding_hor),
+                        self.padding_vertical,
+                        self.block_width,
+                        self.block_height,
+                    ],
+                    rotation_center=None,
+                    transformation={
+                        "rotate": 0,
+                        "translate": np.array([0, 0]),
+                        "scale": 1,
+                        "translate_offset": np.array([0, 0]),
+                    },
+                )
+                shape.set_clickable(True)
+
+                if state == "queued":
+                    shape.decoration = self.FILL_QUEUED
+                    shape.decoration_cursor_off = self.FILL_QUEUED
+                    shape.decoration_cursor_on = self.FILL_QUEUED
+                elif state == "failed":
+                    shape.decoration = self.FILL_FAILED
+                    shape.decoration_cursor_off = self.FILL_FAILED
+                    shape.decoration_cursor_on = self.FILL_FAILED
+                elif state == "paused":
+                    shape.decoration = self.FILL_PAUSED
+                    shape.decoration_cursor_off = self.FILL_PAUSED
+                    shape.decoration_cursor_on = self.FILL_PAUSED
+                elif state == "disabled":
+                    shape.decoration = self.FILL_DISABLED
+                    shape.decoration_cursor_off = self.FILL_DISABLED
+                    shape.decoration_cursor_on = self.FILL_DISABLED
+                elif state == "finished":
+                    shape.decoration = self.FILL_FINISHED
+                    shape.decoration_cursor_off = self.FILL_FINISHED
+                    shape.decoration_cursor_on = self.FILL_FINISHED
+                    shape.text_decoration = {"text_color": (0, 0, 0)}
+                shape.labels = {
+                    "text": [f"{cmd}"],
+                    "anchor": ["center"],
+                    "orientation": ["horizontal"],
+                }
+                setattr(shape, "unique_id", unique_id)
+                if which_col not in self.composite_shape_container:
+                    self.composite_shape_container[which_col] = []
+                    self.composite_shape_container[which_col].append(shape)
+                else:
+                    self.composite_shape_container[which_col].append(shape)
         self.build_composite_object()
         self.update()
 
@@ -240,23 +301,28 @@ class queueSynopticView(QWidget):
         self.composite_shapes = []
         self.lines_bw_composite = []
         self.triangle_ends = []
+        def _inject_at(shapes, original, inject, at):
+            res = [original for i in range(len(shapes)-1)]
+            if at!=None:
+                if at>=len(res):
+                    print(at, len(res))
+                res[at] = inject
+            return res
+
         for each, shapes in self.composite_shape_container.items():
             composite = shapeComposite(
                 shapes=shapes,
                 anchor_args=[4 for i in range(len(shapes))],
                 alignment_pattern={
                     "shapes": [[i, i + 1] for i in range(len(shapes) - 1)],
-                    "anchors": [["bottom", "top"] for i in range(len(shapes) - 1)],
-                    "gaps": [
-                        self.padding_vertical / self.block_height
-                        for i in range(len(shapes) - 1)
-                    ],
+                    "anchors": _inject_at(shapes, ["bottom", "top"], ['right','left'], self.run_id),
+                    "gaps":  _inject_at(shapes, self.padding_vertical / self.block_height, 0, self.run_id),
                     "ref_anchors": [["bottom", "top"] for i in range(len(shapes) - 1)],
                 },
                 connection_pattern={
                     "shapes": [[i, i + 1] for i in range(len(shapes) - 1)],
                     "anchors": [["bottom", "top"] for i in range(len(shapes) - 1)],
-                    "connect_types": [True for i in range(len(shapes) - 1)],
+                    "connect_types":  _inject_at(shapes, True, True, self.run_id),
                 },
             )
             self.composite_shapes.append(composite)
