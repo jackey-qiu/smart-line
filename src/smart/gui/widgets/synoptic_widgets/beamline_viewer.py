@@ -41,7 +41,7 @@ class beamlineSynopticViewer(QWidget):
         shapeComposite.modelKeys = [TaurusBaseComponent.MLIST]
         config_file = str(rs_path / 'config' / (self.parent.comboBox_viewer_filename.currentText() + '.yaml'))
         which_viewer = self.parent.comboBox_viewer_obj_name.currentText()
-        view_shape, view_connection = buildTools.build_view_from_yaml(config_file, self.size().width())
+        view_shape, view_connection = buildTools.build_view_from_yaml(config_file, self.size().width(), which_viewer=which_viewer)
         self.viewer_shape, self.viewer_connection = view_shape[which_viewer], view_connection[which_viewer]
         for each_composite in self.viewer_shape.values():
             each_composite.updateSignal.connect(self.update_canvas)
@@ -160,8 +160,10 @@ class beamlineSynopticViewer(QWidget):
         #first update extra_offset par
         extra_offset = [0,0]
         for composite_shape in self.viewer_shape.values():
-            for each_shape in composite_shape.shapes:
-                each_shape.transformation['translate_offset'] = extra_offset
+            #for each_shape in composite_shape.shapes:
+            #    each_shape.transformation['translate_offset'] = extra_offset
+            composite_shape.ref_shape.transformation['translate_offset'] = extra_offset
+            composite_shape.build_composite()
                 #each_shape.paint(qp, extra_offset)
             extra_offset = np.array(extra_offset) + [0,composite_shape.beam_height_offset]            
         self.update_connection()

@@ -1507,10 +1507,10 @@ class trapezoid(baseShape):
         p1, p2, p3, p4 = self._cal_corner_point_coordinates(False)
         pos_ = rotate_multiple_points(
             [(x, y)],
-            np.array(self.rot_center) + np.array(self.transformation["translate"]) + self.transformation["translate_offset"],
+            np.array(self.rot_center) + np.array(self.transformation["translate"]) + np.array(self.transformation["translate_offset"]),
             -self.transformation["rotate"],
         )
-        pos_ = np.array(pos_) - (np.array(self.transformation["translate"] + self.transformation["translate_offset"]))
+        pos_ = np.array(pos_) - (np.array(self.transformation["translate"] + np.array(self.transformation["translate_offset"])))
         x_, y_ = pos_
         if (p3[0] <= x_ <= p4[0]) and (p1[1] <= y_ <= p3[1]):
             return True
@@ -1973,12 +1973,14 @@ class buildTools(object):
         return composite_obj_container
 
     @classmethod
-    def build_view_from_yaml(cls, yaml_file_path, canvas_width):
+    def build_view_from_yaml(cls, yaml_file_path, canvas_width, which_viewer = None):
         composite_obj_container = cls.build_composite_shape_from_yaml(yaml_file_path)
         with open(yaml_file_path, "r", encoding="utf8") as f:
             viewer_config = yaml.safe_load(f.read())["viewers"]
         viewer_container = {}
         connection_container = {}
+        if (which_viewer!=None) and (which_viewer in viewer_config):
+            viewer_config = {which_viewer: viewer_config[which_viewer]}
         for viewer, viewer_info in viewer_config.items():
             if viewer_info["transformation"]["translate"]["type"] == "absolute":
                 max_width = 0
@@ -2664,27 +2666,27 @@ class shapeContainer(TaurusWidget):
             rectangle(
                 dim=[200, 180, 100 * 1.0, 100 * 1.0],
                 rotation_center=None,
-                transformation={"rotate": 0, "translate": (0, 0), "scale": 1},
+                transformation={"rotate": 0, "translate": (0, 0),"translate_offset": (0, 0), "scale": 1},
             ),
             rectangle(
                 dim=[100, 300, 20 * 1.0, 20 * 1.0],
                 rotation_center=[110, 310],
-                transformation={"rotate": 0, "translate": (0, 0), "scale": 1},
+                transformation={"rotate": 0, "translate": (0, 0),"translate_offset": (0, 0), "scale": 1},
             ),
             rectangle(
                 dim=[100, 300, 20 * 1.0, 20 * 1.0],
                 rotation_center=[110, 310],
-                transformation={"rotate": 0, "translate": (0, 0), "scale": 1},
+                transformation={"rotate": 0, "translate": (0, 0),"translate_offset": (0, 0), "scale": 1},
             ),
             rectangle(
                 dim=[100, 300, 20 * 1.0, 20 * 1.0],
                 rotation_center=[110, 310],
-                transformation={"rotate": 0, "translate": (0, 0), "scale": 1},
+                transformation={"rotate": 0, "translate": (0, 0),"translate_offset": (0, 0), "scale": 1},
             ),
             rectangle(
                 dim=[100, 300, 20 * 1.0, 20 * 1.0],
                 rotation_center=[110, 310],
-                transformation={"rotate": 0, "translate": (0, 0), "scale": 1},
+                transformation={"rotate": 0, "translate": (0, 0),"translate_offset": (0, 0), "scale": 1},
             ),
             isocelesTriangle(dim=[500, 500, 69.28, 60]),
             circle(dim=[700, 400, 80]),

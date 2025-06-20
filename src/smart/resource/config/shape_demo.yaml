@@ -487,11 +487,11 @@ composite_shapes:
         change_value: 1      
     models: 
       index: [4,7,8]
-      model: tango://hasp029rack.desy.de:10000/p06/motor/exp.01/position
+      model: tango://hasep25lab01.desy.de:10000/p25/smar/axis.02/position
     callbacks_upon_model_change:
-      4: ['callback_model_change_with_transformation', 'mv_dir', 'x', 'sign', '+', 'max_translation_range', '[-60,0]']
-      7: ['callback_model_change_with_transformation', 'mv_dir', 'x', 'sign', '+', 'max_translation_range', '[-60,0]']
-      8: ['callback_model_change_with_transformation', 'mv_dir', 'x', 'sign', '+', 'max_translation_range', '[-60,0]']
+      4: ['callback_model_change_with_transformation', 'mv_dir', 'x', 'sign', '+', 'max_translation_range', '[-10,10]']
+      7: ['callback_model_change_with_transformation', 'mv_dir', 'x', 'sign', '+', 'max_translation_range', '[-10,10]']
+      8: ['callback_model_change_with_transformation', 'mv_dir', 'x', 'sign', '+', 'max_translation_range', '[-10,10]']
     callbacks_upon_leftmouse_click:
       4: null
       7: ['callback_leftmouse_click_change_attribute_value']
@@ -512,22 +512,22 @@ composite_shapes:
     transformation: 
       translate: [0,0]
     models: 
-      3: tango://hasp029rack.desy.de:10000/p06/motor/exp.01/position
-      2: tango://hasp029rack.desy.de:10000/p06/motor/exp.01/position
-      5: tango://hasp029rack.desy.de:10000/p06/motor/exp.02/position
-      4: tango://hasp029rack.desy.de:10000/p06/motor/exp.02/position
+      3: tango://hasep25lab01.desy.de:10000/p25/motor/lab.02/position
+      2: tango://hasep25lab01.desy.de:10000/p25/motor/lab.02/position
+      5: tango://hasep25lab01.desy.de:10000/p25/motor/lab.02/position
+      4: tango://hasep25lab01.desy.de:10000/p25/motor/lab.02/position
     callbacks_upon_model_change:
       2: 
-        - ['callback_model_change_with_transformation', 'mv_dir', 'y', 'sign', '+', 'max_translation_range', '[-10,10]']
+        - ['callback_model_change_with_transformation', 'mv_dir', 'y', 'sign', '+', 'max_translation_range', '[0,10]']
         - ['callback_model_change_with_text_label', 'anchor', 'bottom', 'orientation','horizontal']
       3:
-        - ['callback_model_change_with_transformation', 'mv_dir', 'y', 'sign', '-', 'max_translation_range', '[-10,10]']
+        - ['callback_model_change_with_transformation', 'mv_dir', 'y', 'sign', '-', 'max_translation_range', '[0,10]']
         - ['callback_model_change_with_text_label', 'anchor', 'top','orientation','horizontal']
       4: 
-        - ['callback_model_change_with_transformation', 'mv_dir', 'x', 'sign', '+', 'max_translation_range', '[-10,10]']
+        - ['callback_model_change_with_transformation', 'mv_dir', 'x', 'sign', '+', 'max_translation_range', '[0,10]']
         - ['callback_model_change_with_text_label', 'anchor', 'right','orientation','vertical']
       5: 
-        - ['callback_model_change_with_transformation', 'mv_dir', 'x', 'sign', '-', 'max_translation_range', '[-10,10]']
+        - ['callback_model_change_with_transformation', 'mv_dir', 'x', 'sign', '-', 'max_translation_range', '[0,10]']
         - ['callback_model_change_with_text_label', 'anchor', 'left', 'orientation', 'vertical']
     callbacks_upon_leftmouse_click:
       3: null
@@ -917,11 +917,11 @@ viewers:
           width: 1
           ls: SolidLine
         direct_connect: True
-        draw_after: False           
+        draw_after: True           
       x-ray-eye.3.bottom<=>x-ray-eye.5.anchor_top_1:
         pen:
           color: [255, 0, 0]
           width: 1
           ls: SolidLine
         direct_connect: True
-        draw_after: False           
+        draw_after: True           
