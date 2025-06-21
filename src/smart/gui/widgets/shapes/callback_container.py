@@ -72,6 +72,7 @@ def _apply_translation_steps(shape, value_model, mv_dir = 'x', sign = '+', model
         offset = {'translate': (int(new_pxs_widget), shape.transformation['translate'][1])}
     else:
         offset = {'translate': (shape.transformation['translate'][0], int(new_pxs_widget))}
+    # print(lms_model,model_value,offset)
     shape.transformation = offset
 
 def _get_model_value(value_model):

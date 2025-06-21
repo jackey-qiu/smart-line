@@ -22,6 +22,8 @@ class beamlineSynopticViewer(QWidget):
         self.composite_shape = None
         self.viewer_shape = None
         self.viewer_connection = {}
+        self.composite_obj_container = None
+        self.config_file = None
         self.set_parent()
 
     def connect_slots_synoptic_viewer(self):
@@ -40,8 +42,14 @@ class beamlineSynopticViewer(QWidget):
         shapeComposite.model_str_list = []
         shapeComposite.modelKeys = [TaurusBaseComponent.MLIST]
         config_file = str(rs_path / 'config' / (self.parent.comboBox_viewer_filename.currentText() + '.yaml'))
+        if self.config_file != config_file:
+            self.config_file = config_file
+            self.composite_obj_container = None
         which_viewer = self.parent.comboBox_viewer_obj_name.currentText()
-        view_shape, view_connection = buildTools.build_view_from_yaml(config_file, self.size().width(), which_viewer=which_viewer)
+        if self.composite_obj_container==None:
+            view_shape, view_connection, self.composite_obj_container = buildTools.build_view_from_yaml(config_file, self.size().width(), which_viewer=which_viewer, composite_obj_container=self.composite_obj_container)
+        else:
+            view_shape, view_connection, _ = buildTools.build_view_from_yaml(config_file, self.size().width(), which_viewer=which_viewer, composite_obj_container=self.composite_obj_container)
         self.viewer_shape, self.viewer_connection = view_shape[which_viewer], view_connection[which_viewer]
         for each_composite in self.viewer_shape.values():
             each_composite.updateSignal.connect(self.update_canvas)
@@ -160,12 +168,13 @@ class beamlineSynopticViewer(QWidget):
         #first update extra_offset par
         extra_offset = [0,0]
         for composite_shape in self.viewer_shape.values():
+            pass
             #for each_shape in composite_shape.shapes:
             #    each_shape.transformation['translate_offset'] = extra_offset
-            composite_shape.ref_shape.transformation['translate_offset'] = extra_offset
-            composite_shape.build_composite()
+            # composite_shape.ref_shape.transformation['translate_offset'] = extra_offset
+            # composite_shape.build_composite()
                 #each_shape.paint(qp, extra_offset)
-            extra_offset = np.array(extra_offset) + [0,composite_shape.beam_height_offset]            
+            #extra_offset = np.array(extra_offset) + [0,composite_shape.beam_height_offset]            
         self.update_connection()
         #make line connections
         for line_set in self.parent.syringe_lines_container:

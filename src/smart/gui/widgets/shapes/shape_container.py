@@ -1615,6 +1615,7 @@ class shapeComposite(TaurusBaseComponent, QObject):
                 "connection_pattern": self.connection,
                 "ref_shape_index": self._shapes.index(self.ref_shape),
                 "model_index_list": self._model_shape_index_list,
+                "beam_height_offset": self.beam_height_offset
             },
             self.callbacks,
             self._models,
@@ -1953,6 +1954,11 @@ class buildTools(object):
             )
             composite_obj_container[composite].callbacks = callbacks
             composite_obj_container[composite]._models = _models
+            if 'beam_height_offset' in composite_info:
+                beamheight_offset = composite_info["beam_height_offset"]
+            else:
+                beamheight_offset = 0
+            composite_obj_container[composite].set_beam_height_offset(beamheight_offset)
             if composite_info["transformation"] != "None":
                 translate = composite_info["transformation"].pop("translate", (0, 0))
                 if "translate" in kwargs:
@@ -1973,8 +1979,9 @@ class buildTools(object):
         return composite_obj_container
 
     @classmethod
-    def build_view_from_yaml(cls, yaml_file_path, canvas_width, which_viewer = None):
-        composite_obj_container = cls.build_composite_shape_from_yaml(yaml_file_path)
+    def build_view_from_yaml(cls, yaml_file_path, canvas_width, which_viewer = None, composite_obj_container=None):
+        if composite_obj_container==None:
+            composite_obj_container = cls.build_composite_shape_from_yaml(yaml_file_path)
         with open(yaml_file_path, "r", encoding="utf8") as f:
             viewer_config = yaml.safe_load(f.read())["viewers"]
         viewer_container = {}
@@ -2070,7 +2077,7 @@ class buildTools(object):
                 connection_container[viewer] = viewer_info["connection"]
             else:
                 connection_container[viewer] = {}
-        return viewer_container, connection_container             
+        return viewer_container, connection_container, composite_obj_container             
 
 
     @classmethod
