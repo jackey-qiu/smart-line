@@ -284,6 +284,14 @@ def qt_image_to_array(img, share_memory=False):
     else:
         return copy.deepcopy(arr)
 
+STATE_COLOR_MAP = {
+    'queued': QtGui.QColor('DeepSkyBlue'),
+    'running': QtGui.QColor('yellow'),
+    'paused': QtGui.QColor('magenta'),
+    'failed': QtGui.QColor('red'),
+    'finished': QtGui.QColor('green'),
+}
+
 class PandasModel(QtCore.QAbstractTableModel):
     """
     Class to populate a table view with a pandas dataframe
@@ -304,20 +312,30 @@ class PandasModel(QtCore.QAbstractTableModel):
     def data(self, index, role):
         cols = self._data.shape[1]
         checked_columns = [i for i in range(cols) if type(self._data.iloc[0, i])==np.bool_]
+        state_color = None
+        if 'state' in self._data:
+            state = self._data['state'][index.row()]
+            if state in STATE_COLOR_MAP:
+                state_color = STATE_COLOR_MAP[state]
+            
         if index.isValid():
             if role in [QtCore.Qt.DisplayRole, QtCore.Qt.EditRole]:
                 return str(self._data.iloc[index.row(), index.column()])
-            if role == QtCore.Qt.BackgroundRole and index.row()%2 == 0:
-                # return QtGui.QColor('green')
-                return QtGui.QColor('DeepSkyBlue')
-                #return QtGui.QColor('Blue')
-            if role == QtCore.Qt.BackgroundRole and index.row()%2 == 1:
-                return QtGui.QColor('white')
-            if role == QtCore.Qt.BackgroundRole:
-                if index.column() in checked_columns:
-                    return QtGui.QColor('yellow')
-                else:
+            if state_color==None:
+                if role == QtCore.Qt.BackgroundRole and index.row()%2 == 0:
+                    # return QtGui.QColor('green')
+                    return QtGui.QColor('DeepSkyBlue')
+                    #return QtGui.QColor('Blue')
+                if role == QtCore.Qt.BackgroundRole and index.row()%2 == 1:
                     return QtGui.QColor('white')
+                if role == QtCore.Qt.BackgroundRole:
+                    if index.column() in checked_columns:
+                        return QtGui.QColor('yellow')
+                    else:
+                        return QtGui.QColor('white')
+            else:
+                if role == QtCore.Qt.BackgroundRole:
+                    return state_color
                 # return QtGui.QColor('aqua')
                 # return QtGui.QColor('lightGreen')
             # if role == QtCore.Qt.ForegroundRole and index.row()%2 == 1:

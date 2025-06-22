@@ -333,6 +333,50 @@ class queueSynopticView(QWidget):
     # def set_parent(self, parent):
     # self.parent = parent
 
+    def mv_queue_view(self, dir = 'left'):
+        if dir=='left':
+            x_offset = self.block_width + self.padding_hor
+        elif dir=='right':
+            x_offset = -self.block_width - self.padding_hor
+        for composite in self.composite_shapes:
+            original_translate = composite.ref_shape.transformation['translate']
+            new_translate = original_translate - np.array([x_offset, 0])
+            composite.translate(new_translate)
+        for tri in self.triangle_ends:
+            original_translate = tri.transformation['translate']
+            new_translate = original_translate - np.array([x_offset, 0])
+            tri.translate(new_translate)
+
+        #remake connection
+        self.lines_bw_composite = []
+        # self.triangle_ends = []
+        for i in range(len(self.composite_shapes) - 1):
+            shapes = [
+                self.composite_shapes[i].shapes[-1],
+                self.composite_shapes[i + 1].shapes[0],
+            ]
+            anchors = ["right", "left"]
+            # rot_cen = [
+            #     shapes[-1].dim_pars[0]-x_offset,
+            #     shapes[-1].dim_pars[1] + int(shapes[-1].dim_pars[-1] / 2),
+            # ]
+            # self.triangle_ends.append(isocelesTriangle(dim=rot_cen + [10, 60]))
+            # self.triangle_ends[-1].transformation = {"rotate": 90}
+            # self.triangle_ends[-1].rot_center = rot_cen
+            # self.triangle_ends[-1].decoration = {
+            #     "pen": {"color": (0, 255, 0), "width": 2, "ls": "SolidLine"},
+            #     "brush": {"color": (0, 255, 0)},
+            # }
+            self.lines_bw_composite.append(
+                buildTools.make_line_connection_btw_two_anchors(
+                    shapes,
+                    anchors,
+                    short_head_line_len=int(self.padding_hor / 2),
+                    direct_connection=True,
+                )
+            )
+        self.update()
+
     def set_parent(self):
         self.parent = findMainWindow()
 

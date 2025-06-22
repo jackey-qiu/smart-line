@@ -51,7 +51,7 @@
            <item>
             <widget class="QTabWidget" name="tabWidget_viewer">
              <property name="currentIndex">
-              <number>6</number>
+              <number>2</number>
              </property>
              <widget class="QWidget" name="tab_10">
               <attribute name="title">
@@ -123,6 +123,12 @@
                     <layout class="QHBoxLayout" name="horizontalLayout_12">
                      <item>
                       <widget class="QLabel" name="label_20">
+                       <property name="sizePolicy">
+                        <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+                         <horstretch>0</horstretch>
+                         <verstretch>0</verstretch>
+                        </sizepolicy>
+                       </property>
                        <property name="text">
                         <string>viewer type</string>
                        </property>
@@ -145,7 +151,7 @@
                      <item>
                       <widget class="QLabel" name="label_72">
                        <property name="sizePolicy">
-                        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                          <horstretch>0</horstretch>
                          <verstretch>0</verstretch>
                         </sizepolicy>
@@ -188,6 +194,20 @@
                        </property>
                       </widget>
                      </item>
+                     <item>
+                      <widget class="QPushButton" name="pushButton_mv_queue_right">
+                       <property name="text">
+                        <string>shift-&gt;</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QPushButton" name="pushButton_mv_queue_left">
+                       <property name="text">
+                        <string>&lt;-shift</string>
+                       </property>
+                      </widget>
+                     </item>
                     </layout>
                    </item>
                    <item>
@@ -218,361 +238,373 @@
                     </widget>
                    </item>
                    <item>
-                    <layout class="QGridLayout" name="gridLayout_10">
-                     <item row="5" column="0">
-                      <widget class="QLabel" name="label_40">
-                       <property name="text">
-                        <string>scan cmd</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="1" column="3">
-                      <widget class="QLabel" name="label_64">
-                       <property name="text">
-                        <string>N</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="0" column="2">
-                      <widget class="QLabel" name="label_36">
-                       <property name="sizePolicy">
-                        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                         <horstretch>0</horstretch>
-                         <verstretch>0</verstretch>
-                        </sizepolicy>
-                       </property>
-                       <property name="text">
-                        <string>RW</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="3" column="3">
-                      <widget class="QLabel" name="label_66">
-                       <property name="text">
-                        <string>-</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="0" column="3">
-                      <widget class="QLabel" name="label_37">
-                       <property name="sizePolicy">
-                        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                         <horstretch>0</horstretch>
-                         <verstretch>0</verstretch>
-                        </sizepolicy>
-                       </property>
-                       <property name="text">
-                        <string>Required</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="3" column="2">
-                      <widget class="QLabel" name="label_58">
-                       <property name="text">
-                        <string>R</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="5" column="1">
-                      <widget class="QLineEdit" name="lineEdit_cmd">
-                       <property name="text">
-                        <string>ascan samy 0 1 100 0.5</string>
-                       </property>
-                       <property name="placeholderText">
-                        <string>give the scan command: eg ascan samy 0 1 100 0.5</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="10" column="1">
-                      <widget class="QLineEdit" name="lineEdit_scan_info">
-                       <property name="placeholderText">
-                        <string>give the scan info here</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="3" column="1">
-                      <widget class="QLineEdit" name="lineEdit_job_id">
-                       <property name="enabled">
-                        <bool>false</bool>
-                       </property>
-                       <property name="text">
-                        <string>The queue ID, which is a unique identifier for this entry.</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="5" column="2">
-                      <widget class="QLabel" name="label_59">
-                       <property name="text">
-                        <string>RW</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="7" column="1">
-                      <widget class="QLineEdit" name="lineEdit_session">
-                       <property name="text">
-                        <string>test_session_01</string>
-                       </property>
-                       <property name="placeholderText">
-                        <string>give the session name here</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="1" column="0">
-                      <widget class="QLabel" name="label_31">
-                       <property name="text">
-                        <string>execution_id</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="9" column="1">
-                      <widget class="QLineEdit" name="lineEdit_scan_id">
-                       <property name="enabled">
-                        <bool>false</bool>
-                       </property>
-                       <property name="placeholderText">
-                        <string>This is only available when the scan has already been executed.</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="1" column="1">
-                      <widget class="QLineEdit" name="lineEdit_exe_id">
-                       <property name="enabled">
-                        <bool>false</bool>
-                       </property>
-                       <property name="text">
-                        <string/>
-                       </property>
-                       <property name="placeholderText">
-                        <string>execution order index</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="0" column="0">
-                      <widget class="QLabel" name="label_34">
-                       <property name="sizePolicy">
-                        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                         <horstretch>0</horstretch>
-                         <verstretch>0</verstretch>
-                        </sizepolicy>
-                       </property>
-                       <property name="text">
-                        <string>key</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="10" column="3">
-                      <widget class="QLabel" name="label_71">
-                       <property name="text">
-                        <string>N</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="8" column="1">
-                      <widget class="QLineEdit" name="lineEdit_state">
-                       <property name="placeholderText">
-                        <string>possible states: queued, running, finished, failed, disabled, enabled, paused</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="0" column="1">
-                      <widget class="QLabel" name="label_35">
-                       <property name="sizePolicy">
-                        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                         <horstretch>0</horstretch>
-                         <verstretch>0</verstretch>
-                        </sizepolicy>
-                       </property>
-                       <property name="text">
-                        <string>key value</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="8" column="2">
-                      <widget class="QLabel" name="label_61">
-                       <property name="text">
-                        <string>RW</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="2" column="3">
-                      <widget class="QLabel" name="label_65">
-                       <property name="text">
-                        <string>Y</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="8" column="0">
-                      <widget class="QLabel" name="label_42">
-                       <property name="text">
-                        <string>queue state</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="7" column="2">
-                      <widget class="QLabel" name="label_60">
-                       <property name="text">
-                        <string>RW</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="10" column="0">
-                      <widget class="QLabel" name="label_55">
-                       <property name="text">
-                        <string>scan info</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="7" column="3">
-                      <widget class="QLabel" name="label_68">
-                       <property name="text">
-                        <string>Y</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="10" column="2">
-                      <widget class="QLabel" name="label_63">
-                       <property name="text">
-                        <string>RW</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="9" column="2">
-                      <widget class="QLabel" name="label_62">
-                       <property name="text">
-                        <string>R</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="8" column="3">
-                      <widget class="QLabel" name="label_69">
-                       <property name="text">
-                        <string>-/N</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="7" column="0">
-                      <widget class="QLabel" name="label_41">
-                       <property name="text">
-                        <string>session name</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="3" column="0">
-                      <widget class="QLabel" name="label_39">
-                       <property name="text">
-                        <string>job id</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="2" column="0">
-                      <widget class="QLabel" name="label_38">
-                       <property name="text">
-                        <string>queue name</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="9" column="0">
-                      <widget class="QLabel" name="label_44">
-                       <property name="text">
-                        <string>scan id</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="1" column="2">
-                      <widget class="QLabel" name="label_56">
-                       <property name="text">
-                        <string>R</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="2" column="1">
-                      <widget class="QLineEdit" name="lineEdit_queue_name">
-                       <property name="text">
-                        <string>test_queue_01</string>
-                       </property>
-                       <property name="placeholderText">
-                        <string>give the queue name here</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="2" column="2">
-                      <widget class="QLabel" name="label_57">
-                       <property name="text">
-                        <string>RW</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="9" column="3">
-                      <widget class="QLabel" name="label_70">
-                       <property name="text">
-                        <string>-</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="4" column="3">
-                      <widget class="QLabel" name="label_78">
-                       <property name="text">
-                        <string>N</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="5" column="3">
-                      <widget class="QLabel" name="label_67">
-                       <property name="text">
-                        <string>Y</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="4" column="0">
-                      <widget class="QLabel" name="label_76">
-                       <property name="text">
-                        <string>queue id</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="4" column="1">
-                      <widget class="QLineEdit" name="lineEdit_queue_id">
-                       <property name="placeholderText">
-                        <string>queue id used to change run order</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="4" column="2">
-                      <widget class="QLabel" name="label_77">
-                       <property name="text">
-                        <string>RW</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="6" column="0">
-                      <widget class="QLabel" name="label_81">
-                       <property name="text">
-                        <string>prescan action</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="6" column="1">
-                      <widget class="QLineEdit" name="lineEdit_pre_scan_action">
-                       <property name="text">
-                        <string>[]</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="6" column="2">
-                      <widget class="QLabel" name="label_82">
-                       <property name="text">
-                        <string>RW</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="6" column="3">
-                      <widget class="QLabel" name="label_90">
-                       <property name="text">
-                        <string>N</string>
-                       </property>
-                      </widget>
-                     </item>
-                    </layout>
+                    <widget class="QFrame" name="frame_queue">
+                     <property name="frameShape">
+                      <enum>QFrame::StyledPanel</enum>
+                     </property>
+                     <property name="frameShadow">
+                      <enum>QFrame::Raised</enum>
+                     </property>
+                     <layout class="QVBoxLayout" name="verticalLayout_31">
+                      <item>
+                       <layout class="QGridLayout" name="gridLayout_10">
+                        <item row="5" column="0">
+                         <widget class="QLabel" name="label_40">
+                          <property name="text">
+                           <string>scan cmd</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="1" column="3">
+                         <widget class="QLabel" name="label_64">
+                          <property name="text">
+                           <string>N</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="0" column="2">
+                         <widget class="QLabel" name="label_36">
+                          <property name="sizePolicy">
+                           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                            <horstretch>0</horstretch>
+                            <verstretch>0</verstretch>
+                           </sizepolicy>
+                          </property>
+                          <property name="text">
+                           <string>RW</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="3" column="3">
+                         <widget class="QLabel" name="label_66">
+                          <property name="text">
+                           <string>-</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="0" column="3">
+                         <widget class="QLabel" name="label_37">
+                          <property name="sizePolicy">
+                           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                            <horstretch>0</horstretch>
+                            <verstretch>0</verstretch>
+                           </sizepolicy>
+                          </property>
+                          <property name="text">
+                           <string>Required</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="3" column="2">
+                         <widget class="QLabel" name="label_58">
+                          <property name="text">
+                           <string>R</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="5" column="1">
+                         <widget class="QLineEdit" name="lineEdit_cmd">
+                          <property name="text">
+                           <string>ascan samy 0 1 100 0.5</string>
+                          </property>
+                          <property name="placeholderText">
+                           <string>give the scan command: eg ascan samy 0 1 100 0.5</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="10" column="1">
+                         <widget class="QLineEdit" name="lineEdit_scan_info">
+                          <property name="placeholderText">
+                           <string>give the scan info here</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="3" column="1">
+                         <widget class="QLineEdit" name="lineEdit_job_id">
+                          <property name="enabled">
+                           <bool>false</bool>
+                          </property>
+                          <property name="text">
+                           <string>The queue ID, which is a unique identifier for this entry.</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="5" column="2">
+                         <widget class="QLabel" name="label_59">
+                          <property name="text">
+                           <string>RW</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="7" column="1">
+                         <widget class="QLineEdit" name="lineEdit_session">
+                          <property name="text">
+                           <string>test_session_01</string>
+                          </property>
+                          <property name="placeholderText">
+                           <string>give the session name here</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="1" column="0">
+                         <widget class="QLabel" name="label_31">
+                          <property name="text">
+                           <string>execution_id</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="9" column="1">
+                         <widget class="QLineEdit" name="lineEdit_scan_id">
+                          <property name="enabled">
+                           <bool>false</bool>
+                          </property>
+                          <property name="placeholderText">
+                           <string>This is only available when the scan has already been executed.</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="1" column="1">
+                         <widget class="QLineEdit" name="lineEdit_exe_id">
+                          <property name="enabled">
+                           <bool>false</bool>
+                          </property>
+                          <property name="text">
+                           <string/>
+                          </property>
+                          <property name="placeholderText">
+                           <string>execution order index</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="0" column="0">
+                         <widget class="QLabel" name="label_34">
+                          <property name="sizePolicy">
+                           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                            <horstretch>0</horstretch>
+                            <verstretch>0</verstretch>
+                           </sizepolicy>
+                          </property>
+                          <property name="text">
+                           <string>key</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="10" column="3">
+                         <widget class="QLabel" name="label_71">
+                          <property name="text">
+                           <string>N</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="8" column="1">
+                         <widget class="QLineEdit" name="lineEdit_state">
+                          <property name="placeholderText">
+                           <string>possible states: queued, running, finished, failed, disabled, enabled, paused</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="0" column="1">
+                         <widget class="QLabel" name="label_35">
+                          <property name="sizePolicy">
+                           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                            <horstretch>0</horstretch>
+                            <verstretch>0</verstretch>
+                           </sizepolicy>
+                          </property>
+                          <property name="text">
+                           <string>key value</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="8" column="2">
+                         <widget class="QLabel" name="label_61">
+                          <property name="text">
+                           <string>RW</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="2" column="3">
+                         <widget class="QLabel" name="label_65">
+                          <property name="text">
+                           <string>Y</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="8" column="0">
+                         <widget class="QLabel" name="label_42">
+                          <property name="text">
+                           <string>queue state</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="7" column="2">
+                         <widget class="QLabel" name="label_60">
+                          <property name="text">
+                           <string>RW</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="10" column="0">
+                         <widget class="QLabel" name="label_55">
+                          <property name="text">
+                           <string>scan info</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="7" column="3">
+                         <widget class="QLabel" name="label_68">
+                          <property name="text">
+                           <string>Y</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="10" column="2">
+                         <widget class="QLabel" name="label_63">
+                          <property name="text">
+                           <string>RW</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="9" column="2">
+                         <widget class="QLabel" name="label_62">
+                          <property name="text">
+                           <string>R</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="8" column="3">
+                         <widget class="QLabel" name="label_69">
+                          <property name="text">
+                           <string>-/N</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="7" column="0">
+                         <widget class="QLabel" name="label_41">
+                          <property name="text">
+                           <string>session name</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="3" column="0">
+                         <widget class="QLabel" name="label_39">
+                          <property name="text">
+                           <string>job id</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="2" column="0">
+                         <widget class="QLabel" name="label_38">
+                          <property name="text">
+                           <string>queue name</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="9" column="0">
+                         <widget class="QLabel" name="label_44">
+                          <property name="text">
+                           <string>scan id</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="1" column="2">
+                         <widget class="QLabel" name="label_56">
+                          <property name="text">
+                           <string>R</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="2" column="1">
+                         <widget class="QLineEdit" name="lineEdit_queue_name">
+                          <property name="text">
+                           <string>test_queue_01</string>
+                          </property>
+                          <property name="placeholderText">
+                           <string>give the queue name here</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="2" column="2">
+                         <widget class="QLabel" name="label_57">
+                          <property name="text">
+                           <string>RW</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="9" column="3">
+                         <widget class="QLabel" name="label_70">
+                          <property name="text">
+                           <string>-</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="4" column="3">
+                         <widget class="QLabel" name="label_78">
+                          <property name="text">
+                           <string>N</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="5" column="3">
+                         <widget class="QLabel" name="label_67">
+                          <property name="text">
+                           <string>Y</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="4" column="0">
+                         <widget class="QLabel" name="label_76">
+                          <property name="text">
+                           <string>queue id</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="4" column="1">
+                         <widget class="QLineEdit" name="lineEdit_queue_id">
+                          <property name="placeholderText">
+                           <string>queue id used to change run order</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="4" column="2">
+                         <widget class="QLabel" name="label_77">
+                          <property name="text">
+                           <string>RW</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="6" column="0">
+                         <widget class="QLabel" name="label_81">
+                          <property name="text">
+                           <string>prescan action</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="6" column="1">
+                         <widget class="QLineEdit" name="lineEdit_pre_scan_action">
+                          <property name="text">
+                           <string>[]</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="6" column="2">
+                         <widget class="QLabel" name="label_82">
+                          <property name="text">
+                           <string>RW</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="6" column="3">
+                         <widget class="QLabel" name="label_90">
+                          <property name="text">
+                           <string>N</string>
+                          </property>
+                         </widget>
+                        </item>
+                       </layout>
+                      </item>
+                     </layout>
+                    </widget>
                    </item>
                   </layout>
                  </widget>

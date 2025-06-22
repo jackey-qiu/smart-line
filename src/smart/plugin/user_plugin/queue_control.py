@@ -222,10 +222,22 @@ class queueControl(object):
         action_stop_queue.setStatusTip('Stop the queue')
         action_stop_queue.triggered.connect(self.stop_queue_run)
         self.queueToolBar.addAction(action_stop_queue)
+        #fold scan info
+        action_fold_scan = QAction(QIcon(str(icon_path / 'smart' / 'fold.png')),'hide scan details',self)
+        action_fold_scan.setStatusTip('hide the details of scan info.')
+        action_fold_scan.triggered.connect(self.frame_queue.hide)
+        self.queueToolBar.addAction(action_fold_scan)
+        #unfold scan info
+        action_unfold_scan = QAction(QIcon(str(icon_path / 'smart' / 'unfold.png')),'show scan details',self)
+        action_unfold_scan.setStatusTip('show the details of scan info.')
+        action_unfold_scan.triggered.connect(self.frame_queue.show)
+        self.queueToolBar.addAction(action_unfold_scan)        
         #finally add the toolbar
         self.addToolBar(Qt.LeftToolBarArea, self.queueToolBar)
         self.queueToolBar.hide()
 
+    def mv_queue_view(self, dir='left'):
+        self.widget_queue_synoptic_viewer.mv_queue_view(dir=dir)
 
     def connect_queue_server(self):
         if self.settings_object["QueueControl"]['standard']=='p06':
@@ -736,3 +748,5 @@ class queueControl(object):
         self.brcast_listener.queue_entry_event.connect(self.update_queued_task_from_brcast_event)
         self.brcast_listener.queue_event.connect(self.update_scan_progress)
         self.tableView_queue.clicked.connect(self.update_task_upon_click_tableview)
+        self.pushButton_mv_queue_right.clicked.connect(lambda:self.mv_queue_view(dir='right'))
+        self.pushButton_mv_queue_left.clicked.connect(lambda:self.mv_queue_view(dir='left'))
