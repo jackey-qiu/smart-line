@@ -94,12 +94,16 @@ class beamlineSynopticViewer(QWidget):
             return QPen(pen_color, pen_width, pen_style)
         for key, con_info in self.viewer_connection.items():
             nodes = key.rsplit('<=>')
+            # print(nodes)
             #this way there could be any number of conections
             nodes_formated = [[nodes[i], nodes[i+1]] for i in range(len(nodes)-1)]
             for i, (str_lf, str_rg) in enumerate(nodes_formated):
-                shape_lf, anchor_lf, composite_key_lf, shape_ix_lf = _unpack_str(str_lf)
+                pen_dict = con_info['pen'][i] if type(con_info['pen'])==list else con_info['pen']
+                pen = _make_qpen_from_txt(pen_dict)
+                # print(anchor_lf, shape_lf.anchors)
                 draw_after = con_info['draw_after'][i] if type(con_info['draw_after'])==list else con_info['draw_after']
                 if str_rg == 'end':#a line from the anchor to the very end of screen
+                    shape_lf, anchor_lf, composite_key_lf, shape_ix_lf = _unpack_str(str_lf)
                     if anchor_lf not in shape_lf.anchors:
                         if anchor_lf == 'dynamic_anchor':
                             dynamic_anchor_info = copy.deepcopy(con_info['dynamic_anchor_pars'][i]) if type(con_info['dynamic_anchor_pars'])==list else copy.deepcopy(con_info['dynamic_anchor_pars'])
@@ -116,12 +120,31 @@ class beamlineSynopticViewer(QWidget):
                         pt_left = shape_lf.compute_anchor_pos_after_transformation(
                             anchor_lf, return_pos_only=True
                         )
-                        pt_right = [10000,pt_left[1]]#x is arbitrarily large number
+                        pt_right = [10000,int(pt_left[1])]#x is arbitrarily large number
+                        lines = [pt_left, pt_right]
+                elif str_lf == 'end':#a line from the anchor to the very end of screen
+                    shape_rg, anchor_rg, composite_key_rg, shape_ix_rg = _unpack_str(str_rg)
+                    if anchor_rg not in shape_rg.anchors:
+                        if anchor_rg == 'dynamic_anchor':
+                            dynamic_anchor_info = copy.deepcopy(con_info['dynamic_anchor_pars'][i]) if type(con_info['dynamic_anchor_pars'])==list else copy.deepcopy(con_info['dynamic_anchor_pars'])
+                            side = dynamic_anchor_info['side'][0]
+                            if side in shape_rg.dynamic_anchor:
+                                pt_right = shape_rg.dynamic_anchor[side]
+                                pt_left = [0,pt_right[1]]#x is arbitrarily large number
+                                lines = [pt_left, pt_right]
+                            else:
+                                continue
+                        else:
+                            continue
+                    else:
+                        pt_right = shape_rg.compute_anchor_pos_after_transformation(
+                            anchor_rg, return_pos_only=True
+                        )
+                        pt_left = [0,int(pt_right[1])]#x is arbitrarily large number
                         lines = [pt_left, pt_right]
                 else:
+                    shape_lf, anchor_lf, composite_key_lf, shape_ix_lf = _unpack_str(str_lf)
                     shape_rg, anchor_rg, composite_key_rg, shape_ix_rg = _unpack_str(str_rg)
-                    pen_dict = con_info['pen'][i] if type(con_info['pen'])==list else con_info['pen']
-                    pen = _make_qpen_from_txt(pen_dict)
                     direct_connect = con_info['direct_connect'][i] if type(con_info['direct_connect'])==list else con_info['direct_connect']
                     if anchor_rg=='dynamic_anchor':
                         dynamic_anchor_info = copy.deepcopy(con_info['dynamic_anchor_pars'][i]) if type(con_info['dynamic_anchor_pars'])==list else copy.deepcopy(con_info['dynamic_anchor_pars'])
@@ -162,6 +185,8 @@ class beamlineSynopticViewer(QWidget):
     def paintEvent(self, a0) -> None:
         qp = QPainter()
         qp.begin(self)
+        # qp.setRenderHint(QPainter.Antialiasing, True)
+        # qp.setRenderHint(QPainter.HighQualityAntialiasing, True)
         # for each in self.shapes:                       
         if self.viewer_shape == None:
             return
@@ -199,6 +224,7 @@ class beamlineSynopticViewer(QWidget):
             qp.setPen(self.parent.pen_lines_draw_before[k])
             for i in range(len(lines)-1):
                 pts = list(lines[i]) + list(lines[i+1])
+                pts = [int(each) for each in pts]
                 qp.drawLine(*pts)
         #draw shapes
         for composite_shape in self.viewer_shape.values():
@@ -253,7 +279,11 @@ class beamlineSynopticViewer(QWidget):
                         mggui_func = composite_shape.uponRightMouseClicked(i)
                         if mggui_func==None:
                             return
-                        mggui_func.native.setWindowTitle('setup_pars')
+                        # if hasattr(mggui_func, 'scan') and mggui_func.scan.value.value:
+                            # mggui_func.call_button.text = 'run scan'
+                        # else:
+                            # mggui_func.call_button.text = 'move'
+                        mggui_func.native.setWindowTitle('setup pars')
                         pos = self.parentWidget().mapToGlobal(self.pos())
                         mggui_func.native.move(pos.x()+x, pos.y()+y)
                         mggui_func.show(run=True)                        

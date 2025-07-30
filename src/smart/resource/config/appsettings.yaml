@@ -122,10 +122,10 @@ MongoDB:
         - gui-spinbox
         unique: true
 Motors:
-  exp_mot03: tango://hasp029rack.desy.de:10000/p06/motor/exp.03
-  exp_mot04: tango://hasp029rack.desy.de:10000/p06/motor/exp.04
-  samly: tango://hasp029rack.desy.de:10000/p06/motor/exp.02
-  samlz: tango://hasp029rack.desy.de:10000/p06/motor/exp.01
+  exp_mot03: bliss://hasep25lab01:25000/xlab_session_2/x2pitch
+  exp_mot04: bliss://hasep25lab01:25000/xlab_session_2/x2pitch
+  samly: bliss://hasep25lab01:25000/xlab_session_2/x2pitch
+  samlz: bliss://hasep25lab01:25000/xlab_session_2/x2pitch
 Mscope:
   comboBox_illum_types: tango://hasp029rack.desy.de:10000/p06/beamlinemicroscopeillumination/test.01/AvailableIlluminationTypes
   label_illum_pos: tango://hasp029rack.desy.de:10000/p06/beamlinemicroscopeillumination/test.01/intensity{}
@@ -151,24 +151,24 @@ SampleStageMotorNames:
   y: samlz
   z: exp_dmy03
 SampleStages:
-  x_pstage_value: tango://hasp029rack.desy.de:10000/p06/motor/exp.02/position
-  x_stage_value: tango://hasp029rack.desy.de:10000/p06/motor/exp.02/position
-  y_pstage_value: tango://hasp029rack.desy.de:10000/p06/motor/exp.01/position
-  y_stage_value: tango://hasp029rack.desy.de:10000/p06/motor/exp.01/position
-  z_pstage_value: tango://hasp029rack.desy.de:10000/motor/dummy_mot_ctrl/3/position
-  z_stage_value: tango://hasp029rack.desy.de:10000/motor/dummy_mot_ctrl/3/position
+  x_pstage_value: bliss://hasep25lab01:25000/xlab_session_2/x2pitch/position
+  x_stage_value: bliss://hasep25lab01:25000/xlab_session_2/x2pitch/position
+  y_pstage_value: bliss://hasep25lab01:25000/xlab_session_2/x2pitch/position
+  y_stage_value: bliss://hasep25lab01:25000/xlab_session_2/x2pitch/position
+  z_pstage_value: bliss://hasep25lab01:25000/xlab_session_2/x2pitch/position
+  z_stage_value: bliss://hasep25lab01:25000/xlab_session_2/x2pitch/position
 ScanType:
   two_set_of_stage: false
 TaurusMotors:
   piezo_stage:
-    piezo_stage_x: tango://hasp029rack.desy.de:10000/p06/motor/exp.02
-    piezo_stage_y: tango://hasp029rack.desy.de:10000/p06/motor/exp.01
+    piezo_stage_x: bliss://hasep25lab01:25000/xlab_session_2/ccx
+    piezo_stage_y: bliss://hasep25lab01:25000/xlab_session_2/ccx
   possible_styles:
   - read
   - write
   sample_stage1:
-    sample_stage_x: tango://hasp029rack.desy.de:10000/p06/motor/exp.02
-    sample_stage_y: tango://hasp029rack.desy.de:10000/p06/motor/exp.01
+    sample_stage_x: bliss://hasep25lab01:25000/xlab_session_2/ccx
+    sample_stage_y: bliss://hasep25lab01:25000/xlab_session_2/x2pitch
   use_style: write
 Visuals:
   boxColor: (200, 200, 0)
@@ -178,10 +178,10 @@ Visuals:
 ZoomDevice:
   label_zoom_pos: tango://hasp029rack.desy.de:10000/p06/mscope/lab.01/zoom
 motor_alias_address_map:
-  exp_mot03: tango://hasp029rack.desy.de:10000/p06/motor/exp.03
-  samlx: tango://hasp029rack.desy.de:10000/motor/dummy_mot_ctrl/3
-  samly: tango://hasp029rack.desy.de:10000/p06/motor/exp.02
-  samlz: tango://hasp029rack.desy.de:10000/p06/motor/exp.01
+  exp_mot03: bliss://hasep25lab01:25000/xlab_session_2/x2pitch
+  samlx: bliss://hasep25lab01:25000/xlab_session_2/x2pitch
+  samly: bliss://hasep25lab01:25000/xlab_session_2/x2pitch
+  samlz: bliss://hasep25lab01:25000/xlab_session_2/x2pitch
 spockLogin:
   doorAlias: Door-hasp029rack
   doorName: tango://hasp029rack.desy.de:10000/p06/door/hasp029rack.01

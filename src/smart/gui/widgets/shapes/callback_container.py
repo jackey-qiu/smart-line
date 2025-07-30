@@ -5,7 +5,14 @@ from taurus.core.taurusbasetypes import AttrQuality
 from taurus.core.tango import DevState
 import numpy as np
 from magicgui import magicgui
+from enum import Enum
 from taurus.qt.qtgui.panel import TaurusDevicePanel
+try:
+    from blissclient import BlissClient, get_object
+    client = BlissClient()
+except:
+    client = None
+
 QT_DEVICE_STATE_PALETTE = QtColorPalette(DEVICE_STATE_DATA, DevState) 
 QT_ATTRIBUTE_QUALITY_PALETTE = QtColorPalette(ATTRIBUTE_QUALITY_DATA, AttrQuality) 
 
@@ -26,6 +33,7 @@ __all__ = ['callback_model_change_with_decoration',
            'callback_leftmouse_click_change_attribute_bool',
            'callback_rightmouse_click_set_step_size',
            'callback_rightmouse_click_show_device_panel',
+           'callback_rightmouse_click_set_item',
            'callback_model_change_with_composite_rotation']
 
 def _apply_translation_steps(shape, value_model, mv_dir = 'x', sign = '+', model_limits = None, max_translation_range = None, val_ix = None, translate = 'True'):
@@ -161,11 +169,17 @@ def callback_model_change_with_text_label(parent, shape, value_model, anchor='le
         shape.labels = {'text':[f'{label}{round(_get_model_value(value_model)[int(val_ix)]*float(sf),2)} {end_txt}'],'anchor':[anchor], 'orientation': [orientation]}
     callback_model_change_with_decoration(shape, value_model)
 
-def callback_model_change_with_composite_rotation(parent, shape, value_model):
+def callback_model_change_with_composite_rotation(parent, shape, value_model, which_gap = None):
     if shape.parent==None:
         return
     callback_model_change_with_decoration(shape, value_model)
-    shape.parent.rotate(_get_model_value(value_model))
+    value = _get_model_value(value_model)
+    shape.parent.rotate(value)
+    if which_gap!=None:
+        dy = shape._dynamic_attribute_yoffset
+        dx = abs(dy/np.tan(np.radians(value*2)))
+        shape.parent.set_dx_for_fix_exit(dx)
+        shape.parent.alignment['gaps'][which_gap]=[int(dx), int(dy)]
 
 #state updated from main gui attribute
 def callback_model_change_with_text_label_main_gui(parent, shape, value_model, anchor='left', orientation='horizontal', attr= "attr", label="", end_txt=""):
@@ -223,16 +237,81 @@ def callback_rightmouse_click_set_step_size(parent, shape, value_model, attr_nam
         else:
             if hasattr(shape.parent, composite_attr_name):
                 composite_attr_value = getattr(shape.parent, composite_attr_name)
+    def run_bliss_scan(mot, start, end, intervals, ct):
+        if client==None:
+            print('No active bliss client! san is not running!')
+        else:
+            future=client.session.call('ascan', get_object(mot), start, end, intervals, ct, in_terminal=True)
+            return future.state
+    scan=Enum('scan',[('scan', True),('move', False)])
+    if composite_attr_name!='composite_attr_name':
+        @magicgui(call_button='Action',step_size={'min': -100, 'max': 100},start_value={'min': -100, 'max': 100}, composite_attr_value={'min': -100, 'max': 100})
+        def setup_func(step_size=float(attr_value), start_value=float(value_model.rvalue.m), end_value=float(value_model.rvalue.m), intervals=int(2), count_time=1.0, scan=scan.move,composite_attr_name = composite_attr_name,composite_attr_value=float(composite_attr_value)):
+            setattr(shape, complete_name, step_size)
+            if scan.value:
+                if value_model.factory().schemes==('bliss',):
+                    mot=value_model._dev_name
+                    state = run_bliss_scan(mot, start_value, end_value, intervals, count_time)
+                    parent.statusbar.showMessage('summit scan request, state:'+str(state))
+                else:
+                    parent.statusbar.showMessage('scan is only supported with bliss scheme')
+            else:
+                value_model.write(end_value)
+            if shape.parent!=None:
+                if hasattr(shape.parent, composite_attr_name):
+                    setattr(shape.parent, composite_attr_name, composite_attr_value)
+    else:
+        @magicgui(call_button='Action',step_size={'min': -100, 'max': 100},start_value={'min': -100, 'max': 100})
+        def setup_func(step_size=float(attr_value), start_value=float(value_model.rvalue.m), end_value=float(value_model.rvalue.m),intervals=int(2), count_time=1, scan=scan.move):
+            setattr(shape, complete_name, step_size)
+            if scan.value:
+                if value_model.factory().schemes==('bliss',):
+                    mot=value_model._dev_name
+                    state = run_bliss_scan(mot, start_value, end_value, intervals, count_time)
+                    parent.statusbar.showMessage('summit scan request, state:'+str(state))
+                else:
+                    parent.statusbar.showMessage('scan is only supported with bliss scheme')
+            else:
+                value_model.write(end_value)       
+    return setup_func        
 
-    @magicgui(call_button='apply',step_size={'min': -100, 'max': 100},set_value={'min': -100, 'max': 100}, composite_attr_value={'min': -100, 'max': 100})
-    def setup_func(step_size=float(attr_value), set_value=float(value_model.rvalue.m), composite_attr_name = composite_attr_name,composite_attr_value=float(composite_attr_value)):
-        setattr(shape, complete_name, step_size)
-        value_model.write(set_value)
+def callback_rightmouse_click_set_item(parent, shape, value_model, attr_name,composite_attr_name = None, show_label = False):
+    current_model_value = value_model.rvalue.m
+    which = 0
+    complete_name = f'_dynamic_attribute_{attr_name}'
+    if not hasattr(shape, complete_name):
+        print(f'Attribute {complete_name} is not defined in the shape!')
+        return
+    else:
+        attr_value = getattr(shape, complete_name)
+        values = list(attr_value.values())
+        if current_model_value in values:
+            which = values.index(current_model_value)
+        attr_value = Enum('filters', attr_value.items())
+    if composite_attr_name==None:
+        composite_attr_name = 'composite_attr_name'
+        composite_attr_value = float(0)
+    else:
+        if shape.parent==None:
+            composite_attr_value = float(0)
+        else:
+            if hasattr(shape.parent, composite_attr_name):
+                composite_attr_value = getattr(shape.parent, composite_attr_name)
+
+    @magicgui(call_button='apply', composite_attr_value={'min': -100, 'max': 100})
+    def setup_func(select_channel=getattr(attr_value, list(attr_value._member_map_.keys())[which]), composite_attr_name = composite_attr_name,composite_attr_value=float(composite_attr_value)):
+        #setattr(shape, complete_name, step_size)
+        print("selected value is:",select_channel.value)
+        value_model.write(select_channel.value)
+        if show_label:
+            #shape.labels = {'text':[f'{label}{round(_get_model_value(value_model)*float(sf),2)} {end_txt}'],'anchor':[anchor], 'orientation': [orientation]}
+            shape.labels['text']=[list(attr_value._member_map_.keys())[values.index(select_channel.value)]]
         if shape.parent!=None:
             if hasattr(shape.parent, composite_attr_name):
                 setattr(shape.parent, composite_attr_name, composite_attr_value)
-    return setup_func        
-        
+    return setup_func 
+
+
 def callback_rightmouse_click_show_device_panel(parent, shape, value_model):
     #this func for displaying device panel conflit with magicgui popup frame
     #side effect is the mgicgui popup window close automatically after around 2 seconds

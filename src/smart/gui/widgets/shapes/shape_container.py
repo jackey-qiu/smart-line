@@ -691,7 +691,7 @@ class rectangle(baseShape):
             return x + w / 2, y + h / 2
 
     def make_anchors(
-        self, num_of_anchors_on_each_side=4, include_corner=True, grid=False
+        self, num_of_anchors_on_each_side=5, include_corner=True, grid=False
     ):
         # num_of_anchors_on_each_side: exclude corners
         # two possible signature for num_of_achors_one_each_side
@@ -1576,7 +1576,9 @@ class shapeComposite(TaurusBaseComponent, QObject):
         callbacks_upon_mouseclick=[],
         callbacks_upon_rightmouseclick=[],
         static_labels=[],
-        beam_height_offset = 0
+        beam_height_offset = 0,
+        callbacks = {},
+        models = {}
     ):
         # connection_patter = {'shapes':[[0,1],[1,2]], 'anchors':[['left','top'],['right', 'bottom']]}
         # alignment_patter = {'shapes':[[0,1],[1,2]], 'anchors':[['left','top'],['right', 'bottom']]}
@@ -1597,11 +1599,16 @@ class shapeComposite(TaurusBaseComponent, QObject):
         self.connection = connection_pattern
         self.static_labels = static_labels
         self.lines = None
-        self.build_composite()
-        self.callbacks = {}
-        self._models = {}
+        self.callbacks = callbacks
+        self._models = models
         self.beam_height_offset = beam_height_offset
+        self.dx_for_fix_exit=0
         self.parent = findMainWindow()
+        # self.unpack_callbacks_and_models()
+        self.build_composite()
+
+    def set_dx_for_fix_exit(self, dx):
+        self.dx_for_fix_exit = dx
 
     def set_beam_height_offset(self, offset):
         self.beam_height_offset = offset
@@ -1784,6 +1791,7 @@ class shapeComposite(TaurusBaseComponent, QObject):
         shape_index = self.alignment["shapes"]
         anchors = self.alignment["anchors"]
         gaps = self.alignment["gaps"]
+        gaps_absolute = self.alignment.get('gaps_absolute', False)
         ref_anchors = self.alignment["ref_anchors"]
         assert len(shape_index) == len(
             anchors
@@ -1793,7 +1801,7 @@ class shapeComposite(TaurusBaseComponent, QObject):
         ):
             ref_shape, target_shape, *_ = [self.shapes[each] for each in shapes_]
             buildTools.align_two_shapes(
-                ref_shape, target_shape, anchors_, gap_, ref_anchors_
+                ref_shape, target_shape, anchors_, gap_, ref_anchors_, gaps_absolute
             )
         for shape in self.shapes:
             shape.reset_ref_geometry()
@@ -1946,14 +1954,17 @@ class buildTools(object):
             else:
                 connection_pattern = None
             static_labels = composite_info.pop("static_labels", [])
+            #print(_models)
             composite_obj_container[composite] = shapeComposite(
                 shapes=shapes,
                 alignment_pattern=alignment_pattern,
                 connection_pattern=connection_pattern,
                 static_labels=static_labels,
+                callbacks=callbacks,
+                models= _models
             )
-            composite_obj_container[composite].callbacks = callbacks
-            composite_obj_container[composite]._models = _models
+            #composite_obj_container[composite].callbacks = callbacks
+            #composite_obj_container[composite]._models = _models
             if 'beam_height_offset' in composite_info:
                 beamheight_offset = composite_info["beam_height_offset"]
             else:
@@ -2009,9 +2020,10 @@ class buildTools(object):
                     init_kwargs, cbs, models = composite_obj_container[
                         each
                     ].copy_object_meta()
+                    init_kwargs.update({'callbacks': cbs, 'models': models})
                     composite = shapeComposite(**init_kwargs)
-                    composite.callbacks = cbs
-                    composite._models = models
+                    #composite.callbacks = cbs
+                    #composite._models = models
                     composite.unpack_callbacks_and_models()
                     composite.set_shape_parent()
                     # composite = copy.deepcopy(composite_obj_container[each])
@@ -2079,84 +2091,6 @@ class buildTools(object):
                 connection_container[viewer] = {}
         return viewer_container, connection_container, composite_obj_container             
 
-
-    @classmethod
-    def build_view_from_yaml_old(cls, yaml_file_path, canvas_width):
-        composite_obj_container = cls.build_composite_shape_from_yaml(yaml_file_path)
-        with open(yaml_file_path, "r", encoding="utf8") as f:
-            viewer_config = yaml.safe_load(f.read())["viewers"]
-        viewer_container = {}
-        connection_container = {}
-        for viewer, viewer_info in viewer_config.items():
-            if viewer_info["transformation"]["translate"]["type"] == "absolute":
-                max_width = 0
-                max_width = max(
-                    [
-                        each[0]
-                        for each in viewer_info["transformation"]["translate"]["values"]
-                    ]
-                )
-                sf = canvas_width / max_width
-            else:
-                sf = 1
-            composite_obj_container_subset = {}
-            acc_boundary_offset_x = 0
-            acc_boundary_offset_y = 0
-            for i, each in enumerate(viewer_info["composites"]):
-                init_kwargs, cbs, models = composite_obj_container[
-                    each
-                ].copy_object_meta()
-                composite = shapeComposite(**init_kwargs)
-                composite.callbacks = cbs
-                composite._models = models
-                composite.unpack_callbacks_and_models()
-                composite.set_shape_parent()
-                # composite = copy.deepcopy(composite_obj_container[each])
-                if i == 0:
-                    translate = viewer_info["transformation"]["translate"][
-                        "first_composite"
-                    ]
-                    translate = [int(translate[0] * sf), translate[1]]
-                else:
-                    if viewer_info["transformation"]["translate"]["type"] == "absolute":
-                        translate = viewer_info["transformation"]["translate"][
-                            "values"
-                        ][i - 1]
-                        translate = [int(translate[0] * sf), translate[1]]
-                    elif (
-                        viewer_info["transformation"]["translate"]["type"] == "relative"
-                    ):
-                        translate = (
-                            viewer_info["transformation"]["translate"][
-                                "first_composite"
-                            ]
-                            + np.array(
-                                viewer_info["transformation"]["translate"]["values"][0]
-                            )
-                            * i
-                        ) + [acc_boundary_offset_x,acc_boundary_offset_y]
-                x_min, x_max, *_ = buildTools.calculate_boundary_for_combined_shapes(composite.shapes)
-                acc_boundary_offset_x = acc_boundary_offset_x + abs(x_max - x_min)
-                acc_boundary_offset_y = acc_boundary_offset_y + composite.beam_height_offset
-                composite.translate(translate)
-                if each in composite_obj_container_subset:
-                    j = 2
-                    while True:
-                        if each + f"{j}" in composite_obj_container_subset:
-                            j = j + 1
-                            continue
-                        else:
-                            composite_obj_container_subset[each + f"{j}"] = composite
-                            break
-                else:
-                    composite_obj_container_subset[each] = composite
-            viewer_container[viewer] = composite_obj_container_subset
-            if "connection" in viewer_info:
-                connection_container[viewer] = viewer_info["connection"]
-            else:
-                connection_container[viewer] = {}
-        return viewer_container, connection_container
-
     @classmethod
     def calculate_boundary_for_combined_shapes(cls, shapes):
         x_min, x_max, y_min, y_max = None, None, None, None
@@ -2201,7 +2135,18 @@ class buildTools(object):
         orientations=["bottom", "top"],
         gap=0.0,
         ref_anchors=[None, None],
+        gaps_absolute= False
     ):
+        if orientations == ['translate','translate']:
+            assert type(gap)==list and len(gap)==2, 'In translate mode, you should give two translation value in x and y directions'
+            target_shape.transformation.update(ref_shape.transformation)
+            if type(gap[0])==str:
+                assert gap[0] == 'dx_for_fix_exit', 'Wrong str, only dx_for_fix_exit accepted!'
+                dx = getattr(target_shape.parent, gap[0])
+                assert gap[1] == 'yoffset', 'Wrong str, only yoffset accepted!'
+                dy = getattr(ref_shape, '_dynamic_attribute_'+gap[1])
+            target_shape.transformation['translate'] = list(target_shape.transformation['translate'] + np.array(gap))
+            return target_shape
         cen_, v_unit = ref_shape.calculate_orientation_vector(
             orientations[0], ref_anchors[0]
         )
@@ -2212,7 +2157,10 @@ class buildTools(object):
         #    v_mag = -ref_shape.calculate_orientation_length(orientations[0], ref_anchors[0]) + target_shape.calculate_orientation_length(orientations[1], ref_anchors[1])
         # else:
         #    v_mag = ref_shape.calculate_orientation_length(orientations[0], ref_anchors[0]) + target_shape.calculate_orientation_length(orientations[1], ref_anchors[1])
-        v = v_unit * v_mag * (1 + gap)
+        if gaps_absolute:
+            v = v_unit * (v_mag + gap)
+        else:
+            v = v_unit * v_mag * (1 + gap)
         # set rot ang to 0 and translate to 0
         target_shape.reset()
         # this center is the geometry center if ref_anchor is None, and become offseted anchor otherwise

@@ -5,6 +5,78 @@ basic_shapes:
       dim: [0, 0, 40, 20, 10]
       anchor_pars: [3] 
   rectangle:
+    mono_xtal_label:
+      dim: [0,0,100,20]
+      anchor_pars: null
+      labels:
+        text: ['Si111']
+        anchor: ['center']
+        orientation: ['horizontal']
+        decoration: 
+          - text_color: [200,200,200]
+            font_size: 10
+            alignment: AlignCenter
+            padding: 0   
+    mono_xtal_1:
+      dim: [0,0,200,5]
+      anchor_pars: null
+      labels:
+        text: ['']
+        anchor: ['center']
+        orientation: ['horizontal']
+        decoration: 
+          - text_color: [200,200,200]
+            font_size: 10
+            alignment: AlignCenter
+            padding: 0      
+    mono_xtal_2:
+      dim: [0,0,200,5]
+      anchor_pars: null
+      labels:
+        text: ['']
+        anchor: ['center']
+        orientation: ['horizontal']
+        decoration: 
+          - text_color: [200,200,200]
+            font_size: 10
+            alignment: AlignCenter
+            padding: 0         
+    mono_txt_1:
+      dim: [0,0,200,20]
+      anchor_pars: null
+      labels:
+        text: ['Bragg angle: ?? degree']
+        anchor: ['center']
+        orientation: ['horizontal']
+        decoration: 
+          - text_color: [0,200,0]
+            font_size: 10
+            alignment: AlignCenter
+            padding: 0         
+    mono_txt_2:
+      dim: [0,0,200,30]
+      anchor_pars: null
+      labels:
+        text: ['Energy: ??? keV']
+        anchor: ['center']
+        orientation: ['horizontal']
+        decoration: 
+          - text_color: [250,0,0]
+            font_size: 10
+            alignment: AlignCenter
+            padding: 0         
+    mono_txt_3:
+      dim: [0,0,200,30]
+      anchor_pars: null
+      labels:
+        text: ['x2pitch: ??? angle']
+        anchor: ['center']
+        orientation: ['horizontal']
+        decoration: 
+          - text_color: [200,0,200]
+            font_size: 10
+            alignment: AlignCenter
+            padding: 0         
     absorber_unit:
       dim: [0,0,25,20]
       anchor_pars: null
@@ -177,6 +249,38 @@ basic_shapes:
       dim: [0, 0, 30, 80, 10, 10]
       anchor_pars: null
   circle:
+    mono_pitch_cw:
+      dim: [0, 0, 40]
+      anchor_pars: [8]  
+      labels:
+        text: ['pitcw']
+        anchor: ['center']
+        orientation: ['horizontal']         
+        decoration: null      
+    mono_pitch_acw:
+      dim: [0, 0, 40]
+      anchor_pars: [8]  
+      labels:
+        text: ['pitacw']
+        anchor: ['center']
+        orientation: ['horizontal']         
+        decoration: null      
+    mono_bragg_cw:
+      dim: [0, 0, 40]
+      anchor_pars: [8]  
+      labels:
+        text: ['monocw']
+        anchor: ['center']
+        orientation: ['horizontal']         
+        decoration: null      
+    mono_bragg_acw:
+      dim: [0, 0, 40]
+      anchor_pars: [8]  
+      labels:
+        text: ['monoacw']
+        anchor: ['center']
+        orientation: ['horizontal']         
+        decoration: null      
     big:
       dim: [0, 0, 120]
       anchor_pars: [8]
@@ -248,6 +352,107 @@ basic_shapes:
         orientation: ['horizontal']
         decoration: null              
 composite_shapes:
+  dcm:
+    shapes: 
+      - 'rectangle.mono_xtal_1*1'
+      - 'rectangle.mono_xtal_2*1'
+      - 'rectangle.mono_txt_1*1'
+      - 'rectangle.mono_txt_2*1'
+      - 'rectangle.mono_txt_3*1'
+      - 'circle.mono_pitch_cw*1'
+      - 'circle.mono_pitch_acw*1'
+      - 'circle.mono_bragg_cw*1'
+      - 'circle.mono_bragg_acw*1'
+      - 'rectangle.mono_xtal_label*1'
+    dynamic_shape_attributes:
+      (5,):
+        change_value: 1
+      (6,):
+        change_value: -1
+      (7,):
+        change_value: 1
+      (8,):
+        change_value: -1
+      (0,):
+        yoffset: -100
+      (9,):
+        map_par:
+          Si111: 2
+          Si311: 5
+        selected_xtal: Si111
+    ref_shape: null
+    hide: [2,3,4]
+    alignment:
+      shapes: [[0,1],[1,2],[2,3],[3,4],[1,5],[1,6],[0,7],[0,8],[0,9]]
+      anchors:
+        - ['translate','translate']
+        - ['top', 'bottom']
+        - ['top', 'bottom']
+        - ['top', 'bottom']
+        - ['left', 'right']
+        - ['right', 'left']
+        - ['left', 'right']
+        - ['right', 'left']
+        - ['bottom', 'top']
+      # gaps: [['dx_for_fix_exit','yoffset'],10,1,1,1,1,1,1]
+      gaps: [[100,-100],10,1,1,1,1,1,1,5]
+      gaps_absolute: true
+      ref_anchors: 
+        - [null, null]
+        - [null, null]
+        - [null, null]
+        - [null, null]
+        - [null, null]
+        - [null, null]
+        - [null, null]
+        - [null, null]
+        - [null, null]
+    transformation:
+      translate: [0,0]
+    models: 
+      0: eval:bragg={bliss://hasep25lab01:25000/xlab_session_2/bragg/position};-bragg
+      1: bliss://hasep25lab01:25000/xlab_session_2/x2pitch/position
+      2: eval:bragg={bliss://hasep25lab01:25000/xlab_session_2/bragg/position};bragg
+      3: eval:eng={bliss://hasep25lab01:25000/xlab_session_2/energy_axis/position};eng
+      4: eval:x2pitch={bliss://hasep25lab01:25000/xlab_session_2/x2pitch/position};x2pitch
+      5: bliss://hasep25lab01:25000/xlab_session_2/x2pitch/position
+      6: bliss://hasep25lab01:25000/xlab_session_2/x2pitch/position
+      7: bliss://hasep25lab01:25000/xlab_session_2/energy_axis/position
+      8: bliss://hasep25lab01:25000/xlab_session_2/energy_axis/position
+      9: bliss://hasep25lab01:25000/xlab_session_2/mono_hor/position
+    callbacks_upon_model_change:
+      0: ['callback_model_change_with_composite_rotation', 'which_gap', 0]
+      1: null
+      2: ['callback_model_change_with_text_label', 'anchor','center','label', 'bragg angel:','end_txt','degree']
+      3: ['callback_model_change_with_text_label', 'anchor','center','label', 'energy:','end_txt','keV']
+      4: ['callback_model_change_with_text_label', 'anchor','center','label', 'x2pitch:','end_txt','degree']
+      5: null
+      6: null
+      7: null
+      8: null
+      9: null
+    callbacks_upon_leftmouse_click:
+      0: null
+      1: null
+      2: null
+      3: null
+      4: null
+      5: ['callback_leftmouse_click_change_attribute_value']
+      6: ['callback_leftmouse_click_change_attribute_value']
+      7: ['callback_leftmouse_click_change_attribute_value']
+      8: ['callback_leftmouse_click_change_attribute_value']
+      9: null
+    callbacks_upon_rightmouse_click:
+      0: null
+      1: null
+      2: null
+      3: null
+      4: null
+      5: ['callback_rightmouse_click_set_step_size','attr_name','change_value']
+      6: ['callback_rightmouse_click_set_step_size','attr_name','change_value']
+      7: ['callback_rightmouse_click_set_step_size','attr_name','change_value']
+      8: ['callback_rightmouse_click_set_step_size','attr_name','change_value']
+      9: ['callback_rightmouse_click_set_item','attr_name','map_par','show_label',True]
   channel_cut:
     shapes: ['rectangle.channel_cut_plane*2','circle.channel_cut_mv_handle_I*1','circle.channel_cut_mv_handle_O*1','isocelesTriangle.absorber_switch_up*1','isocelesTriangle.absorber_switch_down*1']
     # shapes: ['circle.channel_cut_guide*1', 'rectangle.channel_cut_plane*2']
@@ -488,6 +693,7 @@ composite_shapes:
         change_value: 1      
     models: 
       index: [4,7,8]
+      # model: bliss://hasep25lab01:25000/xlab_session_2/ccx/position
       model: tango://hasep25lab01.desy.de:10000/p25/smar/axis.02/position
     callbacks_upon_model_change:
       4: ['callback_model_change_with_transformation', 'mv_dir', 'x', 'sign', '+', 'max_translation_range', '[-100,100]']
@@ -565,10 +771,22 @@ composite_shapes:
       translate: [0,0]
     models: 
       index: [1,2,3,4,5,6,7,8,9,10,11,12]
-      model: tango://hasep25lab01:10000/sys/tg_test/1/long_scalar_w
+      model: tango://hasep25lab01:10000/p25/smar/axis.02/position
+      #model: bliss://hasep25lab01:25000/xlab_session_2/filtW_first/transmission
     dynamic_shape_attributes:
       (5,6,7,8):
         change_value: 1
+      (5,):
+        filter_map:
+          Al_0: 2
+          Al_0.025: 2.5
+          Al_0.1: 3
+          Ti_0.025: 3.5
+          Ti_0.1: 4
+          Cu_0.025: 4.5
+          Cu_0.1: 5
+          W_0.025: 5.5
+          W_0.1: 6
       (9,10,11,12):
         change_value: -1
     callbacks_upon_model_change:
@@ -604,7 +822,7 @@ composite_shapes:
       2: ['callback_rightmouse_click_show_device_panel']
       3: ['callback_rightmouse_click_show_device_panel']
       4: ['callback_rightmouse_click_show_device_panel']
-      5: ['callback_rightmouse_click_set_step_size','attr_name','change_value']
+      5: ['callback_rightmouse_click_set_item','attr_name','filter_map']
       6: ['callback_rightmouse_click_set_step_size','attr_name','change_value']
       7: ['callback_rightmouse_click_set_step_size','attr_name','change_value']
       8: ['callback_rightmouse_click_set_step_size','attr_name','change_value']
@@ -766,8 +984,8 @@ composite_shapes:
     hide: []
     alignment:
       shapes: [[0,1]]
-      anchors: [['right','left']]
-      gaps: [0.]
+      anchors: [['translate','translate']] #[['right','left']]
+      gaps: [[30,40]] #[0.]
       ref_anchors: [[null, null]]
     transformation: 
       translate: [0,0]
@@ -879,6 +1097,24 @@ viewers:
         first_composite: [100, 220] #always in absolute value
         values:   
           - [220, 220]
+  DCM:
+    composites: ['dcm']
+    transformation:
+      translate:
+        type: absolute #or absolute
+        first_composite: [10, 320] #always in absolute value
+        values: 
+          - [100, 320] #either relative offsets in dx and dy directions or a list of absolute values for the other composite shapes.
+          - [200, 320] #either relative offsets in dx and dy directions or a list of absolute values for the other composite shapes.
+    connection:
+      # end<=>dcm.0.top<=>dcm.1.anchor_bottom_2<=>end:
+      end<=>dcm.0.anchor_top_2<=>dcm.1.anchor_bottom_2<=>end:
+        pen:
+          color: [255, 0, 0]
+          width: 2
+          ls: DotLine
+        direct_connect: True
+        draw_after: False          
   viewer3:
     composites: ['anchor2']
     transformation:
