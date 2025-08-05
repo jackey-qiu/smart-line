@@ -185,8 +185,8 @@ class beamlineSynopticViewer(QWidget):
     def paintEvent(self, a0) -> None:
         qp = QPainter()
         qp.begin(self)
-        # qp.setRenderHint(QPainter.Antialiasing, True)
-        # qp.setRenderHint(QPainter.HighQualityAntialiasing, True)
+        qp.setRenderHint(QPainter.Antialiasing, True)
+        qp.setRenderHint(QPainter.HighQualityAntialiasing, True)
         # for each in self.shapes:                       
         if self.viewer_shape == None:
             return
@@ -271,7 +271,7 @@ class beamlineSynopticViewer(QWidget):
             return
         for composite_shape in self.viewer_shape.values():
             for i, each_shape in enumerate(composite_shape.shapes):
-                if each_shape.cursor_pos_checker(x, y) and each_shape.clickable:
+                if each_shape.cursor_pos_checker(x, y) and each_shape.clickable and each_shape.show:
                     if event.button() == Qt.LeftButton:
                         composite_shape.uponLeftMouseClicked(i)
                         return

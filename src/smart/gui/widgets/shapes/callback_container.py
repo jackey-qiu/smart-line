@@ -155,7 +155,7 @@ def callback_model_change_with_decoration(shape, value_model):
 
 def callback_model_change_with_transformation(parent, shape, value_model, mv_dir, sign = '+',model_limits = None, max_translation_range = None, val_ix = None, translate = 'True'):
     _apply_translation_steps(shape, value_model,mv_dir, sign, model_limits, max_translation_range, val_ix, translate)
-    callback_model_change_with_decoration(shape, value_model)
+    # callback_model_change_with_decoration(shape, value_model)
 
 def callback_model_change_with_text_label(parent, shape, value_model, anchor='left', orientation='horizontal', val_ix = None, sf = 1, label="", end_txt=""):
     if label==None:
@@ -167,12 +167,12 @@ def callback_model_change_with_text_label(parent, shape, value_model, anchor='le
         shape.labels = {'text':[f'{label}{round(_get_model_value(value_model)*float(sf),2)} {end_txt}'],'anchor':[anchor], 'orientation': [orientation]}
     else:
         shape.labels = {'text':[f'{label}{round(_get_model_value(value_model)[int(val_ix)]*float(sf),2)} {end_txt}'],'anchor':[anchor], 'orientation': [orientation]}
-    callback_model_change_with_decoration(shape, value_model)
+    # callback_model_change_with_decoration(shape, value_model)
 
 def callback_model_change_with_composite_rotation(parent, shape, value_model, which_gap = None):
     if shape.parent==None:
         return
-    callback_model_change_with_decoration(shape, value_model)
+    # callback_model_change_with_decoration(shape, value_model)
     value = _get_model_value(value_model)
     shape.parent.rotate(value)
     if which_gap!=None:

@@ -8,6 +8,13 @@ basic_shapes:
     mono_xtal_label:
       dim: [0,0,100,20]
       anchor_pars: null
+      decoration_cursor_off:
+        pen: 
+          color: [255, 0, 0]
+          width: 0
+          ls: NoPen
+        brush: 
+          color: [250, 250, 0, 255]      
       labels:
         text: ['Si111']
         anchor: ['center']
@@ -20,6 +27,13 @@ basic_shapes:
     mono_xtal_1:
       dim: [0,0,200,5]
       anchor_pars: null
+      decoration_cursor_off:
+        pen: 
+          color: [255, 0, 0]
+          width: 0
+          ls: NoPen
+        brush: 
+          color: [250, 250, 250, 255]
       labels:
         text: ['']
         anchor: ['center']
@@ -32,6 +46,13 @@ basic_shapes:
     mono_xtal_2:
       dim: [0,0,200,5]
       anchor_pars: null
+      decoration_cursor_off:
+        pen: 
+          color: [255, 0, 0]
+          width: 0
+          ls: NoPen
+        brush: 
+          color: [250, 250, 250, 255]      
       labels:
         text: ['']
         anchor: ['center']
@@ -42,14 +63,21 @@ basic_shapes:
             alignment: AlignCenter
             padding: 0         
     mono_txt_1:
-      dim: [0,0,200,20]
+      dim: [0,0,200,30]
       anchor_pars: null
+      decoration_cursor_off:
+        pen: 
+          color: [255, 0, 0]
+          width: 0
+          ls: NoPen
+        brush: 
+          color: [0, 0, 255, 255]
       labels:
         text: ['Bragg angle: ?? degree']
         anchor: ['center']
         orientation: ['horizontal']
         decoration: 
-          - text_color: [0,200,0]
+          - text_color: [200,200,200]
             font_size: 10
             alignment: AlignCenter
             padding: 0         
@@ -61,22 +89,37 @@ basic_shapes:
         anchor: ['center']
         orientation: ['horizontal']
         decoration: 
-          - text_color: [250,0,0]
+          - text_color: [200,200,200]
             font_size: 10
             alignment: AlignCenter
-            padding: 0         
+            padding: 0        
+      decoration_cursor_off:
+        pen: 
+          color: [255, 0, 0]
+          width: 0
+          ls: NoPen
+        brush: 
+          color: [0, 0, 255, 255]        
     mono_txt_3:
       dim: [0,0,200,30]
       anchor_pars: null
       labels:
         text: ['x2pitch: ??? angle']
         anchor: ['center']
-        orientation: ['horizontal']
+        orientation: ['horizontal']        
         decoration: 
-          - text_color: [200,0,200]
+          - text_color: [200,200,200]
             font_size: 10
             alignment: AlignCenter
-            padding: 0         
+            padding: 0  
+      decoration_cursor_off:
+        pen: 
+          color: [255, 0, 0]
+          width: 0
+          ls: NoPen
+        brush: 
+          color: [0, 0, 255, 255]        
+       
     absorber_unit:
       dim: [0,0,25,20]
       anchor_pars: null
@@ -335,6 +378,21 @@ basic_shapes:
         anchor: ['center']
         orientation: ['horizontal']
         decoration: null         
+    mono_tweak:
+      dim: [0, 0, 30, 60]
+      anchor_pars: null
+      labels:
+        text: ['']
+        anchor: ['center']
+        orientation: ['horizontal']
+        decoration: null         
+      decoration_cursor_off:
+        pen: 
+          color: [255, 0, 0]
+          width: 0
+          ls: NoPen
+        brush: 
+          color: [0, 255, 0, 255]
     absorber_switch_up:
       dim: [0, 0, 40, 60]
       anchor_pars: null
@@ -359,20 +417,22 @@ composite_shapes:
       - 'rectangle.mono_txt_1*1'
       - 'rectangle.mono_txt_2*1'
       - 'rectangle.mono_txt_3*1'
-      - 'circle.mono_pitch_cw*1'
-      - 'circle.mono_pitch_acw*1'
-      - 'circle.mono_bragg_cw*1'
-      - 'circle.mono_bragg_acw*1'
+      - 'isocelesTriangle.mono_tweak*4'
+      # - 'circle.mono_bragg_cw*1'
+      # - 'circle.mono_bragg_acw*1'
       - 'rectangle.mono_xtal_label*1'
+      - 'rectangle.mono_txt_1*1'
+      - 'rectangle.mono_txt_1*1'
+      - 'isocelesTriangle.mono_tweak*4'
     dynamic_shape_attributes:
-      (5,):
-        change_value: 1
-      (6,):
+      (5,12,14):
         change_value: -1
+      (6,13,15):
+        change_value: 1
       (7,):
-        change_value: 1
-      (8,):
         change_value: -1
+      (8,):
+        change_value: 1
       (0,):
         yoffset: -100
       (9,):
@@ -381,23 +441,35 @@ composite_shapes:
           Si311: 5
         selected_xtal: Si111
     ref_shape: null
-    hide: [2,3,4]
+    hide: []
     alignment:
-      shapes: [[0,1],[1,2],[2,3],[3,4],[1,5],[1,6],[0,7],[0,8],[0,9]]
+      shapes: [[0,1],[1,2],[2,3],[3,4],[4,5],[4,6],[3,7],[3,8],[0,9],[4,10],[10,11],[10,12],[10,13],[11,14],[11,15]]
       anchors:
         - ['translate','translate']
         - ['top', 'bottom']
         - ['top', 'bottom']
         - ['top', 'bottom']
-        - ['left', 'right']
-        - ['right', 'left']
-        - ['left', 'right']
-        - ['right', 'left']
+        - ['left', 'bottom']
+        - ['right', 'bottom']
+        - ['left', 'bottom']
+        - ['right', 'bottom']
         - ['bottom', 'top']
+        - ['top', 'bottom']
+        - ['top', 'bottom']
+        - ['left', 'bottom']
+        - ['right', 'bottom']
+        - ['left', 'bottom']
+        - ['right', 'bottom']
       # gaps: [['dx_for_fix_exit','yoffset'],10,1,1,1,1,1,1]
-      gaps: [[100,-100],10,1,1,1,1,1,1,5]
+      gaps: [[100,-100],10,1,1,1,1,1,1,5,1,1,1,1,1,1]
       gaps_absolute: true
       ref_anchors: 
+        - [null, null]
+        - [null, null]
+        - [null, null]
+        - [null, null]
+        - [null, null]
+        - [null, null]
         - [null, null]
         - [null, null]
         - [null, null]
@@ -420,6 +492,12 @@ composite_shapes:
       7: bliss://hasep25lab01:25000/xlab_session_2/energy_axis/position
       8: bliss://hasep25lab01:25000/xlab_session_2/energy_axis/position
       9: bliss://hasep25lab01:25000/xlab_session_2/mono_hor/position
+      10: eval:x1roll={bliss://hasep25lab01:25000/xlab_session_2/x1roll/position};x1roll
+      11: eval:x2roll={bliss://hasep25lab01:25000/xlab_session_2/x2roll/position};x2roll
+      12: bliss://hasep25lab01:25000/xlab_session_2/x1roll/position
+      13: bliss://hasep25lab01:25000/xlab_session_2/x1roll/position
+      14: bliss://hasep25lab01:25000/xlab_session_2/x2roll/position
+      15: bliss://hasep25lab01:25000/xlab_session_2/x2roll/position
     callbacks_upon_model_change:
       0: ['callback_model_change_with_composite_rotation', 'which_gap', 0]
       1: null
@@ -431,6 +509,12 @@ composite_shapes:
       7: null
       8: null
       9: null
+      10: ['callback_model_change_with_text_label', 'anchor','center','label', 'x1roll:','end_txt','degree']
+      11: ['callback_model_change_with_text_label', 'anchor','center','label', 'x2roll:','end_txt','degree']
+      12: null
+      13: null
+      14: null
+      15: null
     callbacks_upon_leftmouse_click:
       0: null
       1: null
@@ -442,6 +526,12 @@ composite_shapes:
       7: ['callback_leftmouse_click_change_attribute_value']
       8: ['callback_leftmouse_click_change_attribute_value']
       9: null
+      10: null
+      11: null
+      12: ['callback_leftmouse_click_change_attribute_value']
+      13: ['callback_leftmouse_click_change_attribute_value']
+      14: ['callback_leftmouse_click_change_attribute_value']
+      15: ['callback_leftmouse_click_change_attribute_value']
     callbacks_upon_rightmouse_click:
       0: null
       1: null
@@ -453,6 +543,12 @@ composite_shapes:
       7: ['callback_rightmouse_click_set_step_size','attr_name','change_value']
       8: ['callback_rightmouse_click_set_step_size','attr_name','change_value']
       9: ['callback_rightmouse_click_set_item','attr_name','map_par','show_label',True]
+      10: null
+      11: null
+      12: ['callback_rightmouse_click_set_step_size','attr_name','change_value']
+      13: ['callback_rightmouse_click_set_step_size','attr_name','change_value']
+      14: ['callback_rightmouse_click_set_step_size','attr_name','change_value']
+      15: ['callback_rightmouse_click_set_step_size','attr_name','change_value']
   channel_cut:
     shapes: ['rectangle.channel_cut_plane*2','circle.channel_cut_mv_handle_I*1','circle.channel_cut_mv_handle_O*1','isocelesTriangle.absorber_switch_up*1','isocelesTriangle.absorber_switch_down*1']
     # shapes: ['circle.channel_cut_guide*1', 'rectangle.channel_cut_plane*2']
@@ -1111,8 +1207,8 @@ viewers:
       end<=>dcm.0.anchor_top_2<=>dcm.1.anchor_bottom_2<=>end:
         pen:
           color: [255, 0, 0]
-          width: 2
-          ls: DotLine
+          width: 5
+          ls: SolidLine
         direct_connect: True
         draw_after: False          
   viewer3:
