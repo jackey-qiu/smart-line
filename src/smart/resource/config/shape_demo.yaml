@@ -493,7 +493,8 @@ composite_shapes:
       8: bliss://hasep25lab01:25000/xlab_session_2/energy_axis/position
       9: bliss://hasep25lab01:25000/xlab_session_2/mono_hor/position
       10: eval:x1roll={bliss://hasep25lab01:25000/xlab_session_2/x1roll/position};x1roll
-      11: eval:x2roll={bliss://hasep25lab01:25000/xlab_session_2/x2roll/position};x2roll
+      # 11: eval:x2roll={bliss://hasep25lab01:25000/xlab_session_2/x2roll/position};x2roll
+      11: eval:@p=smart.smartProperties()/p.scan_progress_req
       12: bliss://hasep25lab01:25000/xlab_session_2/x1roll/position
       13: bliss://hasep25lab01:25000/xlab_session_2/x1roll/position
       14: bliss://hasep25lab01:25000/xlab_session_2/x2roll/position
@@ -510,7 +511,8 @@ composite_shapes:
       8: null
       9: null
       10: ['callback_model_change_with_text_label', 'anchor','center','label', 'x1roll:','end_txt','degree']
-      11: ['callback_model_change_with_text_label', 'anchor','center','label', 'x2roll:','end_txt','degree']
+      # 11: ['callback_model_change_with_text_label', 'anchor','center','label', 'x2roll:','end_txt','degree']
+      11: ['callback_model_change_with_text_label', 'anchor','center','label', 'scanprogress:','end_txt','*100%']
       12: null
       13: null
       14: null
@@ -578,7 +580,7 @@ composite_shapes:
       # index: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
       # model: tango://hasep25lab01:10000/sys/tg_test/1/boolean_spectrum_ro
     callbacks_upon_model_change:
-      0: ['callback_model_change_with_composite_rotation']
+      0: ['callback_model_change_with_composite_rotation','factor',-1]
     callbacks_upon_leftmouse_click:
       0: null
     callbacks_upon_rightmouse_click:

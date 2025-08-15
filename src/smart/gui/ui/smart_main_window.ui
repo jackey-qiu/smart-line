@@ -51,7 +51,7 @@
            <item>
             <widget class="QTabWidget" name="tabWidget_viewer">
              <property name="currentIndex">
-              <number>2</number>
+              <number>0</number>
              </property>
              <widget class="QWidget" name="tab_10">
               <attribute name="title">
@@ -218,7 +218,20 @@
                     </widget>
                    </item>
                    <item>
+                    <widget class="QLabel" name="label_108">
+                     <property name="text">
+                      <string>Scan queue viewer</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
                     <widget class="queueSynopticView" name="widget_queue_synoptic_viewer" native="true">
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
                      <property name="minimumSize">
                       <size>
                        <width>0</width>
@@ -233,6 +246,45 @@
                    <item>
                     <widget class="QTableView" name="tableView_queue">
                      <property name="sortingEnabled">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="Line" name="line_4">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QLabel" name="label_107">
+                     <property name="text">
+                      <string>Acquisition chain viewer</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="chainSynopticView" name="widget_chain_viewer" native="true">
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
+                     <property name="minimumSize">
+                      <size>
+                       <width>0</width>
+                       <height>30</height>
+                      </size>
+                     </property>
+                     <property name="maximumSize">
+                      <size>
+                       <width>16777215</width>
+                       <height>360</height>
+                      </size>
+                     </property>
+                     <property name="mouseTracking">
                       <bool>true</bool>
                      </property>
                     </widget>
@@ -3316,6 +3368,24 @@
    <container>1</container>
   </customwidget>
   <customwidget>
+   <class>beamlineSynopticViewer</class>
+   <extends>QWidget</extends>
+   <header>smart.gui.widgets.synoptic_widgets.beamline_viewer.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>Taurus2DImageItem</class>
+   <extends>QWidget</extends>
+   <header>smart.gui.widgets.camera_viewer.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>SmartParameters</class>
+   <extends>QWidget</extends>
+   <header>smart.gui.widgets.parameter_tree.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
    <class>TaurusSequencerWidget</class>
    <extends>QWidget</extends>
    <header>smart.gui.widgets.extra_macroexecutor.sequenceeditor.h</header>
@@ -3351,27 +3421,9 @@
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>beamlineSynopticViewer</class>
-   <extends>QWidget</extends>
-   <header>smart.gui.widgets.synoptic_widgets.beamline_viewer.h</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
-   <class>Taurus2DImageItem</class>
-   <extends>QWidget</extends>
-   <header>smart.gui.widgets.camera_viewer.h</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
    <class>TaurusValueLineEdit</class>
    <extends>QLineEdit</extends>
    <header>taurus.qt.qtgui.input.h</header>
-  </customwidget>
-  <customwidget>
-   <class>SmartParameters</class>
-   <extends>QWidget</extends>
-   <header>smart.gui.widgets.parameter_tree.h</header>
-   <container>1</container>
   </customwidget>
   <customwidget>
    <class>TaurusPlot</class>
@@ -3383,6 +3435,12 @@
    <class>TaurusLed</class>
    <extends>QWidget</extends>
    <header>taurus.qt.qtgui.display.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>chainSynopticView</class>
+   <extends>QWidget</extends>
+   <header>smart.gui.widgets.synoptic_widgets.chain_viewer.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

@@ -1640,6 +1640,15 @@ class shapeComposite(TaurusBaseComponent, QObject):
         self.model_shape_index_list = inx_shape
         for ix in inx_shape:
             self.shapes[ix].set_clickable(True)
+        #change pollingperiod to 50ms
+        for i, _ix in enumerate(self.model_shape_index_list):
+            key = (TaurusBaseComponent.MLIST, i + self.model_ix_start)
+            if (
+                key not in self.modelKeys
+            ):  # this could happen when the setModel step is slower than the event polling
+                return
+            self.getModelObj(key=key).changePollingPeriod(50)
+
         self.callbacks_upon_model_change = [
             self._make_callback(each, False)
             for each in self.callbacks["callbacks_upon_model_change"].values()

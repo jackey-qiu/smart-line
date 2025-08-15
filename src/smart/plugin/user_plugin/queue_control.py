@@ -59,6 +59,8 @@ class eventListener(QtCore.QObject):
 class eventListener_p25(QtCore.QObject):
     queue_entry_event = QtCore.pyqtSignal(list)
     queue_event = QtCore.pyqtSignal(object)
+    chain_event = QtCore.pyqtSignal(object)
+    chain_state = QtCore.pyqtSignal(object)
 
     def __init__(self):
         super().__init__()
@@ -89,6 +91,8 @@ class eventListener_p25(QtCore.QObject):
                 self.brcast_comm[-1].connect(f"tcp://{self.ntp_host}:{port}")
                 self.brcast_comm[-1].setsockopt(zmq.SUBSCRIBE, b'queue_dict')
                 self.brcast_comm[-1].setsockopt(zmq.SUBSCRIBE, b'scan_progress')
+                self.brcast_comm[-1].setsockopt(zmq.SUBSCRIBE, b'chain')
+                self.brcast_comm[-1].setsockopt(zmq.SUBSCRIBE, b'chain_state')
                 self.poller.register(self.brcast_comm[-1],zmq.POLLIN)
             if start_listening:
                 self.start_listen_server()
@@ -117,6 +121,12 @@ class eventListener_p25(QtCore.QObject):
                         self.queue_entry_event.emit(['current_instance'])
                     elif self.topic == 'scan_progress':
                         self.queue_event.emit(self.msg)
+                    elif self.topic == 'chain':
+                        #print('receive chain info', self.msg)
+                        self.chain_event.emit(self.msg)
+                    elif self.topic == 'chain_state':
+                        # print('chain state change::', self.msg)
+                        self.chain_state.emit(self.msg)
 
     def stop_listen_server(self):
         self.listening = False
@@ -597,6 +607,16 @@ class queueControl(object):
         self.widget_queue_synoptic_viewer.build_shapes()
         self.statusUpdate(str(scan_progress))
 
+    @Slot(object)
+    def update_chain_structure(self, data):
+        self.widget_chain_viewer.set_data(data)
+        self.statusUpdate('New scan is just started!')
+
+    @Slot(object)
+    def update_chain_state(self, data):
+        self.widget_chain_viewer.update_state(data)
+        self.statusUpdate('New scan state is just updated!')
+
     def update_scan_roi_upon_state_change(self):
         running_row = self.pandas_model_queue._data[self.pandas_model_queue._data['state']=='running']
         if len(running_row)==0:
@@ -747,6 +767,8 @@ class queueControl(object):
         # self.pushButton_pause_task.clicked.connect(lambda: self.change_state_of_a_task('paused'))
         self.brcast_listener.queue_entry_event.connect(self.update_queued_task_from_brcast_event)
         self.brcast_listener.queue_event.connect(self.update_scan_progress)
+        self.brcast_listener.chain_event.connect(self.update_chain_structure)
+        self.brcast_listener.chain_state.connect(self.update_chain_state)
         self.tableView_queue.clicked.connect(self.update_task_upon_click_tableview)
         self.pushButton_mv_queue_right.clicked.connect(lambda:self.mv_queue_view(dir='right'))
         self.pushButton_mv_queue_left.clicked.connect(lambda:self.mv_queue_view(dir='left'))
